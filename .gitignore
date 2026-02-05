@@ -1,0 +1,23 @@
+# Claude Code
+.claude/
+
+# TLDR
+.tldr/
+.tldrignore
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Composer
+/vendor/
+composer.lock
+
+# Build
+/build/
