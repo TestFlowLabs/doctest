@@ -1,6 +1,6 @@
 # PHP DocTest Specification
 
-A PHP documentation testing tool that validates code examples in markdown files. Extracts PHP code blocks, executes them in an isolated environment, validates outputs and assertions, and reports failures with clear diffs. Integrates with PHPUnit, Pest, and Laravel.
+A PHP documentation testing tool that validates code examples in markdown files. Extracts PHP code blocks, executes them in an isolated environment, validates outputs and assertions, and reports failures with clear diffs. Optionally integrates with Laravel.
 
 Inspired by Python's doctest, Rust's rustdoc, Elixir's ExDoc, and Go's testable examples.
 
@@ -19,10 +19,9 @@ Inspired by Python's doctest, Rust's rustdoc, Elixir's ExDoc, and Go's testable 
 11. [Error Handling](#error-handling)
 12. [Configuration](#configuration)
 13. [CLI Interface](#cli-interface)
-14. [PHPUnit/Pest Integration](#phpunitpest-integration)
-15. [CI/CD Integration](#cicd-integration)
-16. [Security Considerations](#security-considerations)
-17. [Implementation Phases](#implementation-phases)
+14. [CI/CD Integration](#cicd-integration)
+15. [Security Considerations](#security-considerations)
+16. [Implementation Phases](#implementation-phases)
 
 ---
 
@@ -64,8 +63,8 @@ A tool that:
 ### Distribution
 
 - **Type:** Composer package
-- **Package:** `tarfinlabs/doctest`
-- **Installation:** `composer require tarfinlabs/doctest --dev`
+- **Package:** `testflowlabs/doctest`
+- **Installation:** `composer require testflowlabs/doctest --dev`
 
 ### Dependencies
 
@@ -93,7 +92,7 @@ Laravel mode is activated automatically when a Laravel application is detected (
 
 1. **Verify documentation accuracy** - Ensure code examples produce expected results
 2. **Low friction adoption** - Work with existing markdown without major rewrites
-3. **Laravel-first design** - Native support for Laravel testing patterns
+3. **PHP-first with Laravel support** - Standalone PHP tool with optional Laravel integration
 4. **Clear failure reporting** - Show exactly what failed and why
 5. **Flexible execution** - Support various testing scenarios (output, assertions, exceptions)
 6. **CI/CD ready** - Exit codes, machine-readable output, parallel execution
@@ -165,10 +164,10 @@ src/
 │   ├── OutputAssertion.php      # // Output: style assertions
 │   └── ExpectAssertion.php      # // Expect: style assertions
 ├── Executor/
-│   ├── TestExecutor.php         # Execute code blocks
-│   ├── ProcessExecutor.php      # Standalone process execution
-│   ├── LaravelExecutor.php      # Laravel-aware execution
-│   └── OutputCapture.php        # Capture stdout/stderr
+│   ├── Executor.php             # Orchestrates block execution
+│   ├── CodeGenerator.php        # Generates instrumented PHP files
+│   ├── ProcessRunner.php        # Runs PHP subprocess, captures output
+│   └── ExecutionResult.php      # Execution result value object
 ├── Comparison/
 │   ├── OutputComparator.php     # Compare expected vs actual
 │   ├── Normalizer.php           # Normalize whitespace, etc.
@@ -220,7 +219,7 @@ Only process blocks explicitly marked as PHP:
 ```markdown
 ```php             ← Process
 ```php ignore      ← Process (with attribute)
-```php{1,4}        ← Process (VitePress line highlighting)
+```php{1,4}        ← Process (Shiki line highlighting)
 ```PHP             ← Process (case-insensitive)
 ```javascript     ← Skip
 ```                ← Skip (no language)
@@ -272,10 +271,9 @@ $example = 'display only';
 | `throws(ExceptionClass)` | Expect specific exception type (`instanceof` check) |
 | `throws(ExceptionClass, "message")` | Expect exception type with message substring |
 | `parse_error` | Expect PHP parse/syntax error |
-| `setup` | Run before all other blocks in the file |
-| `teardown` | Run after all other blocks in the file |
+| `setup` | Code prepended to every block's generated PHP file |
+| `teardown` | Code appended to every block's generated PHP file |
 | `group="name"` | Share execution context with same-named blocks |
-| `standalone` | Run in a separate PHP process (extra isolation) |
 
 ### Attribute Examples
 
@@ -333,21 +331,28 @@ $x = ;; // demonstrates what NOT to do
 ```
 ````
 
-#### `setup` / `teardown` — File-Level Lifecycle
+#### `setup` / `teardown` — Prepend/Append to Every Block
+
+Setup code is **prepended** to every generated PHP file in the same markdown file. Teardown code is **appended**. This means setup/teardown code runs with every block, not "once" — this is a natural consequence of process isolation.
 
 ````markdown
 ```php setup
-// Runs once before all blocks in this file
+// This code is prepended to every block's generated PHP file
 $sharedConfig = ['env' => 'testing'];
+function helper(): string { return 'test'; }
 ```
 ````
 
 ````markdown
 ```php teardown
-// Runs once after all blocks in this file
-cleanupTestArtifacts();
+// This code is appended to every block's generated PHP file
+if (file_exists('/tmp/test-artifact')) {
+    unlink('/tmp/test-artifact');
+}
 ```
 ````
+
+For grouped blocks, setup is prepended once to the group's file and teardown is appended once — since all group blocks share one file.
 
 #### `group` — Shared Execution Context
 
@@ -375,18 +380,6 @@ echo $machine->state->value;
 ```
 ````
 
-#### `standalone` — Process Isolation
-
-For blocks that need a completely clean PHP process (e.g., testing global state, `define()`, `ini_set()`):
-
-````markdown
-```php standalone
-define('MY_CONSTANT', 42);
-echo MY_CONSTANT;
-// Output: 42
-```
-````
-
 ### Blocks Without Assertions
 
 A code block with no assertion comments (`// Output:`, `// Expect:`) is still executed. It passes if it completes without throwing an unhandled exception. This serves as a "smoke test" — verifying the example doesn't crash.
@@ -399,7 +392,7 @@ $machine->send(['type' => 'NEXT']);
 ```
 ````
 
-### VitePress Compatibility
+### Shiki Compatibility
 
 Line highlighting metadata is stripped before attribute parsing:
 
@@ -411,7 +404,7 @@ $highlighted = true;
 ```
 ````
 
-VitePress diff markers are stripped before execution:
+Shiki diff markers are stripped before execution:
 
 ````markdown
 ```php
@@ -469,7 +462,7 @@ $machine = TrafficLightMachine::create();
 // Expect: $machine->state !== null
 ```
 
-**How it works:** The expression after `// Expect:` is evaluated via `eval('return (' . $expression . ');')` with access to all variables defined in the block. If the result is falsy, the assertion fails.
+**How it works:** The expression is evaluated inside the generated PHP file (in the same scope as the block's code). The generated file wraps it as `(bool)($expression)` and reports the result via stderr JSON. If the result is falsy, the assertion fails.
 
 **Important:** Always use explicit expressions. Avoid bare values:
 
@@ -566,34 +559,37 @@ The reason: output is captured sequentially. Each `// Output:` assertion is matc
 
 ### How Code Execution Works
 
-1. Code is extracted from the markdown block (without `<?php` tags)
-2. VitePress markers are stripped
-3. Assertion comments are parsed and extracted
-4. Code is executed via `eval()` (default) or separate process (`standalone`)
-5. `stdout` is captured via `ob_start()` / `ob_get_clean()`
-6. Captured output is compared against `// Output:` assertions
-7. `// Expect:` expressions are evaluated in the block's variable scope
-8. Exceptions are matched against `throws` attribute (if present)
+Every code block runs in a **separate PHP process** for full isolation. The executor:
+
+1. Extracts code from the markdown block (strips `<?php` tags, Shiki markers)
+2. Parses and extracts assertion comments
+3. Generates an instrumented PHP file with output capture (`ob_start()`/`ob_get_clean()`)
+4. Runs the file as a subprocess via `proc_open('php tempfile.php')`
+5. Reads user output from `stdout` and structured results from `stderr` (JSON)
+6. Compares captured output against `// Output:` assertions
+7. Evaluates `// Expect:` results from the subprocess
+8. Matches exceptions against `throws` attribute (if present)
+9. Cleans up the temp file
 
 ### Execution Contexts
 
 #### Isolated (Default)
 
-Each code block runs in a fresh PHP context. No state leaks between blocks:
+Each code block runs in its own PHP process. No state leaks between blocks:
 
 ```php
-// Block 1
+// Block 1 — runs in process A
 $x = 1;
 ```
 
 ```php
-// Block 2 — $x is NOT available here
+// Block 2 — runs in process B, $x does not exist
 // This would cause: "Undefined variable $x"
 ```
 
 #### Grouped
 
-Blocks with the same `group` attribute share execution context. They run in document order, preserving variables, imports, and (in Laravel mode) database state:
+Blocks with the same `group` attribute are concatenated into a **single PHP file** and run in **one process**. This gives them a shared scope naturally — variables, imports, and (in Laravel mode) database state persist between group blocks:
 
 ````markdown
 ```php group="counter"
@@ -611,47 +607,30 @@ $counter++;
 ```
 ````
 
-Groups are independent — blocks in different groups don't share state.
-
-#### Standalone
-
-Blocks with `standalone` run in a completely separate PHP process. Use for code that modifies global state (`define()`, `ini_set()`, static properties):
-
-````markdown
-```php standalone
-ini_set('precision', 14);
-echo ini_get('precision');
-// Output: 14
-```
-````
+Groups are independent — different groups run in separate processes.
 
 ### Execution Order
 
-1. **`setup` blocks** — once per file, before everything else
-2. **Regular blocks** — in document order, each isolated
-3. **Grouped blocks** — in document order within each group, sharing state
-4. **`teardown` blocks** — once per file, after everything else
+For each markdown file:
+
+1. **Collect `setup` blocks** — concatenated in document order into a setup preamble
+2. **Collect `teardown` blocks** — concatenated in document order into a teardown epilogue
+3. **For each regular block** — generate PHP file: `[setup preamble] + [block code] + [teardown epilogue]`, run in its own process
+4. **For each group** — generate PHP file: `[setup preamble] + [all group blocks in order] + [teardown epilogue]`, run in one process
+
+Setup and teardown blocks are never executed on their own — they only run as part of other blocks' generated files.
 
 ### Imports and Namespaces
 
-Imports can be configured globally (in `doctest.php`) or declared explicitly per block:
+Each block must declare its own imports explicitly:
 
-**Global (config-based):**
-```php
-// doctest.php: 'imports' => ['App\\Machines\\*']
-// The executor auto-generates `use` statements via class map resolution.
-// Wildcard `*` resolves all classes in the namespace using Composer's autoloader.
-
-// So this works without explicit `use` statements:
-$machine = TrafficLightMachine::create();
-```
-
-**Explicit (in-block):**
 ```php
 use App\Machines\TrafficLightMachine;
 
 $machine = TrafficLightMachine::create();
 ```
+
+In Laravel mode (Phase 3), global imports can be configured via `doctest.php` so blocks don't need explicit `use` statements for common namespaces.
 
 ### Parallel Execution
 
@@ -659,8 +638,7 @@ When `execution.parallel` is configured with N > 1 workers:
 
 - Parallelism is at the **file level** — each file runs in its own worker
 - Blocks within a file always execute sequentially (preserving group semantics)
-- Each worker has its own PHP process and (in Laravel mode) its own database
-- `standalone` blocks always get their own process regardless of parallelism
+- Each worker manages its own subprocess pool and (in Laravel mode) its own database
 
 ---
 
@@ -870,7 +848,9 @@ throw new InvalidArgumentException('Wrong value');
 
 ### Configuration File
 
-Located at project root as `doctest.php` (standalone) or published to `config/doctest.php` (Laravel):
+Located at project root as `doctest.php`. A custom path can be specified via `--config=PATH`.
+
+#### Standalone Configuration (Phase 1)
 
 ```php
 <?php
@@ -888,39 +868,15 @@ return [
         'docs/**/*draft*.md',
     ],
 
-    // Namespaces automatically imported in all code blocks
-    // Wildcard '*' resolves via Composer's class map
-    'imports' => [
-        'App\\Machines\\*',
-        'Tarfinlabs\\EventMachine\\Actor\\Machine',
-    ],
-
-    // File to require before running any tests
-    'bootstrap' => null,
-
-    // Laravel service providers to register (Laravel mode only)
-    'providers' => [],
-
     'execution' => [
         'timeout' => 30,           // Seconds per block
         'memory_limit' => '256M',  // Memory limit per block
-        'parallel' => 1,           // Number of parallel workers (file-level)
         'stop_on_failure' => false, // Stop at first failure
     ],
 
     'output' => [
         'normalize_whitespace' => true,
         'trim_trailing' => true,
-        'verbose_failures' => true,
-    ],
-
-    // Database settings (Laravel mode only)
-    'database' => [
-        'connection' => 'testing',
-        'driver' => 'sqlite',
-        'database' => ':memory:',
-        'refresh_between_blocks' => true,
-        'migrations' => true,
     ],
 
     'reporters' => [
@@ -931,13 +887,42 @@ return [
 ];
 ```
 
-### Environment Overrides
+#### Laravel Configuration (Phase 3)
 
-```bash
-# .env or .env.testing
-DOCTEST_DB_CONNECTION=sqlite
-DOCTEST_TIMEOUT=60
-DOCTEST_PARALLEL=4
+The following keys are added in Laravel mode:
+
+```php
+<?php
+
+return [
+    // ... all standalone keys above, plus:
+
+    // Namespaces automatically imported in all code blocks (Phase 3)
+    // Wildcard '*' resolves via Composer's class map
+    'imports' => [
+        'App\\Machines\\*',
+    ],
+
+    // File to require before running any tests
+    'bootstrap' => null,
+
+    // Laravel service providers to register
+    'providers' => [],
+
+    'execution' => [
+        // ... standalone keys, plus:
+        'parallel' => 1,  // Number of parallel workers (file-level)
+    ],
+
+    // Database settings
+    'database' => [
+        'connection' => 'testing',
+        'driver' => 'sqlite',
+        'database' => ':memory:',
+        'refresh_between_blocks' => true,
+        'migrations' => true,
+    ],
+];
 ```
 
 ---
@@ -975,10 +960,13 @@ vendor/bin/doctest --audit
 | `--audit` | List all executable code without running it |
 | `--stop-on-failure` | Stop at first failure |
 | `--parallel[=N]` | Run in parallel (N workers, file-level) |
+| `--config=PATH` | Use specified configuration file |
 | `--no-progress` | Hide progress bar |
 | `--junit=FILE` | Output JUnit XML to file |
 | `--json=FILE` | Output JSON to file |
-| `-v / -vv / -vvv` | Verbosity levels |
+| `-v` | Show execution time per block |
+| `-vv` | Show full block source code on failure |
+| `-vvv` | Show generated PHP file contents (debug mode) |
 
 ### Exit Codes
 
@@ -1027,84 +1015,6 @@ $ vendor/bin/doctest --audit
 docs/guide.md:42    $machine = TrafficLightMachine::create();
 docs/guide.md:67    file_put_contents('output.txt', $data);  ⚠️ FILESYSTEM
 docs/api.md:12      Http::get('https://api.example.com');    ⚠️ NETWORK
-```
-
----
-
-## PHPUnit/Pest Integration
-
-### Pest Plugin
-
-```php
-// tests/Pest.php
-uses(\Tarfinlabs\DocTest\Testing\DocTestCase::class)->in('DocTest');
-```
-
-```php
-// tests/DocTest/DocumentationTest.php
-doctest('docs/getting-started.md');
-doctest('docs/advanced/parallel-states.md');
-doctest('docs/patterns/*.md');
-```
-
-### PHPUnit Data Provider
-
-```php
-use PHPUnit\Framework\TestCase;
-use Tarfinlabs\DocTest\DocTest;
-
-class DocumentationTest extends TestCase
-{
-    #[\PHPUnit\Framework\Attributes\DataProvider('documentationProvider')]
-    public function test_documentation_examples(string $file, int $line, string $code): void
-    {
-        $result = DocTest::execute($code);
-
-        $this->assertTrue(
-            $result->passed,
-            "Documentation example at {$file}:{$line} failed:\n{$result->error}"
-        );
-    }
-
-    public static function documentationProvider(): iterable
-    {
-        $docTest = new DocTest();
-
-        foreach ($docTest->findAllBlocks('docs/') as $block) {
-            yield "{$block->file}:{$block->line}" => [
-                $block->file,
-                $block->line,
-                $block->code,
-            ];
-        }
-    }
-}
-```
-
-### Test Trait
-
-```php
-use Tarfinlabs\DocTest\Testing\TestsDocumentation;
-
-class MyTest extends TestCase
-{
-    use TestsDocumentation;
-
-    public function test_readme_examples(): void
-    {
-        $this->assertDocumentationPasses('README.md');
-    }
-
-    public function test_all_docs(): void
-    {
-        $this->assertDocumentationPasses('docs/');
-    }
-
-    public function test_specific_block(): void
-    {
-        $this->assertDocBlockPasses('docs/guide.md', line: 42);
-    }
-}
 ```
 
 ---
@@ -1200,8 +1110,9 @@ fi
 
 ### Safe Defaults
 
-- `set_time_limit()` is enforced — blocks cannot override timeout
-- `ini_set('memory_limit')` is enforced — blocks cannot override memory limit
+- Timeout is enforced via `max_execution_time` CLI flag on the child process — blocks cannot override it
+- Memory limit is enforced via `memory_limit` CLI flag on the child process — blocks cannot override it
+- Each block runs in a separate process — no state leaks between blocks
 - Dangerous function calls are flagged in `--audit` mode
 
 ### Audit Mode
@@ -1220,31 +1131,29 @@ Flags operations involving: filesystem access, network requests, process executi
 
 ### Phase 1: Core (MVP)
 
-**Goal:** Run simple code blocks with output assertions
+**Goal:** Simple code blocks with output and expression assertions, basic attributes
 
 - [ ] Markdown parser with code block extraction (league/commonmark)
 - [ ] Attribute parsing (`ignore`, `no_run`, `throws`, `parse_error`)
-- [ ] `// Output:` assertion parsing and matching
-- [ ] Code execution via `eval()` with output capture
-- [ ] Console reporter with pass/fail and line numbers
+- [ ] `// Output:` assertion parsing and matching (single-line and multi-line)
+- [ ] `// Expect:` expression assertions
+- [ ] Code execution via process isolation (`proc_open()`) with output capture
+- [ ] Console reporter with pass/fail, line numbers, and diffs
+- [ ] Configuration file (`doctest.php`)
 - [ ] Standalone CLI (`vendor/bin/doctest`)
 
-**Milestone:** `echo "hello"; // Output: hello` works end-to-end.
+**Milestone:** `echo "hello"; // Output: hello` and `// Expect: $x === 3` work end-to-end.
 
-### Phase 2: Assertions and Attributes
+### Phase 2: Advanced Assertions and Attributes
 
-**Goal:** Full assertion and attribute support
+**Goal:** Subset assertions, wildcards, grouped execution, lifecycle blocks
 
-- [ ] `// Expect:` expression assertions
 - [ ] `// OutputContains:`, `// OutputMatches:`, `// OutputJson:`
 - [ ] Wildcard placeholders (`{{any}}`, `{{int}}`, etc.)
-- [ ] Exception testing via `throws` attribute
 - [ ] `group` attribute with shared execution context
 - [ ] `setup` / `teardown` lifecycle blocks
-- [ ] `standalone` process isolation
-- [ ] Configuration file (`doctest.php`)
 
-**Milestone:** grouped blocks, exception tests, and wildcard matching work.
+**Milestone:** grouped blocks, wildcard matching, and subset assertions work.
 
 ### Phase 3: Laravel Integration
 
@@ -1258,18 +1167,15 @@ Flags operations involving: filesystem access, network requests, process executi
 
 **Milestone:** code using Eloquent, config, and service container works.
 
-### Phase 4: CI/CD and Integrations
+### Phase 4: CI/CD and Reporters
 
-**Goal:** Seamless integration with existing workflows
+**Goal:** Seamless integration with existing CI workflows
 
 - [ ] JUnit XML reporter
 - [ ] JSON reporter
-- [ ] PHPUnit data provider integration
-- [ ] Pest plugin
-- [ ] `TestsDocumentation` trait
 - [ ] Parallel execution (file-level workers)
 
-**Milestone:** `composer test` includes documentation tests; CI produces JUnit reports.
+**Milestone:** CI pipelines produce JUnit reports; parallel execution for large doc sets.
 
 ### Phase 5: Polish
 
@@ -1279,7 +1185,6 @@ Flags operations involving: filesystem access, network requests, process executi
 - [ ] Progress bar
 - [ ] Watch mode (re-run on file change)
 - [ ] IDE-compatible error format (clickable `file:line` paths)
-- [ ] VitePress marker stripping
 - [ ] `--audit` security review mode
 
 **Milestone:** pleasant CLI experience, comprehensive docs.
@@ -1395,7 +1300,7 @@ All documentation tests passed! ✓
 | Exception testing | ✓ | ✓ | ✓ | ✓ |
 | Parallel execution | ✓ | ✓ | ✓ | ✗ |
 | JUnit output | ✓ | ✓ | ✓ | ✗ |
-| VitePress support | ✓ | N/A | N/A | N/A |
+| Shiki support | ✓ | N/A | N/A | N/A |
 
 ---
 
@@ -1409,5 +1314,4 @@ All documentation tests passed! ✓
 | Group | Named set of blocks that share execution context |
 | Bootstrap | Setup code/file run before any tests execute |
 | Wildcard | A placeholder in expected output matching dynamic values |
-| Standalone | A block executed in its own separate PHP process |
 | Smoke Test | A block without assertions that passes if it doesn't throw |
