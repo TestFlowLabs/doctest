@@ -106,7 +106,6 @@ final class DocTestCommand extends Command
             verbosity: $baseConfig->verbosity,
             bootstrap: $baseConfig->bootstrap,
             reporterConsole: $baseConfig->reporterConsole,
-            reporterJunit: $baseConfig->reporterJunit,
             reporterJson: $baseConfig->reporterJson,
         );
 
