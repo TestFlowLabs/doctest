@@ -34,6 +34,7 @@ final class ConsoleReporter
     {
         $this->output->writeln('');
         $this->output->writeln("<options=bold>{$filePath}</>");
+        $this->flush();
     }
 
     public function reportResult(ExecutionResult $result): void
@@ -48,6 +49,7 @@ final class ConsoleReporter
 
         if ($result->skipped) {
             $this->output->writeln("  <fg=gray>⊘</> {$preview} <fg=gray>{$location}</>{$progress}");
+            $this->flush();
 
             return;
         }
@@ -55,6 +57,7 @@ final class ConsoleReporter
         if ($result->passed) {
             $duration = sprintf('<fg=gray>%.2fs</>', $result->duration);
             $this->output->writeln("  <fg=green>✔</> {$preview} <fg=gray>{$location}</>{$progress} {$duration}");
+            $this->flush();
 
             return;
         }
@@ -80,6 +83,8 @@ final class ConsoleReporter
             $this->output->writeln('');
             $this->output->writeln($this->errorFormatter->format($result));
         }
+
+        $this->flush();
     }
 
     /**
@@ -117,6 +122,16 @@ final class ConsoleReporter
 
         $summary .= sprintf('Duration: %.2fs', $duration);
         $this->output->writeln($summary);
+    }
+
+    private function flush(): void
+    {
+        if ($this->output instanceof ConsoleOutput) {
+            $stream = $this->output->getStream();
+            if (is_resource($stream)) {
+                fflush($stream);
+            }
+        }
     }
 
     private function codePreview(CodeBlock $codeBlock): string
