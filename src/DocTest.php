@@ -30,7 +30,14 @@ final readonly class DocTest
         $this->fileFinder     = new FileFinder();
         $this->markdownParser = new MarkdownParser();
         $this->extractor      = new CodeBlockExtractor();
-        $this->executor       = new Executor($config->timeout, $config->memoryLimit, $config->normalizeWhitespace, $config->trimTrailing);
+        $bootstrapCode        = null;
+        if ($config->bootstrap !== null) {
+            $resolvedPath = realpath($config->bootstrap);
+            if ($resolvedPath !== false) {
+                $bootstrapCode = "require_once '".addslashes($resolvedPath)."';";
+            }
+        }
+        $this->executor = new Executor($config->timeout, $config->memoryLimit, $config->normalizeWhitespace, $config->trimTrailing, $bootstrapCode);
 
         if ($output !== null) {
             $this->reporter = new ConsoleReporter($output);
