@@ -24,7 +24,7 @@ final class ProcessRunnerTest extends TestCase
 
     protected function tearDown(): void
     {
-        array_map('unlink', glob($this->tmpDir . '/*') ?: []);
+        array_map(unlink(...), glob($this->tmpDir . '/*') ?: []);
         rmdir($this->tmpDir);
     }
 
