@@ -34,25 +34,20 @@ echo 'Request took 42ms at ' . date('Y-m-d');
 
 ### Timestamps
 
-````markdown
 ```php
 echo 'Generated: ' . date('Y-m-d H:i:s');
 ```
 <!-- doctest: Generated: {{date}} {{time}} -->
-````
 
 ### UUIDs
 
-````markdown
 ```php
 echo sprintf('User ID: %s', '550e8400-e29b-41d4-a716-446655440000');
 ```
 <!-- doctest: User ID: {{uuid}} -->
-````
 
 ### Mixed dynamic content
 
-````markdown
 ```php
 echo json_encode([
     'id' => 42,
@@ -61,7 +56,6 @@ echo json_encode([
 ]);
 ```
 <!-- doctest: {"id":{{int}},"created":"{{datetime}}","price":{{float}}} -->
-````
 
 <div v-pre>
 
@@ -71,12 +65,10 @@ The `{{...}}` wildcard spans across newlines, useful for matching variable-lengt
 
 </div>
 
-````markdown
 ```php
 echo "Header\nSome variable content\nhere\nFooter";
 ```
 <!-- doctest: Header{{...}}Footer -->
-````
 
 ## How It Works
 
@@ -93,7 +85,6 @@ echo "Header\nSome variable content\nhere\nFooter";
 
 You can use multiple wildcards in a single assertion:
 
-````markdown
 ```php
 echo sprintf('[%s] %s: Processed %d items in %.2fs',
     date('Y-m-d'),
@@ -103,7 +94,6 @@ echo sprintf('[%s] %s: Processed %d items in %.2fs',
 );
 ```
 <!-- doctest: [{{date}}] {{any}}: Processed {{int}} items in {{float}}s -->
-````
 
 ## Tips
 
