@@ -32,7 +32,7 @@ export default defineConfig({
         items: [
           { text: 'Configuration', link: '/configuration/' },
           { text: 'Reporters', link: '/reporters/' },
-          { text: 'Laravel', link: '/laravel/' },
+          { text: 'Framework Bootstrap', link: '/framework-bootstrap/' },
           { text: 'CI/CD', link: '/ci-cd/' },
         ],
       },
@@ -102,14 +102,9 @@ export default defineConfig({
         link: '/shiki/',
       },
       {
-        text: 'Laravel',
+        text: 'Framework Bootstrap',
         collapsed: true,
-        items: [
-          { text: 'Overview', link: '/laravel/' },
-          { text: 'Artisan Command', link: '/laravel/artisan-command' },
-          { text: 'Auto-Detection', link: '/laravel/auto-detection' },
-          { text: 'Bootstrap & Database', link: '/laravel/bootstrap' },
-        ],
+        link: '/framework-bootstrap/',
       },
       {
         text: 'CI/CD Integration',
