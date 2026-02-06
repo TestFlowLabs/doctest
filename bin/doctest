@@ -36,6 +36,11 @@ $config = DocTestConfig::fromArray([
     'dry_run' => $args->dryRun,
     'filter' => $args->filter,
     'verbosity' => $args->verbosity > 0 ? $args->verbosity : $config->verbosity,
+    'reporters' => [
+        'console' => $config->reporterConsole,
+        'junit' => $config->reporterJunit,
+        'json' => $config->reporterJson,
+    ],
 ]);
 
 $docTest = new DocTest($config);
