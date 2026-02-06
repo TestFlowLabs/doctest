@@ -66,7 +66,7 @@ Blocks: 12  Passed: 10  Failed: 1  Skipped: 1  Duration: 1.23s
 
 ## Configuration
 
-```php
+```php ignore
 return [
     'reporters' => [
         'console' => true,  // or false to disable
