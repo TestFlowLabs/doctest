@@ -47,9 +47,3 @@ DocTest scans `docs/` and `README.md` by default. That's it.
 4. Output is compared against the assertion
 5. Results are reported to the console
 
-## Next Steps
-
-- [Installation](/guide/installation) — Composer setup and requirements
-- [How It Works](/guide/how-it-works) — Execution model and architecture
-- [Assertions](/assertions/) — All the ways to verify output
-- [CLI Options](/cli/options) — Command-line reference
