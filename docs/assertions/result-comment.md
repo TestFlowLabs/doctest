@@ -61,7 +61,9 @@ $isset = isset($undefined); // => false
 
 Regular PHP comments (without `=>`) are left untouched. Only the `// =>` pattern triggers an assertion:
 
+````markdown
 ```php
 $x = 42; // This is just a comment, not an assertion
 $y = 42; // => 42   <-- This IS an assertion
 ```
+````
