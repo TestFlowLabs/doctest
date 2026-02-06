@@ -18,13 +18,13 @@ composer require --dev testflowlabs/doctest
 
 ## Quick Start
 
-Write a PHP code block in any markdown file with an `Output:` comment:
+Write a PHP code block in any markdown file with an assertion in an HTML comment:
 
 ````markdown
 ```php
 echo 'Hello, World!';
-// Output: Hello, World!
 ```
+<!-- doctest: Hello, World! -->
 ````
 
 Run it:
@@ -37,40 +37,42 @@ DocTest scans `docs/` and `README.md` by default. That's it.
 
 ## Assertions
 
+Assertions are written as HTML comments after the code block, keeping your rendered documentation clean.
+
 ### Exact Output
 
 ```php
 echo 2 + 3;
-// Output: 5
 ```
+<!-- doctest: 5 -->
 
 ### Contains
 
 ```php
 echo 'The quick brown fox jumps over the lazy dog';
-// OutputContains: brown fox
 ```
+<!-- doctest-contains: brown fox -->
 
 ### Regex
 
 ```php
 echo date('Y');
-// OutputMatches: /^\d{4}$/
 ```
+<!-- doctest-matches: /^\d{4}$/ -->
 
 ### JSON
 
 ```php
 echo json_encode(['name' => 'DocTest', 'php' => '8.4+']);
-// OutputJson: {"name": "DocTest", "php": "8.4+"}
 ```
+<!-- doctest-json: {"name": "DocTest", "php": "8.4+"} -->
 
 ### Expression
 
 ```php
 $result = array_sum([1, 2, 3, 4, 5]);
-// Expect: $result === 15
 ```
+<!-- doctest-expect: $result === 15 -->
 
 ## Wildcards
 
@@ -78,8 +80,8 @@ When output contains dynamic values, use wildcards:
 
 ```php
 echo 'Request took 42ms at ' . date('Y-m-d');
-// Output: Request took {{int}}ms at {{date}}
 ```
+<!-- doctest: Request took {{int}}ms at {{date}} -->
 
 Available wildcards: `{{any}}`, `{{int}}`, `{{float}}`, `{{uuid}}`, `{{date}}`, `{{time}}`, `{{datetime}}`, `{{...}}`
 
@@ -117,8 +119,8 @@ $pdo->exec('CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT)');
 $pdo->exec("INSERT INTO users (name) VALUES ('Alice')");
 $count = $pdo->query('SELECT COUNT(*) FROM users')->fetchColumn();
 echo $count;
-// Output: 1
 ```
+<!-- doctest: 1 -->
 
 ```php teardown group="database"
 $pdo->exec('DROP TABLE users');
