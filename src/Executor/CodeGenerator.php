@@ -60,9 +60,10 @@ final readonly class CodeGenerator
                 $lines[] = 'ob_start();';
                 $lines[] = $segment->code;
                 $lines[] = '$__doctest_output = ob_get_clean();';
+                $expected = $this->getExpectedValue($segment->outputAssertion);
                 $lines[] = '$__doctest_results[] = [';
-                $lines[] = "    'type' => 'output',";
-                $lines[] = "    'expected' => " . var_export($segment->outputAssertion->expected, true) . ',';
+                $lines[] = "    'type' => " . var_export($segment->outputAssertion->type(), true) . ',';
+                $lines[] = "    'expected' => " . var_export($expected, true) . ',';
                 $lines[] = "    'actual' => \$__doctest_output,";
                 $lines[] = "    'line' => " . $segment->outputAssertion->line() . ',';
                 $lines[] = '];';
@@ -87,6 +88,17 @@ final readonly class CodeGenerator
         $lines[] = 'fwrite(STDERR, json_encode($__doctest_results));';
 
         return implode("\n", $lines);
+    }
+
+    private function getExpectedValue(\TestFlowLabs\DocTest\Assertion\Assertion $assertion): string
+    {
+        return match (true) {
+            $assertion instanceof \TestFlowLabs\DocTest\Assertion\OutputAssertion => $assertion->expected,
+            $assertion instanceof \TestFlowLabs\DocTest\Assertion\OutputContainsAssertion => $assertion->expected,
+            $assertion instanceof \TestFlowLabs\DocTest\Assertion\OutputMatchesAssertion => $assertion->pattern,
+            $assertion instanceof \TestFlowLabs\DocTest\Assertion\OutputJsonAssertion => $assertion->expectedJson,
+            default => '',
+        };
     }
 
     private function generateThrowsWrapper(CodeBlock $block, string $executableCode): string
