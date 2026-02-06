@@ -13,6 +13,10 @@ final class ConsoleReporter
 
     private readonly ErrorFormatter $errorFormatter;
 
+    private int $totalBlocks = 0;
+
+    private int $currentBlock = 0;
+
     /**
      * @param resource $output
      */
@@ -25,6 +29,11 @@ final class ConsoleReporter
         $this->errorFormatter = new ErrorFormatter();
     }
 
+    public function setTotalBlocks(int $total): void
+    {
+        $this->totalBlocks = $total;
+    }
+
     public function reportFile(string $filePath): void
     {
         $this->write("\n" . $this->bold($filePath) . "\n");
@@ -32,14 +41,19 @@ final class ConsoleReporter
 
     public function reportResult(ExecutionResult $result): void
     {
+        $this->currentBlock++;
+        $progress = $this->totalBlocks > 0
+            ? " [{$this->currentBlock}/{$this->totalBlocks}]"
+            : '';
+
         if ($result->skipped) {
-            $this->write('  ' . $this->gray('[SKIP]') . " Line {$result->codeBlock->startLine}\n");
+            $this->write('  ' . $this->gray('[SKIP]') . " Line {$result->codeBlock->startLine}{$progress}\n");
 
             return;
         }
 
         if ($result->passed) {
-            $line = '  ' . $this->green('[PASS]') . " Line {$result->codeBlock->startLine}";
+            $line = '  ' . $this->green('[PASS]') . " Line {$result->codeBlock->startLine}{$progress}";
 
             if ($this->verbosity >= 1) {
                 $line .= sprintf(' [%.2fs]', $result->duration);
@@ -50,7 +64,7 @@ final class ConsoleReporter
             return;
         }
 
-        $line = '  ' . $this->red('[FAIL]') . " {$result->codeBlock->file}:{$result->codeBlock->startLine}";
+        $line = '  ' . $this->red('[FAIL]') . " {$result->codeBlock->file}:{$result->codeBlock->startLine}{$progress}";
 
         if ($this->verbosity >= 1) {
             $line .= sprintf(' [%.2fs]', $result->duration);
