@@ -275,14 +275,3 @@ echo 'This is fine';
 ````
 
 If an example can run, let it run. Only use `ignore` for genuinely non-runnable code.
-
-## Checklist
-
-Before publishing documentation, verify each example:
-
-- [ ] **Runs standalone** — no hidden dependencies
-- [ ] **Has an assertion** — output is verified (or explicitly marked `ignore`/`no_run`)
-- [ ] **Uses appropriate wildcards** — dynamic values don't cause false failures
-- [ ] **Teaches one concept** — focused and clear
-- [ ] **Uses the simplest assertion** — `doctest:` before `doctest-matches:`
-- [ ] **Passes in CI** — `vendor/bin/doctest` runs on every push
