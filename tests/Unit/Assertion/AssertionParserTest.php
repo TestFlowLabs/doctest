@@ -199,4 +199,53 @@ final class AssertionParserTest extends TestCase
         $this->assertSame('is_string($x)', $result->resultComments[0]->expression);
         $this->assertSame('false', $result->resultComments[0]->expectedValue);
     }
+
+    // --- Edge cases ---
+
+    #[Test]
+    public function handles_empty_code(): void
+    {
+        $result = $this->parser->parse('');
+
+        $this->assertEmpty($result->resultComments);
+        $this->assertSame('', $result->executableCode);
+    }
+
+    #[Test]
+    public function result_comment_adds_semicolon_to_executable_code(): void
+    {
+        $result = $this->parser->parse('is_string($x) // => false');
+
+        $this->assertStringContainsString('is_string($x);', $result->executableCode);
+    }
+
+    #[Test]
+    public function url_in_code_is_not_treated_as_result_comment(): void
+    {
+        $result = $this->parser->parse('$url = "https://example.com";');
+
+        $this->assertEmpty($result->resultComments);
+        $this->assertStringContainsString('https://example.com', $result->executableCode);
+    }
+
+    #[Test]
+    public function result_comment_with_array_expected_value(): void
+    {
+        $result = $this->parser->parse('$arr = [1, 2, 3]; // => array (0 => 1, 1 => 2, 2 => 3)');
+
+        $this->assertCount(1, $result->resultComments);
+        $this->assertSame('array (0 => 1, 1 => 2, 2 => 3)', $result->resultComments[0]->expectedValue);
+    }
+
+    #[Test]
+    public function mixed_result_comments_and_regular_lines(): void
+    {
+        $code   = "\$x = 1;\n\$y = \$x + 1; // => 2\n\$z = 3;";
+        $result = $this->parser->parse($code);
+
+        $this->assertCount(1, $result->resultComments);
+        $this->assertSame('2', $result->resultComments[0]->expectedValue);
+        $this->assertStringContainsString('$x = 1;', $result->executableCode);
+        $this->assertStringContainsString('$z = 3;', $result->executableCode);
+    }
 }
