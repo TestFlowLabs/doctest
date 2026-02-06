@@ -122,4 +122,75 @@ final class DocTestConfigTest extends TestCase
 
         $this->assertSame(['docs/archive/*', 'docs/**/*draft*.md'], $config->exclude);
     }
+
+    // --- Edge cases ---
+
+    #[Test]
+    public function wrong_type_timeout_falls_back_to_default(): void
+    {
+        $config = DocTestConfig::fromArray([
+            'execution' => ['timeout' => 'not_int'],
+        ]);
+
+        $this->assertSame(30, $config->timeout);
+    }
+
+    #[Test]
+    public function wrong_type_memory_limit_falls_back_to_default(): void
+    {
+        $config = DocTestConfig::fromArray([
+            'execution' => ['memory_limit' => 42],
+        ]);
+
+        $this->assertSame('256M', $config->memoryLimit);
+    }
+
+    #[Test]
+    public function load_returns_defaults_when_file_returns_non_array(): void
+    {
+        $tmpFile = tempnam(sys_get_temp_dir(), 'doctest-config-');
+
+        try {
+            file_put_contents($tmpFile, "<?php\nreturn 'not an array';\n");
+
+            $config = DocTestConfig::load($tmpFile);
+
+            $this->assertSame(['docs', 'README.md'], $config->paths);
+        } finally {
+            @unlink($tmpFile);
+        }
+    }
+
+    #[Test]
+    public function stop_on_failure_from_top_level_key(): void
+    {
+        $config = DocTestConfig::fromArray([
+            'stop_on_failure' => true,
+        ]);
+
+        $this->assertTrue($config->stopOnFailure);
+    }
+
+    #[Test]
+    public function filter_and_dry_run_loaded(): void
+    {
+        $config = DocTestConfig::fromArray([
+            'filter'  => 'example.md',
+            'dry_run' => true,
+        ]);
+
+        $this->assertSame('example.md', $config->filter);
+        $this->assertTrue($config->dryRun);
+    }
+
+    #[Test]
+    public function non_array_execution_section_uses_defaults(): void
+    {
+        $config = DocTestConfig::fromArray([
+            'execution' => 'invalid',
+        ]);
+
+        $this->assertSame(30, $config->timeout);
+        $this->assertSame('256M', $config->memoryLimit);
+    }
 }
