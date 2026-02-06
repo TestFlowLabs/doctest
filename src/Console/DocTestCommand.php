@@ -34,13 +34,13 @@ final class DocTestCommand extends Command
                   <info>-v</info>         Show per-assertion details under each block
                   <info>-vv</info>        Also show source code on failure
 
-                <comment>Assertion types:</comment>
-                  <info>// Output: Hello</info>        Exact output match
-                  <info>// OutputContains: He</info>   Partial output match
-                  <info>// OutputMatches: /H/</info>   Regex output match
-                  <info>// Expect: $x === 42</info>    Expression must be truthy
-                  <info>$x = 42; // => 42</info>       Return value match
-                  \<!-- doctest: Hello --\>  HTML comment output match
+                <comment>Assertion types (HTML comments after code block):</comment>
+                  \<!-- doctest: Hello --\>            Exact output match
+                  \<!-- doctest-contains: He --\>      Partial output match
+                  \<!-- doctest-matches: /H/ --\>      Regex output match
+                  \<!-- doctest-json: {"k":"v"} --\>   JSON structure match
+                  \<!-- doctest-expect: $x === 42 --\> Expression must be truthy
+                  <info>$x = 42; // => 42</info>               Return value match
 
                 <comment>Attributes (in code fence info string):</comment>
                   <info>```php {ignore}</info>          Skip this block
