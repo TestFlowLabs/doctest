@@ -154,4 +154,67 @@ final class ConsoleReporterTest extends TestCase
         $this->assertStringContainsString('Source:', $output);
         $this->assertStringContainsString('echo "test"', $output);
     }
+
+    #[Test]
+    public function pass_result_shows_first_code_line(): void
+    {
+        $reporter = new ConsoleReporter($this->output);
+        $block = new CodeBlock(
+            file: 'docs/test.md',
+            startLine: 42,
+            rawCode: "\$name = 'World';\necho \"Hello, {\$name}!\";",
+            executableCode: 'echo "test";',
+            attributes: new Attributes(),
+            assertions: [],
+        );
+        $result = new ExecutionResult(passed: true, codeBlock: $block);
+        $reporter->reportResult($result);
+
+        $output = $this->getOutput();
+        $this->assertStringContainsString('$name = \'World\';', $output);
+        $this->assertStringContainsString(':42', $output);
+        $this->assertStringNotContainsString('Line 42', $output);
+    }
+
+    #[Test]
+    public function skip_result_shows_first_code_line(): void
+    {
+        $reporter = new ConsoleReporter($this->output);
+        $block = new CodeBlock(
+            file: 'docs/test.md',
+            startLine: 10,
+            rawCode: "// This is skipped\necho 'skip';",
+            executableCode: '',
+            attributes: new Attributes(),
+            assertions: [],
+        );
+        $result = new ExecutionResult(passed: true, codeBlock: $block, skipped: true);
+        $reporter->reportResult($result);
+
+        $output = $this->getOutput();
+        $this->assertStringContainsString('// This is skipped', $output);
+        $this->assertStringContainsString(':10', $output);
+        $this->assertStringNotContainsString('Line 10', $output);
+    }
+
+    #[Test]
+    public function long_first_line_is_truncated(): void
+    {
+        $reporter = new ConsoleReporter($this->output);
+        $longLine = str_repeat('x', 80);
+        $block = new CodeBlock(
+            file: 'docs/test.md',
+            startLine: 1,
+            rawCode: $longLine,
+            executableCode: 'echo "test";',
+            attributes: new Attributes(),
+            assertions: [],
+        );
+        $result = new ExecutionResult(passed: true, codeBlock: $block);
+        $reporter->reportResult($result);
+
+        $output = $this->getOutput();
+        $this->assertStringContainsString('...', $output);
+        $this->assertLessThan(strlen($longLine), strlen($output));
+    }
 }
