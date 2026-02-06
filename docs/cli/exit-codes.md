@@ -8,6 +8,7 @@ DocTest uses standard exit codes compatible with CI systems.
 |------|----------|---------|
 | `0` | `Command::SUCCESS` | All blocks passed (or were skipped) |
 | `1` | `Command::FAILURE` | One or more blocks failed |
+| `3` | — | No files found or no testable blocks extracted |
 
 ## CI Usage
 
