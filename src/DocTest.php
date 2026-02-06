@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace TestFlowLabs\DocTest;
 
+use Symfony\Component\Console\Output\OutputInterface;
 use TestFlowLabs\DocTest\Config\DocTestConfig;
 use TestFlowLabs\DocTest\Config\FileFinder;
 use TestFlowLabs\DocTest\Executor\ExecutionResult;
@@ -26,18 +27,20 @@ final readonly class DocTest
 
     private ConsoleReporter $reporter;
 
-    /**
-     * @param resource|null $output
-     */
     public function __construct(
         private DocTestConfig $config,
-        $output = null,
+        ?OutputInterface $output = null,
     ) {
         $this->fileFinder = new FileFinder();
         $this->markdownParser = new MarkdownParser();
         $this->extractor = new CodeBlockExtractor();
         $this->executor = new Executor($config->timeout, $config->memoryLimit);
-        $this->reporter = new ConsoleReporter($output, colors: $output === null, verbosity: $config->verbosity);
+
+        if ($output !== null) {
+            $this->reporter = new ConsoleReporter($output);
+        } else {
+            $this->reporter = new ConsoleReporter();
+        }
     }
 
     public function run(): int
