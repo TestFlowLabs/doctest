@@ -122,25 +122,14 @@ final class ConsoleReporterTest extends TestCase
     }
 
     #[Test]
-    public function shows_duration_at_verbosity_verbose(): void
-    {
-        $this->output->setVerbosity(OutputInterface::VERBOSITY_VERBOSE);
-        $reporter = new ConsoleReporter($this->output);
-        $reporter->reportResult($this->makeResult(passed: true));
-
-        $output = $this->getOutput();
-        $this->assertMatchesRegularExpression('/\[\d+\.\d+s\]/', $output);
-    }
-
-    #[Test]
-    public function hides_duration_at_normal_verbosity(): void
+    public function shows_duration_at_normal_verbosity(): void
     {
         $this->output->setVerbosity(OutputInterface::VERBOSITY_NORMAL);
         $reporter = new ConsoleReporter($this->output);
         $reporter->reportResult($this->makeResult(passed: true));
 
         $output = $this->getOutput();
-        $this->assertDoesNotMatchRegularExpression('/\[\d+\.\d+s\]/', $output);
+        $this->assertMatchesRegularExpression('/\d+\.\d+s/', $output);
     }
 
     #[Test]
