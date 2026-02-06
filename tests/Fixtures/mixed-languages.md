@@ -4,8 +4,8 @@ PHP block:
 
 ```php
 echo "PHP works";
-// Output: PHP works
 ```
+<!-- doctest: PHP works -->
 
 JavaScript block (should be skipped):
 
@@ -29,8 +29,8 @@ Another PHP block:
 
 ```php
 echo "second PHP";
-// Output: second PHP
 ```
+<!-- doctest: second PHP -->
 
 Block without language (should be skipped):
 
