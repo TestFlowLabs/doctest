@@ -196,6 +196,59 @@ final readonly class Executor
                 }
             }
 
+            if ($result['type'] === 'output_contains') {
+                $expected = $result['expected'] ?? '';
+                $actual = $result['actual'] ?? '';
+                $capturedOutput[] = $actual;
+
+                if (! str_contains($actual, $expected)) {
+                    return new ExecutionResult(
+                        passed: false,
+                        codeBlock: $block,
+                        actualOutput: $actual,
+                        expectedOutput: $expected,
+                        error: "Output does not contain: {$expected}",
+                        duration: $processResult->duration,
+                    );
+                }
+            }
+
+            if ($result['type'] === 'output_matches') {
+                $pattern = $result['expected'] ?? '';
+                $actual = $result['actual'] ?? '';
+                $capturedOutput[] = $actual;
+
+                if (preg_match($pattern, $actual) !== 1) {
+                    return new ExecutionResult(
+                        passed: false,
+                        codeBlock: $block,
+                        actualOutput: $actual,
+                        expectedOutput: $pattern,
+                        error: "Output does not match pattern: {$pattern}",
+                        duration: $processResult->duration,
+                    );
+                }
+            }
+
+            if ($result['type'] === 'output_json') {
+                $expectedJson = $result['expected'] ?? '';
+                $actual = $result['actual'] ?? '';
+                $capturedOutput[] = $actual;
+                $expectedDecoded = json_decode($expectedJson, true);
+                $actualDecoded = json_decode($actual, true);
+
+                if ($expectedDecoded !== $actualDecoded) {
+                    return new ExecutionResult(
+                        passed: false,
+                        codeBlock: $block,
+                        actualOutput: $actual,
+                        expectedOutput: $expectedJson,
+                        error: 'JSON output does not match expected structure',
+                        duration: $processResult->duration,
+                    );
+                }
+            }
+
             if ($result['type'] === 'expect') {
                 if (! ($result['passed'] ?? false)) {
                     return new ExecutionResult(
