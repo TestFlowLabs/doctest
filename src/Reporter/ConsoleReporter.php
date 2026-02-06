@@ -50,7 +50,7 @@ final class ConsoleReporter
             return;
         }
 
-        $line = '  ' . $this->red('[FAIL]') . " Line {$result->codeBlock->startLine}";
+        $line = '  ' . $this->red('[FAIL]') . " {$result->codeBlock->file}:{$result->codeBlock->startLine}";
 
         if ($this->verbosity >= 1) {
             $line .= sprintf(' [%.2fs]', $result->duration);
