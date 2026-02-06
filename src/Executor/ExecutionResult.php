@@ -4,10 +4,14 @@ declare(strict_types=1);
 
 namespace TestFlowLabs\DocTest\Executor;
 
+use TestFlowLabs\DocTest\Assertion\AssertionResultDetail;
 use TestFlowLabs\DocTest\CodeBlock\CodeBlock;
 
 final readonly class ExecutionResult
 {
+    /**
+     * @param array<AssertionResultDetail> $assertionDetails
+     */
     public function __construct(
         public bool $passed,
         public CodeBlock $codeBlock,
@@ -17,5 +21,6 @@ final readonly class ExecutionResult
         public ?string $error = null,
         public float $duration = 0.0,
         public bool $skipped = false,
+        public array $assertionDetails = [],
     ) {}
 }
