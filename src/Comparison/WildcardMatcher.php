@@ -15,7 +15,7 @@ final readonly class WildcardMatcher
         '{{datetime}}' => '\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[^\s]*',
         '{{date}}' => '\d{4}-\d{2}-\d{2}',
         '{{time}}' => '\d{2}:\d{2}:\d{2}',
-        '{{...}}' => '[\s\S]*',
+        '{{...}}' => '[\s\S]*?',
     ];
 
     public function matches(string $actual, string $pattern): bool
