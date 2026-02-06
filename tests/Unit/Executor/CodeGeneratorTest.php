@@ -168,4 +168,76 @@ final class CodeGeneratorTest extends TestCase
 
         $this->assertSame(0, $exitCode, 'Generated PHP file has syntax errors: ' . implode("\n", $output));
     }
+
+    #[Test]
+    public function generates_result_comment_capture(): void
+    {
+        $block = $this->makeBlock('$x = 42; // => 42');
+        $filePath = $this->generator->generate($block);
+        $content = file_get_contents($filePath);
+
+        $this->assertStringContainsString('var_export', $content);
+        $this->assertStringContainsString("'type' => 'result_comment'", $content);
+        $this->assertStringContainsString('$x = 42', $content);
+    }
+
+    #[Test]
+    public function result_comment_generated_code_passes_syntax_check(): void
+    {
+        $block = $this->makeBlock('$x = 42; // => 42');
+        $filePath = $this->generator->generate($block);
+
+        $output = [];
+        $exitCode = 0;
+        exec(PHP_BINARY . ' -l ' . escapeshellarg($filePath) . ' 2>&1', $output, $exitCode);
+
+        $this->assertSame(0, $exitCode, 'Generated PHP file has syntax errors: ' . implode("\n", $output));
+    }
+
+    #[Test]
+    public function generates_multiple_result_comment_captures(): void
+    {
+        $block = $this->makeBlock("\$x = 1; // => 1\n\$y = 2; // => 2");
+        $filePath = $this->generator->generate($block);
+        $content = file_get_contents($filePath);
+
+        $this->assertSame(2, substr_count($content, "'type' => 'result_comment'"));
+    }
+
+    #[Test]
+    public function result_comment_produces_correct_output_when_executed(): void
+    {
+        $block = $this->makeBlock('$x = 42; // => 42');
+        $filePath = $this->generator->generate($block);
+
+        $descriptors = [
+            0 => ['pipe', 'r'],
+            1 => ['pipe', 'w'],
+            2 => ['pipe', 'w'],
+        ];
+        $process = proc_open([PHP_BINARY, $filePath], $descriptors, $pipes);
+        $stderr = stream_get_contents($pipes[2]);
+        fclose($pipes[0]);
+        fclose($pipes[1]);
+        fclose($pipes[2]);
+        proc_close($process);
+
+        $results = json_decode($stderr, true);
+        $this->assertIsArray($results);
+        $this->assertCount(1, $results);
+        $this->assertSame('result_comment', $results[0]['type']);
+        $this->assertSame('42', $results[0]['expected']);
+        $this->assertSame('42', $results[0]['actual']);
+    }
+
+    #[Test]
+    public function result_comment_mixed_with_output_assertion(): void
+    {
+        $block = $this->makeBlock("\$x = 42; // => 42\necho \$x;\n// Output: 42");
+        $filePath = $this->generator->generate($block);
+        $content = file_get_contents($filePath);
+
+        $this->assertStringContainsString("'type' => 'result_comment'", $content);
+        $this->assertStringContainsString('ob_start()', $content);
+    }
 }
