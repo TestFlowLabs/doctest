@@ -78,6 +78,17 @@ final readonly class CodeGenerator
                 $lines[] = '];';
                 $lines[] = '';
             }
+
+            foreach ($parsed->resultComments as $rc) {
+                $lines[] = '$__doctest_result = ' . $rc->expression . ';';
+                $lines[] = '$__doctest_results[] = [';
+                $lines[] = "    'type' => 'result_comment',";
+                $lines[] = "    'expected' => " . var_export($rc->expectedValue, true) . ',';
+                $lines[] = "    'actual' => var_export(\$__doctest_result, true),";
+                $lines[] = "    'line' => " . $rc->line() . ',';
+                $lines[] = '];';
+                $lines[] = '';
+            }
         }
 
         if ($teardown !== null) {
@@ -179,6 +190,17 @@ final readonly class CodeGenerator
                 $lines[] = "    'expression' => " . var_export($expect->expression, true) . ',';
                 $lines[] = "    'passed' => (bool)(" . $expect->expression . '),';
                 $lines[] = "    'line' => " . $expect->line() . ',';
+                $lines[] = '];';
+                $lines[] = '';
+            }
+
+            foreach ($parsed->resultComments as $rc) {
+                $lines[] = '$__doctest_result = ' . $rc->expression . ';';
+                $lines[] = '$__doctest_results[] = [';
+                $lines[] = "    'type' => 'result_comment',";
+                $lines[] = "    'expected' => " . var_export($rc->expectedValue, true) . ',';
+                $lines[] = "    'actual' => var_export(\$__doctest_result, true),";
+                $lines[] = "    'line' => " . $rc->line() . ',';
                 $lines[] = '];';
                 $lines[] = '';
             }
