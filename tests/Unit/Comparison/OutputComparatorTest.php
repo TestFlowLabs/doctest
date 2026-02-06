@@ -138,4 +138,65 @@ final class OutputComparatorTest extends TestCase
 
         $this->assertFalse($result->passed);
     }
+
+    #[Test]
+    public function compare_json_passes_with_same_structure(): void
+    {
+        $result = $this->comparator->compareJson('{"a": 1, "b": 2}', '{"a":1,"b":2}');
+
+        $this->assertTrue($result->passed);
+    }
+
+    #[Test]
+    public function compare_json_passes_with_different_key_order(): void
+    {
+        $result = $this->comparator->compareJson('{"a": 1, "b": 2}', '{"b":2,"a":1}');
+
+        $this->assertTrue($result->passed);
+    }
+
+    #[Test]
+    public function compare_json_passes_with_nested_different_key_order(): void
+    {
+        $result = $this->comparator->compareJson(
+            '{"user": {"name": "Alice", "age": 30}, "roles": ["admin"]}',
+            '{"roles":["admin"],"user":{"age":30,"name":"Alice"}}',
+        );
+
+        $this->assertTrue($result->passed);
+    }
+
+    #[Test]
+    public function compare_json_fails_with_different_values(): void
+    {
+        $result = $this->comparator->compareJson('{"a": 1}', '{"a":2}');
+
+        $this->assertFalse($result->passed);
+    }
+
+    #[Test]
+    public function compare_json_fails_with_different_array_order(): void
+    {
+        $result = $this->comparator->compareJson('["a", "b"]', '["b","a"]');
+
+        $this->assertFalse($result->passed);
+    }
+
+    #[Test]
+    public function compare_json_fails_with_invalid_expected(): void
+    {
+        $result = $this->comparator->compareJson('not json', '{"a":1}');
+
+        $this->assertFalse($result->passed);
+        $this->assertStringContainsString('Expected JSON is invalid', $result->normalizedExpected);
+    }
+
+    #[Test]
+    public function compare_json_fails_with_invalid_actual(): void
+    {
+        $result = $this->comparator->compareJson('{"a": 1}', 'not json');
+
+        $this->assertFalse($result->passed);
+        $this->assertStringContainsString('Actual JSON output is invalid', $result->normalizedActual);
+    }
 }
