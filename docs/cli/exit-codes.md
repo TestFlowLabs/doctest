@@ -36,7 +36,7 @@ vendor/bin/doctest -v
 
 ## Combining with Reporters
 
-Use the [JUnit reporter](/reporters/junit) for CI dashboards that parse test results:
+Use the [JSON reporter](/reporters/json) for machine-readable test results:
 
 Create a `doctest.php` config:
 
@@ -44,18 +44,7 @@ Create a `doctest.php` config:
 return [
     'reporters' => [
         'console' => true,
-        'junit'   => 'build/doctest.xml',
+        'json'    => 'build/doctest.json',
     ],
 ];
-```
-
-Then in your CI config:
-
-```yaml
-- run: vendor/bin/doctest
-- uses: dorny/test-reporter@v1
-  with:
-    name: DocTest Results
-    path: build/doctest.xml
-    reporter: java-junit
 ```
