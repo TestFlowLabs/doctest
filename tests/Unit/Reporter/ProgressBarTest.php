@@ -37,7 +37,7 @@ final class ProgressBarTest extends TestCase
                 rawCode: 'echo "ok";',
                 executableCode: $parsed->executableCode,
                 attributes: new Attributes(),
-                assertions: $parsed->assertions,
+                assertions: [],
             ),
         );
     }
