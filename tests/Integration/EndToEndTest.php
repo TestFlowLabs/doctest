@@ -55,7 +55,7 @@ final class EndToEndTest extends TestCase
         $output = $this->getOutput();
 
         $this->assertSame(1, $exitCode);
-        $this->assertStringContainsString('FAIL', $output);
+        $this->assertStringContainsString('✖', $output);
     }
 
     #[Test]
@@ -69,8 +69,8 @@ final class EndToEndTest extends TestCase
         $output = $this->getOutput();
 
         $this->assertSame(0, $exitCode);
-        $this->assertStringContainsString('SKIP', $output);
-        $this->assertStringContainsString('PASS', $output);
+        $this->assertStringContainsString('⊘', $output);
+        $this->assertStringContainsString('✔', $output);
     }
 
     #[Test]
@@ -110,7 +110,7 @@ final class EndToEndTest extends TestCase
         $output = $this->getOutput();
 
         $this->assertSame(0, $exitCode);
-        $this->assertStringContainsString('SKIP', $output);
+        $this->assertStringContainsString('⊘', $output);
     }
 
     #[Test]
@@ -130,8 +130,8 @@ final class EndToEndTest extends TestCase
 
             $this->assertSame(1, $exitCode);
             // Should only have one FAIL, not a second PASS (stopped early)
-            $this->assertSame(1, substr_count($output, 'FAIL'));
-            $this->assertStringNotContainsString('PASS', $output);
+            $this->assertSame(1, substr_count($output, '✖'));
+            $this->assertStringNotContainsString('✔', $output);
         } finally {
             if (file_exists($tempFile)) {
                 unlink($tempFile);
