@@ -163,4 +163,60 @@ final class ExecutorTest extends TestCase
         $this->assertSame('wrong', $result->actualOutput);
         $this->assertSame('right', $result->expectedOutput);
     }
+
+    #[Test]
+    public function evaluates_result_comment_with_matching_value(): void
+    {
+        $block = $this->makeBlock('$x = 42; // => 42');
+        $result = $this->executor->execute($block);
+
+        $this->assertTrue($result->passed);
+    }
+
+    #[Test]
+    public function evaluates_result_comment_with_boolean(): void
+    {
+        $block = $this->makeBlock('$x = true; // => true');
+        $result = $this->executor->execute($block);
+
+        $this->assertTrue($result->passed);
+    }
+
+    #[Test]
+    public function evaluates_result_comment_with_null(): void
+    {
+        $block = $this->makeBlock('$x = null; // => NULL');
+        $result = $this->executor->execute($block);
+
+        $this->assertTrue($result->passed);
+    }
+
+    #[Test]
+    public function result_comment_fails_on_mismatch(): void
+    {
+        $block = $this->makeBlock('$x = 42; // => 99');
+        $result = $this->executor->execute($block);
+
+        $this->assertFalse($result->passed);
+        $this->assertNotNull($result->error);
+        $this->assertStringContainsString('result_comment', $result->error);
+    }
+
+    #[Test]
+    public function evaluates_multiple_result_comments(): void
+    {
+        $block = $this->makeBlock("\$x = 1; // => 1\n\$y = 2; // => 2\n\$z = \$x + \$y; // => 3");
+        $result = $this->executor->execute($block);
+
+        $this->assertTrue($result->passed);
+    }
+
+    #[Test]
+    public function result_comment_mixed_with_output_assertion(): void
+    {
+        $block = $this->makeBlock("\$x = 42; // => 42\necho \$x;\n// Output: 42");
+        $result = $this->executor->execute($block);
+
+        $this->assertTrue($result->passed);
+    }
 }
