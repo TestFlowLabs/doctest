@@ -50,32 +50,37 @@ final class ConsoleReporterTest extends TestCase
     }
 
     #[Test]
-    public function reports_passing_result(): void
+    public function pass_result_shows_checkmark_symbol(): void
     {
         $reporter = new ConsoleReporter($this->output);
         $reporter->reportResult($this->makeResult(passed: true));
 
-        $this->assertStringContainsString('PASS', $this->getOutput());
+        $output = $this->getOutput();
+        $this->assertStringContainsString('✔', $output);
+        $this->assertStringNotContainsString('[PASS]', $output);
     }
 
     #[Test]
-    public function reports_failing_result_with_error(): void
+    public function fail_result_shows_cross_symbol(): void
     {
         $reporter = new ConsoleReporter($this->output);
         $reporter->reportResult($this->makeResult(passed: false, error: 'Something failed'));
 
         $output = $this->getOutput();
-        $this->assertStringContainsString('FAIL', $output);
+        $this->assertStringContainsString('✖', $output);
+        $this->assertStringNotContainsString('[FAIL]', $output);
         $this->assertStringContainsString('Something failed', $output);
     }
 
     #[Test]
-    public function reports_skipped_result(): void
+    public function skip_result_shows_skip_symbol(): void
     {
         $reporter = new ConsoleReporter($this->output);
         $reporter->reportResult($this->makeResult(passed: true, skipped: true));
 
-        $this->assertStringContainsString('SKIP', $this->getOutput());
+        $output = $this->getOutput();
+        $this->assertStringContainsString('⊘', $output);
+        $this->assertStringNotContainsString('[SKIP]', $output);
     }
 
     #[Test]
@@ -113,7 +118,7 @@ final class ConsoleReporterTest extends TestCase
         $reporter->reportResult($this->makeResult(passed: true));
 
         $output = $this->getOutput();
-        $this->assertStringContainsString('[PASS]', $output);
+        $this->assertStringContainsString('✔', $output);
     }
 
     #[Test]
