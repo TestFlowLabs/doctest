@@ -35,4 +35,22 @@ final readonly class LaravelBootstrap
 
         return implode("\n", $lines);
     }
+
+    /**
+     * @param array<string> $providers
+     */
+    public function getProviderRegistrationCode(array $providers): string
+    {
+        if ($providers === []) {
+            return '';
+        }
+
+        $lines = [];
+
+        foreach ($providers as $provider) {
+            $lines[] = '$app->register(\\' . ltrim($provider, '\\') . '::class);';
+        }
+
+        return implode("\n", $lines);
+    }
 }
