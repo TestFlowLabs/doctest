@@ -184,6 +184,20 @@ final class CodeBlockExtractorTest extends TestCase
     }
 
     #[Test]
+    public function parses_multi_line_html_comment_output_assertion(): void
+    {
+        $markdown = "```php\necho \"Hello\\nWorld\";\n```\n<!-- doctest:\nHello\nWorld\n-->\n";
+        $document = $this->markdownParser->parse($markdown);
+
+        $blocks = $this->extractor->extract($document, 'test.md');
+
+        $this->assertCount(1, $blocks);
+        $this->assertCount(1, $blocks[0]->assertions);
+        $this->assertInstanceOf(OutputAssertion::class, $blocks[0]->assertions[0]);
+        $this->assertSame("Hello\nWorld", $blocks[0]->assertions[0]->expected);
+    }
+
+    #[Test]
     public function ignores_html_comments_not_following_php_blocks(): void
     {
         $markdown = "<!-- doctest: orphan -->\n\n```php\necho 1;\n```\n";
