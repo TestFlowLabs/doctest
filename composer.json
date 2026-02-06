@@ -29,6 +29,25 @@
     "bin": [
         "bin/doctest"
     ],
+    "scripts": {
+        "rector": "rector",
+        "pint": "pint --config=pint.json",
+        "test:rector": "rector --dry-run",
+        "test:pint": "pint --config=pint.json --test",
+        "test:phpstan": "phpstan analyse --configuration=phpstan.neon --ansi",
+        "test:unit": "pest --parallel --colors=always --order-by=random",
+        "test:types": "pest --type-coverage --colors=always",
+        "test:coverage": "pest --coverage --colors=always --min=80",
+        "test:profile": "pest --profile --colors=always --order-by=random",
+        "test:mutation": "pest --mutate --parallel --everything",
+        "test": [
+            "@test:rector",
+            "@test:pint",
+            "@test:phpstan",
+            "@test:unit",
+            "@test:types"
+        ]
+    },
     "config": {
         "sort-packages": true,
         "allow-plugins": {
