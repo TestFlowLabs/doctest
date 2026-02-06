@@ -15,7 +15,7 @@ echo json_encode(['name' => 'DocTest', 'php' => '8.4+']);
 
 1. The code block executes and its output is captured
 2. Both the expected JSON and actual output are decoded with `json_decode()`
-3. The decoded structures are compared with `===`
+3. Keys are recursively sorted so key order doesn't matter
 4. If either side has invalid JSON, the assertion fails with a descriptive error
 
 ## Key Order Independence
@@ -25,7 +25,7 @@ The comparison is structural, so key order doesn't matter:
 ```php
 echo json_encode(['b' => 2, 'a' => 1]);
 ```
-<!-- doctest-json: {"b": 2, "a": 1} -->
+<!-- doctest-json: {"a": 1, "b": 2} -->
 
 Both produce the same decoded structure, so this passes.
 
