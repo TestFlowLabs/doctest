@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace TestFlowLabs\DocTest\Parser;
 
 use League\CommonMark\Extension\CommonMark\Node\Block\FencedCode;
+use League\CommonMark\Extension\CommonMark\Node\Block\HtmlBlock;
 use League\CommonMark\Node\Block\Document;
 use League\CommonMark\Node\NodeIterator;
 use TestFlowLabs\DocTest\Assertion\AssertionParser;
+use TestFlowLabs\DocTest\Assertion\HtmlCommentAssertionParser;
 use TestFlowLabs\DocTest\CodeBlock\CodeBlock;
 
 final readonly class CodeBlockExtractor
@@ -18,11 +20,14 @@ final readonly class CodeBlockExtractor
 
     private AssertionParser $assertionParser;
 
+    private HtmlCommentAssertionParser $htmlCommentParser;
+
     public function __construct()
     {
         $this->shikiFilter = new ShikiFilter();
         $this->attributeParser = new AttributeParser();
         $this->assertionParser = new AssertionParser();
+        $this->htmlCommentParser = new HtmlCommentAssertionParser();
     }
 
     /**
@@ -54,8 +59,17 @@ final readonly class CodeBlockExtractor
             // Strip opening <?php tag
             $code = $this->stripPhpTag($shikiResult->code);
 
-            // Parse assertions
+            // Parse assertions from code comments
             $assertionResult = $this->assertionParser->parse($code);
+
+            // Check for HTML comment assertions after the code block
+            $htmlAssertions = [];
+            $nextNode = $node->next();
+            if ($nextNode instanceof HtmlBlock) {
+                $htmlAssertions = $this->htmlCommentParser->parse($nextNode->getLiteral());
+            }
+
+            $allAssertions = array_merge($assertionResult->assertions, $htmlAssertions);
 
             $blocks[] = new CodeBlock(
                 file: $filePath,
@@ -63,7 +77,7 @@ final readonly class CodeBlockExtractor
                 rawCode: $rawCode,
                 executableCode: $assertionResult->executableCode,
                 attributes: $attributes,
-                assertions: $assertionResult->assertions,
+                assertions: $allAssertions,
             );
         }
 
