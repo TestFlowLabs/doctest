@@ -11,6 +11,8 @@ use TestFlowLabs\DocTest\Executor\Executor;
 use TestFlowLabs\DocTest\Parser\CodeBlockExtractor;
 use TestFlowLabs\DocTest\Parser\MarkdownParser;
 use TestFlowLabs\DocTest\Reporter\ConsoleReporter;
+use TestFlowLabs\DocTest\Reporter\JsonReporter;
+use TestFlowLabs\DocTest\Reporter\JUnitReporter;
 
 final readonly class DocTest
 {
@@ -35,7 +37,7 @@ final readonly class DocTest
         $this->markdownParser = new MarkdownParser();
         $this->extractor = new CodeBlockExtractor();
         $this->executor = new Executor($config->timeout, $config->memoryLimit);
-        $this->reporter = new ConsoleReporter($output, colors: $output === null);
+        $this->reporter = new ConsoleReporter($output, colors: $output === null, verbosity: $config->verbosity);
     }
 
     public function run(): int
@@ -49,14 +51,30 @@ final readonly class DocTest
 
         $allResults = [];
         $hasFailure = false;
+        $totalBlocks = 0;
+
+        // Count total blocks for progress reporting
+        $allBlocks = [];
+        foreach ($files as $file) {
+            $blocks = $this->extractBlocks($file);
+            $allBlocks[$file] = $blocks;
+            $totalBlocks += count($blocks);
+        }
+
+        $this->reporter->setTotalBlocks($totalBlocks);
 
         foreach ($files as $file) {
             $this->reporter->reportFile($file);
+            $blocks = $allBlocks[$file];
+
+            if ($this->config->filter !== null) {
+                $blocks = $this->applyFilter($blocks, $this->config->filter);
+            }
 
             if ($this->config->dryRun) {
-                $results = $this->dryRunFile($file);
+                $results = $this->dryRunBlocks($blocks);
             } else {
-                $results = $this->testFile($file);
+                $results = $this->executor->executeAll($blocks);
             }
 
             $allResults = array_merge($allResults, $results);
@@ -69,6 +87,7 @@ final readonly class DocTest
 
                     if ($this->config->stopOnFailure) {
                         $this->reporter->reportSummary($allResults, microtime(true) - $startTime);
+                        $this->writeReporterFiles($allResults);
 
                         return 1;
                     }
@@ -81,6 +100,7 @@ final readonly class DocTest
         }
 
         $this->reporter->reportSummary($allResults, microtime(true) - $startTime);
+        $this->writeReporterFiles($allResults);
 
         return $hasFailure ? 1 : 0;
     }
@@ -90,22 +110,9 @@ final readonly class DocTest
      */
     public function testFile(string $filePath): array
     {
-        $markdown = file_get_contents($filePath);
+        $blocks = $this->extractBlocks($filePath);
 
-        if ($markdown === false) {
-            return [];
-        }
-
-        $document = $this->markdownParser->parse($markdown);
-        $blocks = $this->extractor->extract($document, $filePath);
-
-        $results = [];
-
-        foreach ($blocks as $block) {
-            $results[] = $this->executor->execute($block);
-        }
-
-        return $results;
+        return $this->executor->executeAll($blocks);
     }
 
     /**
@@ -132,9 +139,9 @@ final readonly class DocTest
     }
 
     /**
-     * @return array<ExecutionResult>
+     * @return array<\TestFlowLabs\DocTest\CodeBlock\CodeBlock>
      */
-    private function dryRunFile(string $filePath): array
+    private function extractBlocks(string $filePath): array
     {
         $markdown = file_get_contents($filePath);
 
@@ -143,8 +150,29 @@ final readonly class DocTest
         }
 
         $document = $this->markdownParser->parse($markdown);
-        $blocks = $this->extractor->extract($document, $filePath);
 
+        return $this->extractor->extract($document, $filePath);
+    }
+
+    /**
+     * @param array<\TestFlowLabs\DocTest\CodeBlock\CodeBlock> $blocks
+     * @return array<\TestFlowLabs\DocTest\CodeBlock\CodeBlock>
+     */
+    private function applyFilter(array $blocks, string $filter): array
+    {
+        return array_values(array_filter(
+            $blocks,
+            static fn($block) => str_contains($block->rawCode, $filter)
+                || str_contains($block->file, $filter),
+        ));
+    }
+
+    /**
+     * @param array<\TestFlowLabs\DocTest\CodeBlock\CodeBlock> $blocks
+     * @return array<ExecutionResult>
+     */
+    private function dryRunBlocks(array $blocks): array
+    {
         $results = [];
 
         foreach ($blocks as $block) {
@@ -156,5 +184,21 @@ final readonly class DocTest
         }
 
         return $results;
+    }
+
+    /**
+     * @param array<ExecutionResult> $results
+     */
+    private function writeReporterFiles(array $results): void
+    {
+        if ($this->config->reporterJunit !== null) {
+            $reporter = new JUnitReporter();
+            $reporter->generateToFile($results, $this->config->reporterJunit);
+        }
+
+        if ($this->config->reporterJson !== null) {
+            $reporter = new JsonReporter();
+            $reporter->generateToFile($results, $this->config->reporterJson);
+        }
     }
 }
