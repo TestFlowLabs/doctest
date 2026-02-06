@@ -234,6 +234,7 @@ final readonly class Executor
     private function evaluateResults(CodeBlock $block, array $results, ProcessResult $processResult): ExecutionResult
     {
         $capturedOutput = [];
+        $assertionDetails = [];
 
         foreach ($results as $result) {
             if ($result['type'] === 'output') {
@@ -241,6 +242,14 @@ final readonly class Executor
                 $actual = $result['actual'] ?? '';
                 $capturedOutput[] = $actual;
                 $comparison = $this->comparator->compare($expected, $actual);
+
+                $assertionDetails[] = new \TestFlowLabs\DocTest\Assertion\AssertionResultDetail(
+                    type: 'output',
+                    passed: $comparison->passed,
+                    expected: $expected,
+                    actual: $actual,
+                    line: $result['line'] ?? 0,
+                );
 
                 if (! $comparison->passed) {
                     $diff = $this->diffGenerator->generate($comparison->normalizedExpected, $comparison->normalizedActual);
@@ -252,6 +261,7 @@ final readonly class Executor
                         expectedOutput: $expected,
                         diff: $diff,
                         duration: $processResult->duration,
+                        assertionDetails: $assertionDetails,
                     );
                 }
             }
@@ -260,8 +270,17 @@ final readonly class Executor
                 $expected = $result['expected'] ?? '';
                 $actual = $result['actual'] ?? '';
                 $capturedOutput[] = $actual;
+                $passed = str_contains($actual, $expected);
 
-                if (! str_contains($actual, $expected)) {
+                $assertionDetails[] = new \TestFlowLabs\DocTest\Assertion\AssertionResultDetail(
+                    type: 'output_contains',
+                    passed: $passed,
+                    expected: $expected,
+                    actual: $actual,
+                    line: $result['line'] ?? 0,
+                );
+
+                if (! $passed) {
                     return new ExecutionResult(
                         passed: false,
                         codeBlock: $block,
@@ -269,6 +288,7 @@ final readonly class Executor
                         expectedOutput: $expected,
                         error: "Output does not contain: {$expected}",
                         duration: $processResult->duration,
+                        assertionDetails: $assertionDetails,
                     );
                 }
             }
@@ -281,15 +301,34 @@ final readonly class Executor
                 $matchResult = @preg_match($pattern, $actual);
 
                 if ($matchResult === false) {
+                    $assertionDetails[] = new \TestFlowLabs\DocTest\Assertion\AssertionResultDetail(
+                        type: 'output_matches',
+                        passed: false,
+                        expected: $pattern,
+                        actual: $actual,
+                        line: $result['line'] ?? 0,
+                    );
+
                     return new ExecutionResult(
                         passed: false,
                         codeBlock: $block,
                         error: "Invalid regex pattern: {$pattern}",
                         duration: $processResult->duration,
+                        assertionDetails: $assertionDetails,
                     );
                 }
 
-                if ($matchResult !== 1) {
+                $passed = $matchResult === 1;
+
+                $assertionDetails[] = new \TestFlowLabs\DocTest\Assertion\AssertionResultDetail(
+                    type: 'output_matches',
+                    passed: $passed,
+                    expected: $pattern,
+                    actual: $actual,
+                    line: $result['line'] ?? 0,
+                );
+
+                if (! $passed) {
                     return new ExecutionResult(
                         passed: false,
                         codeBlock: $block,
@@ -297,6 +336,7 @@ final readonly class Executor
                         expectedOutput: $pattern,
                         error: "Output does not match pattern: {$pattern}",
                         duration: $processResult->duration,
+                        assertionDetails: $assertionDetails,
                     );
                 }
             }
@@ -308,26 +348,54 @@ final readonly class Executor
 
                 $expectedDecoded = json_decode($expectedJson, true);
                 if (json_last_error() !== JSON_ERROR_NONE) {
+                    $assertionDetails[] = new \TestFlowLabs\DocTest\Assertion\AssertionResultDetail(
+                        type: 'output_json',
+                        passed: false,
+                        expected: $expectedJson,
+                        actual: $actual,
+                        line: $result['line'] ?? 0,
+                    );
+
                     return new ExecutionResult(
                         passed: false,
                         codeBlock: $block,
                         error: 'Expected JSON is invalid: ' . json_last_error_msg(),
                         duration: $processResult->duration,
+                        assertionDetails: $assertionDetails,
                     );
                 }
 
                 $actualDecoded = json_decode($actual, true);
                 if (json_last_error() !== JSON_ERROR_NONE) {
+                    $assertionDetails[] = new \TestFlowLabs\DocTest\Assertion\AssertionResultDetail(
+                        type: 'output_json',
+                        passed: false,
+                        expected: $expectedJson,
+                        actual: $actual,
+                        line: $result['line'] ?? 0,
+                    );
+
                     return new ExecutionResult(
                         passed: false,
                         codeBlock: $block,
                         actualOutput: $actual,
                         error: 'Actual JSON output is invalid: ' . json_last_error_msg(),
                         duration: $processResult->duration,
+                        assertionDetails: $assertionDetails,
                     );
                 }
 
-                if ($expectedDecoded !== $actualDecoded) {
+                $passed = $expectedDecoded === $actualDecoded;
+
+                $assertionDetails[] = new \TestFlowLabs\DocTest\Assertion\AssertionResultDetail(
+                    type: 'output_json',
+                    passed: $passed,
+                    expected: $expectedJson,
+                    actual: $actual,
+                    line: $result['line'] ?? 0,
+                );
+
+                if (! $passed) {
                     return new ExecutionResult(
                         passed: false,
                         codeBlock: $block,
@@ -335,17 +403,31 @@ final readonly class Executor
                         expectedOutput: $expectedJson,
                         error: 'JSON output does not match expected structure',
                         duration: $processResult->duration,
+                        assertionDetails: $assertionDetails,
                     );
                 }
             }
 
             if ($result['type'] === 'expect') {
-                if (! ($result['passed'] ?? false)) {
+                $passed = (bool) ($result['passed'] ?? false);
+                $expression = $result['expression'] ?? '';
+
+                $assertionDetails[] = new \TestFlowLabs\DocTest\Assertion\AssertionResultDetail(
+                    type: 'expect',
+                    passed: $passed,
+                    expected: $expression,
+                    actual: $passed ? 'true' : 'false',
+                    line: $result['line'] ?? 0,
+                    expression: $expression,
+                );
+
+                if (! $passed) {
                     return new ExecutionResult(
                         passed: false,
                         codeBlock: $block,
-                        error: 'Expect assertion failed: ' . ($result['expression'] ?? ''),
+                        error: 'Expect assertion failed: ' . $expression,
                         duration: $processResult->duration,
+                        assertionDetails: $assertionDetails,
                     );
                 }
             }
@@ -353,13 +435,24 @@ final readonly class Executor
             if ($result['type'] === 'result_comment') {
                 $expected = $result['expected'] ?? '';
                 $actual = $result['actual'] ?? '';
+                $passed = $expected === $actual;
 
-                if ($expected !== $actual) {
+                $assertionDetails[] = new \TestFlowLabs\DocTest\Assertion\AssertionResultDetail(
+                    type: 'result_comment',
+                    passed: $passed,
+                    expected: $expected,
+                    actual: $actual,
+                    line: $result['line'] ?? 0,
+                    expression: $result['expression'] ?? null,
+                );
+
+                if (! $passed) {
                     return new ExecutionResult(
                         passed: false,
                         codeBlock: $block,
                         error: "result_comment assertion failed: expected {$expected} but got {$actual}",
                         duration: $processResult->duration,
+                        assertionDetails: $assertionDetails,
                     );
                 }
             }
@@ -372,6 +465,7 @@ final readonly class Executor
             codeBlock: $block,
             actualOutput: $actualOutput,
             duration: $processResult->duration,
+            assertionDetails: $assertionDetails,
         );
     }
 
