@@ -95,4 +95,51 @@ final class WildcardMatcherTest extends TestCase
         $this->assertTrue($this->matcher->matches('{{unknown}}', '{{unknown}}'));
         $this->assertFalse($this->matcher->matches('hello', '{{unknown}}'));
     }
+
+    // --- Edge cases ---
+
+    #[Test]
+    public function has_wildcards_returns_true_for_known_placeholders(): void
+    {
+        $this->assertTrue($this->matcher->hasWildcards('Hello {{any}}'));
+        $this->assertTrue($this->matcher->hasWildcards('Count: {{int}}'));
+        $this->assertTrue($this->matcher->hasWildcards('{{...}}'));
+    }
+
+    #[Test]
+    public function has_wildcards_returns_false_for_no_placeholders(): void
+    {
+        $this->assertFalse($this->matcher->hasWildcards('no wildcards here'));
+        $this->assertFalse($this->matcher->hasWildcards(''));
+    }
+
+    #[Test]
+    public function has_wildcards_returns_false_for_unknown_placeholders(): void
+    {
+        $this->assertFalse($this->matcher->hasWildcards('{{unknown}}'));
+    }
+
+    #[Test]
+    public function pattern_with_special_regex_characters(): void
+    {
+        $this->assertTrue($this->matcher->matches('price: $42.00 (USD)', 'price: ${{float}} (USD)'));
+    }
+
+    #[Test]
+    public function float_rejects_non_numeric(): void
+    {
+        $this->assertFalse($this->matcher->matches('abc', '{{float}}'));
+    }
+
+    #[Test]
+    public function datetime_rejects_non_date(): void
+    {
+        $this->assertFalse($this->matcher->matches('not-a-date', '{{datetime}}'));
+    }
+
+    #[Test]
+    public function multiple_same_wildcards_in_pattern(): void
+    {
+        $this->assertTrue($this->matcher->matches('1 + 2 = 3', '{{int}} + {{int}} = {{int}}'));
+    }
 }
