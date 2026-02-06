@@ -1,0 +1,42 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+// Find Composer autoloader
+$autoloadPaths = [
+    __DIR__ . '/../vendor/autoload.php',
+    __DIR__ . '/../../../autoload.php',
+];
+
+foreach ($autoloadPaths as $autoloadPath) {
+    if (file_exists($autoloadPath)) {
+        require $autoloadPath;
+        break;
+    }
+}
+
+use TestFlowLabs\DocTest\Config\CliArgs;
+use TestFlowLabs\DocTest\Config\DocTestConfig;
+use TestFlowLabs\DocTest\DocTest;
+
+/** @var array<string> $argv */
+$args = CliArgs::parse($argv);
+$config = DocTestConfig::load($args->configPath);
+
+// Override config with CLI arguments
+$config = DocTestConfig::fromArray([
+    'paths' => $args->files !== [] ? $args->files : $config->paths,
+    'exclude' => $args->exclude !== null ? [$args->exclude] : $config->exclude,
+    'execution' => [
+        'timeout' => $config->timeout,
+        'memory_limit' => $config->memoryLimit,
+        'stop_on_failure' => $args->stopOnFailure || $config->stopOnFailure,
+    ],
+    'dry_run' => $args->dryRun,
+    'filter' => $args->filter,
+    'verbosity' => $args->verbosity > 0 ? $args->verbosity : $config->verbosity,
+]);
+
+$docTest = new DocTest($config);
+exit($docTest->run());
