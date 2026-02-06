@@ -9,7 +9,11 @@ final readonly class ProcessRunner
     public function __construct(
         private int $timeout,
         private string $memoryLimit,
-    ) {}
+    ) {
+        if (preg_match('/^\-?\d+[KMGkmg]?$/', $this->memoryLimit) !== 1) {
+            throw new \InvalidArgumentException("Invalid memory limit format: {$this->memoryLimit}");
+        }
+    }
 
     public function run(string $phpFilePath): ProcessResult
     {
