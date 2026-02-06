@@ -43,13 +43,13 @@ final class DocTestCommand extends Command
                   <info>$x = 42; // => 42</info>               Return value match
 
                 <comment>Attributes (in code fence info string):</comment>
-                  <info>```php {ignore}</info>          Skip this block
-                  <info>```php {no_run}</info>          Syntax check only
-                  <info>```php {throws RuntimeException}</info>  Expect exception
-                  <info>```php {parse_error}</info>     Expect parse error
-                  <info>```php {group:name}</info>      Group blocks sharing state
-                  <info>```php {setup:name}</info>      Setup code for a group
-                  <info>```php {teardown:name}</info>   Teardown code for a group
+                  <info>```php ignore</info>                        Skip this block
+                  <info>```php no_run</info>                        Syntax check only
+                  <info>```php throws(RuntimeException)</info>      Expect exception
+                  <info>```php parse_error</info>                   Expect parse error
+                  <info>```php group="name"</info>                  Group blocks sharing state
+                  <info>```php setup group="name"</info>            Setup code for a group
+                  <info>```php teardown group="name"</info>         Teardown code for a group
 
                 <comment>Examples:</comment>
                   <info>doctest</info>
