@@ -4,15 +4,6 @@ The `OutputMatches` assertion checks that the output matches a **regular express
 
 ## Syntax
 
-### Inline Comment
-
-```php
-echo date('Y');
-// OutputMatches: /^\d{4}$/
-```
-
-### HTML Comment
-
 ````markdown
 ```php
 echo date('Y');
@@ -30,15 +21,19 @@ echo date('Y');
 
 Patterns must include delimiters, just like PHP's `preg_match()`:
 
+````markdown
 ```php
-// Standard delimiters
 echo 'abc123';
-// OutputMatches: /^[a-z]+\d+$/
-
-// Case-insensitive flag
-echo 'Hello World';
-// OutputMatches: /hello world/i
 ```
+<!-- doctest-matches: /^[a-z]+\d+$/ -->
+````
+
+````markdown
+```php
+echo 'Hello World';
+```
+<!-- doctest-matches: /hello world/i -->
+````
 
 ## When to Use
 
@@ -50,17 +45,21 @@ echo 'Hello World';
 
 ### Validate email format
 
+````markdown
 ```php
 echo 'user@example.com';
-// OutputMatches: /^[\w.+-]+@[\w-]+\.[\w.]+$/
 ```
+<!-- doctest-matches: /^[\w.+-]+@[\w-]+\.[\w.]+$/ -->
+````
 
 ### Match a version string
 
+````markdown
 ```php
 echo '2.1.0';
-// OutputMatches: /^\d+\.\d+\.\d+$/
 ```
+<!-- doctest-matches: /^\d+\.\d+\.\d+$/ -->
+````
 
 ::: tip
 For common dynamic patterns like dates, UUIDs, and integers, consider using [wildcards](/wildcards/) with the `Output` assertion instead. They're more readable.
