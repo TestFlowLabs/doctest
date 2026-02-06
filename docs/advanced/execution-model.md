@@ -89,4 +89,4 @@ After execution, results flow through the comparator:
 
 ## Temp File Cleanup
 
-Generated scripts are written to `/tmp/doctest/` and cleaned up after execution. Each file has a random name to avoid collisions.
+Generated scripts are written to the system temp directory (`sys_get_temp_dir()`) with a `doctest_` prefix and cleaned up after execution. Each file has a random suffix to avoid collisions.
