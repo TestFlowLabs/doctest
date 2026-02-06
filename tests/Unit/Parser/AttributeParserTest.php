@@ -121,4 +121,61 @@ final class AttributeParserTest extends TestCase
         $this->assertSame(Attribute::Throws, $attributes->attribute);
         $this->assertSame('test', $attributes->group);
     }
+
+    // --- Edge cases ---
+
+    #[Test]
+    public function parses_throws_with_namespaced_class(): void
+    {
+        $attributes = $this->parser->parse('php throws(App\\Exceptions\\CustomException)');
+
+        $this->assertSame(Attribute::Throws, $attributes->attribute);
+        $this->assertSame('App\\Exceptions\\CustomException', $attributes->throwsClass);
+    }
+
+    #[Test]
+    public function group_combined_with_throws_class_and_message(): void
+    {
+        $attributes = $this->parser->parse('php group="grp" throws(RuntimeException, "msg")');
+
+        $this->assertSame(Attribute::Throws, $attributes->attribute);
+        $this->assertSame('RuntimeException', $attributes->throwsClass);
+        $this->assertSame('msg', $attributes->throwsMessage);
+        $this->assertSame('grp', $attributes->group);
+    }
+
+    #[Test]
+    public function first_attribute_wins_when_multiple_present(): void
+    {
+        $attributes = $this->parser->parse('php ignore no_run');
+
+        $this->assertSame(Attribute::Ignore, $attributes->attribute);
+    }
+
+    #[Test]
+    public function strips_shiki_highlight_before_parsing_attributes(): void
+    {
+        $attributes = $this->parser->parse('php{1,4-6} ignore');
+
+        $this->assertSame(Attribute::Ignore, $attributes->attribute);
+    }
+
+    #[Test]
+    public function empty_string_returns_no_attributes(): void
+    {
+        $attributes = $this->parser->parse('');
+
+        $this->assertNull($attributes->attribute);
+        $this->assertNull($attributes->group);
+    }
+
+    #[Test]
+    public function throws_with_empty_message_returns_null_message(): void
+    {
+        $attributes = $this->parser->parse('php throws(RuntimeException, "")');
+
+        $this->assertSame(Attribute::Throws, $attributes->attribute);
+        $this->assertSame('RuntimeException', $attributes->throwsClass);
+        $this->assertNull($attributes->throwsMessage);
+    }
 }
