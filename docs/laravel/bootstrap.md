@@ -70,7 +70,7 @@ DB::statement('DROP TABLE users');
 
 DocTest can register additional service providers if needed:
 
-```php
+```php ignore
 // In your setup block
 $app->register(\App\Providers\CustomProvider::class);
 ```
