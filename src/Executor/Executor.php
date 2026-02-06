@@ -268,8 +268,27 @@ final readonly class Executor
                 $expectedJson = $result['expected'] ?? '';
                 $actual = $result['actual'] ?? '';
                 $capturedOutput[] = $actual;
+
                 $expectedDecoded = json_decode($expectedJson, true);
+                if (json_last_error() !== JSON_ERROR_NONE) {
+                    return new ExecutionResult(
+                        passed: false,
+                        codeBlock: $block,
+                        error: 'Expected JSON is invalid: ' . json_last_error_msg(),
+                        duration: $processResult->duration,
+                    );
+                }
+
                 $actualDecoded = json_decode($actual, true);
+                if (json_last_error() !== JSON_ERROR_NONE) {
+                    return new ExecutionResult(
+                        passed: false,
+                        codeBlock: $block,
+                        actualOutput: $actual,
+                        error: 'Actual JSON output is invalid: ' . json_last_error_msg(),
+                        duration: $processResult->duration,
+                    );
+                }
 
                 if ($expectedDecoded !== $actualDecoded) {
                     return new ExecutionResult(
