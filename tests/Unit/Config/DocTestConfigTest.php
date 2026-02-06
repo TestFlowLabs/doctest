@@ -1,224 +1,164 @@
 <?php
 
 declare(strict_types=1);
-
-namespace TestFlowLabs\DocTest\Tests\Unit\Config;
-
-use PHPUnit\Framework\TestCase;
-use PHPUnit\Framework\Attributes\Test;
 use TestFlowLabs\DocTest\Config\DocTestConfig;
 
-final class DocTestConfigTest extends TestCase
-{
-    #[Test]
-    public function uses_defaults_for_missing_keys(): void
-    {
-        $config = DocTestConfig::fromArray([]);
+test('uses defaults for missing keys', function (): void {
+    $config = DocTestConfig::fromArray([]);
 
-        $this->assertSame(['docs', 'README.md'], $config->paths);
-        $this->assertSame([], $config->exclude);
-        $this->assertSame(30, $config->timeout);
-        $this->assertSame('256M', $config->memoryLimit);
-        $this->assertFalse($config->stopOnFailure);
-        $this->assertSame(0, $config->verbosity);
-        $this->assertTrue($config->normalizeWhitespace);
-        $this->assertTrue($config->trimTrailing);
-    }
-
-    #[Test]
-    public function loads_from_array_with_all_keys(): void
-    {
-        $config = DocTestConfig::fromArray([
-            'paths'     => ['src'],
-            'exclude'   => ['docs/archive/*'],
-            'execution' => [
-                'timeout'         => 60,
-                'memory_limit'    => '512M',
-                'stop_on_failure' => true,
-            ],
-            'output' => [
-                'normalize_whitespace' => false,
-                'trim_trailing'        => false,
-            ],
-        ]);
-
-        $this->assertSame(['src'], $config->paths);
-        $this->assertSame(['docs/archive/*'], $config->exclude);
-        $this->assertSame(60, $config->timeout);
-        $this->assertSame('512M', $config->memoryLimit);
-        $this->assertTrue($config->stopOnFailure);
-        $this->assertFalse($config->normalizeWhitespace);
-        $this->assertFalse($config->trimTrailing);
-    }
-
-    #[Test]
-    public function loads_from_php_file(): void
-    {
-        $tmpFile = tempnam(sys_get_temp_dir(), 'doctest-config-');
-
-        try {
-            file_put_contents($tmpFile, "<?php\nreturn ['paths' => ['custom']];\n");
-
-            $config = DocTestConfig::load($tmpFile);
-
-            $this->assertSame(['custom'], $config->paths);
-        } finally {
-            @unlink($tmpFile);
-        }
-    }
-
-    #[Test]
-    public function returns_default_config_when_no_file_exists(): void
-    {
-        $config = DocTestConfig::load('/nonexistent/path/doctest.php');
-
-        $this->assertSame(['docs', 'README.md'], $config->paths);
-    }
-
-    #[Test]
-    public function config_merges_with_defaults(): void
-    {
-        $config = DocTestConfig::fromArray([
-            'execution' => ['timeout' => 120],
-        ]);
-
-        $this->assertSame(120, $config->timeout);
-        $this->assertSame('256M', $config->memoryLimit);
-        $this->assertFalse($config->stopOnFailure);
-    }
-
-    #[Test]
-    public function reporters_config_defaults(): void
-    {
-        $config = DocTestConfig::fromArray([]);
-
-        $this->assertTrue($config->reporterConsole);
-        $this->assertNull($config->reporterJunit);
-        $this->assertNull($config->reporterJson);
-    }
-
-    #[Test]
-    public function reporters_config_with_file_paths(): void
-    {
-        $config = DocTestConfig::fromArray([
-            'reporters' => [
-                'console' => true,
-                'junit'   => 'build/doctest.xml',
-                'json'    => 'build/doctest.json',
-            ],
-        ]);
-
-        $this->assertTrue($config->reporterConsole);
-        $this->assertSame('build/doctest.xml', $config->reporterJunit);
-        $this->assertSame('build/doctest.json', $config->reporterJson);
-    }
-
-    #[Test]
-    public function exclude_patterns_loaded(): void
-    {
-        $config = DocTestConfig::fromArray([
-            'exclude' => ['docs/archive/*', 'docs/**/*draft*.md'],
-        ]);
-
-        $this->assertSame(['docs/archive/*', 'docs/**/*draft*.md'], $config->exclude);
-    }
-
-    // --- Edge cases ---
-
-    #[Test]
-    public function wrong_type_timeout_falls_back_to_default(): void
-    {
-        $config = DocTestConfig::fromArray([
-            'execution' => ['timeout' => 'not_int'],
-        ]);
-
-        $this->assertSame(30, $config->timeout);
-    }
-
-    #[Test]
-    public function wrong_type_memory_limit_falls_back_to_default(): void
-    {
-        $config = DocTestConfig::fromArray([
-            'execution' => ['memory_limit' => 42],
-        ]);
-
-        $this->assertSame('256M', $config->memoryLimit);
-    }
-
-    #[Test]
-    public function load_returns_defaults_when_file_returns_non_array(): void
-    {
-        $tmpFile = tempnam(sys_get_temp_dir(), 'doctest-config-');
-
-        try {
-            file_put_contents($tmpFile, "<?php\nreturn 'not an array';\n");
-
-            $config = DocTestConfig::load($tmpFile);
-
-            $this->assertSame(['docs', 'README.md'], $config->paths);
-        } finally {
-            @unlink($tmpFile);
-        }
-    }
-
-    #[Test]
-    public function stop_on_failure_from_top_level_key(): void
-    {
-        $config = DocTestConfig::fromArray([
+    expect($config->paths)->toBe(['docs', 'README.md']);
+    expect($config->exclude)->toBe([]);
+    expect($config->timeout)->toBe(30);
+    expect($config->memoryLimit)->toBe('256M');
+    expect($config->stopOnFailure)->toBeFalse();
+    expect($config->verbosity)->toBe(0);
+    expect($config->normalizeWhitespace)->toBeTrue();
+    expect($config->trimTrailing)->toBeTrue();
+});
+test('loads from array with all keys', function (): void {
+    $config = DocTestConfig::fromArray([
+        'paths'     => ['src'],
+        'exclude'   => ['docs/archive/*'],
+        'execution' => [
+            'timeout'         => 60,
+            'memory_limit'    => '512M',
             'stop_on_failure' => true,
-        ]);
+        ],
+        'output' => [
+            'normalize_whitespace' => false,
+            'trim_trailing'        => false,
+        ],
+    ]);
 
-        $this->assertTrue($config->stopOnFailure);
+    expect($config->paths)->toBe(['src']);
+    expect($config->exclude)->toBe(['docs/archive/*']);
+    expect($config->timeout)->toBe(60);
+    expect($config->memoryLimit)->toBe('512M');
+    expect($config->stopOnFailure)->toBeTrue();
+    expect($config->normalizeWhitespace)->toBeFalse();
+    expect($config->trimTrailing)->toBeFalse();
+});
+test('loads from php file', function (): void {
+    $tmpFile = tempnam(sys_get_temp_dir(), 'doctest-config-');
+
+    try {
+        file_put_contents($tmpFile, "<?php\nreturn ['paths' => ['custom']];\n");
+
+        $config = DocTestConfig::load($tmpFile);
+
+        expect($config->paths)->toBe(['custom']);
+    } finally {
+        @unlink($tmpFile);
     }
+});
+test('returns default config when no file exists', function (): void {
+    $config = DocTestConfig::load('/nonexistent/path/doctest.php');
 
-    #[Test]
-    public function filter_and_dry_run_loaded(): void
-    {
-        $config = DocTestConfig::fromArray([
-            'filter'  => 'example.md',
-            'dry_run' => true,
-        ]);
+    expect($config->paths)->toBe(['docs', 'README.md']);
+});
+test('config merges with defaults', function (): void {
+    $config = DocTestConfig::fromArray([
+        'execution' => ['timeout' => 120],
+    ]);
 
-        $this->assertSame('example.md', $config->filter);
-        $this->assertTrue($config->dryRun);
+    expect($config->timeout)->toBe(120);
+    expect($config->memoryLimit)->toBe('256M');
+    expect($config->stopOnFailure)->toBeFalse();
+});
+test('reporters config defaults', function (): void {
+    $config = DocTestConfig::fromArray([]);
+
+    expect($config->reporterConsole)->toBeTrue();
+    expect($config->reporterJunit)->toBeNull();
+    expect($config->reporterJson)->toBeNull();
+});
+test('reporters config with file paths', function (): void {
+    $config = DocTestConfig::fromArray([
+        'reporters' => [
+            'console' => true,
+            'junit'   => 'build/doctest.xml',
+            'json'    => 'build/doctest.json',
+        ],
+    ]);
+
+    expect($config->reporterConsole)->toBeTrue();
+    expect($config->reporterJunit)->toBe('build/doctest.xml');
+    expect($config->reporterJson)->toBe('build/doctest.json');
+});
+test('exclude patterns loaded', function (): void {
+    $config = DocTestConfig::fromArray([
+        'exclude' => ['docs/archive/*', 'docs/**/*draft*.md'],
+    ]);
+
+    expect($config->exclude)->toBe(['docs/archive/*', 'docs/**/*draft*.md']);
+});
+test('wrong type timeout falls back to default', function (): void {
+    $config = DocTestConfig::fromArray([
+        'execution' => ['timeout' => 'not_int'],
+    ]);
+
+    expect($config->timeout)->toBe(30);
+});
+test('wrong type memory limit falls back to default', function (): void {
+    $config = DocTestConfig::fromArray([
+        'execution' => ['memory_limit' => 42],
+    ]);
+
+    expect($config->memoryLimit)->toBe('256M');
+});
+test('load returns defaults when file returns non array', function (): void {
+    $tmpFile = tempnam(sys_get_temp_dir(), 'doctest-config-');
+
+    try {
+        file_put_contents($tmpFile, "<?php\nreturn 'not an array';\n");
+
+        $config = DocTestConfig::load($tmpFile);
+
+        expect($config->paths)->toBe(['docs', 'README.md']);
+    } finally {
+        @unlink($tmpFile);
     }
+});
+test('stop on failure from top level key', function (): void {
+    $config = DocTestConfig::fromArray([
+        'stop_on_failure' => true,
+    ]);
 
-    #[Test]
-    public function non_array_execution_section_uses_defaults(): void
-    {
-        $config = DocTestConfig::fromArray([
-            'execution' => 'invalid',
-        ]);
+    expect($config->stopOnFailure)->toBeTrue();
+});
+test('filter and dry run loaded', function (): void {
+    $config = DocTestConfig::fromArray([
+        'filter'  => 'example.md',
+        'dry_run' => true,
+    ]);
 
-        $this->assertSame(30, $config->timeout);
-        $this->assertSame('256M', $config->memoryLimit);
-    }
+    expect($config->filter)->toBe('example.md');
+    expect($config->dryRun)->toBeTrue();
+});
+test('non array execution section uses defaults', function (): void {
+    $config = DocTestConfig::fromArray([
+        'execution' => 'invalid',
+    ]);
 
-    #[Test]
-    public function bootstrap_defaults_to_null(): void
-    {
-        $config = DocTestConfig::fromArray([]);
+    expect($config->timeout)->toBe(30);
+    expect($config->memoryLimit)->toBe('256M');
+});
+test('bootstrap defaults to null', function (): void {
+    $config = DocTestConfig::fromArray([]);
 
-        $this->assertNull($config->bootstrap);
-    }
+    expect($config->bootstrap)->toBeNull();
+});
+test('bootstrap loaded from array', function (): void {
+    $config = DocTestConfig::fromArray([
+        'bootstrap' => 'tests/bootstrap.php',
+    ]);
 
-    #[Test]
-    public function bootstrap_loaded_from_array(): void
-    {
-        $config = DocTestConfig::fromArray([
-            'bootstrap' => 'tests/bootstrap.php',
-        ]);
+    expect($config->bootstrap)->toBe('tests/bootstrap.php');
+});
+test('bootstrap non string falls back to null', function (): void {
+    $config = DocTestConfig::fromArray([
+        'bootstrap' => 42,
+    ]);
 
-        $this->assertSame('tests/bootstrap.php', $config->bootstrap);
-    }
-
-    #[Test]
-    public function bootstrap_non_string_falls_back_to_null(): void
-    {
-        $config = DocTestConfig::fromArray([
-            'bootstrap' => 42,
-        ]);
-
-        $this->assertNull($config->bootstrap);
-    }
-}
+    expect($config->bootstrap)->toBeNull();
+});

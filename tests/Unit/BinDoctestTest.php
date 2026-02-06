@@ -1,38 +1,17 @@
 <?php
 
 declare(strict_types=1);
-
-namespace TestFlowLabs\DocTest\Tests\Unit;
-
-use PHPUnit\Framework\TestCase;
-use PHPUnit\Framework\Attributes\Test;
-
-final class BinDoctestTest extends TestCase
-{
-    private string $binPath;
-
-    protected function setUp(): void
-    {
-        $this->binPath = __DIR__.'/../../bin/doctest';
-    }
-
-    #[Test]
-    public function bin_doctest_file_exists(): void
-    {
-        $this->assertFileExists($this->binPath);
-    }
-
-    #[Test]
-    public function bin_doctest_is_executable(): void
-    {
-        $this->assertTrue(is_executable($this->binPath));
-    }
-
-    #[Test]
-    public function bin_doctest_exits_with_zero(): void
-    {
-        $fixture = __DIR__.'/../Fixtures/basic.md';
-        exec(PHP_BINARY.' '.escapeshellarg($this->binPath).' '.escapeshellarg($fixture).' 2>&1', $output, $exitCode);
-        $this->assertSame(0, $exitCode);
-    }
-}
+beforeEach(function (): void {
+    $this->binPath = __DIR__.'/../../bin/doctest';
+});
+test('bin doctest file exists', function (): void {
+    expect($this->binPath)->toBeFile();
+});
+test('bin doctest is executable', function (): void {
+    expect(is_executable($this->binPath))->toBeTrue();
+});
+test('bin doctest exits with zero', function (): void {
+    $fixture = __DIR__.'/../Fixtures/basic.md';
+    exec(PHP_BINARY.' '.escapeshellarg($this->binPath).' '.escapeshellarg($fixture).' 2>&1', $output, $exitCode);
+    expect($exitCode)->toBe(0);
+});

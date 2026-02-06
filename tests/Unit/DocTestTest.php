@@ -1,136 +1,101 @@
 <?php
 
 declare(strict_types=1);
-
-namespace TestFlowLabs\DocTest\Tests\Unit;
-
-use PHPUnit\Framework\TestCase;
 use TestFlowLabs\DocTest\DocTest;
-use PHPUnit\Framework\Attributes\Test;
 use TestFlowLabs\DocTest\Config\DocTestConfig;
 use Symfony\Component\Console\Output\BufferedOutput;
 
-final class DocTestTest extends TestCase
-{
-    private BufferedOutput $output;
-    private string $fixturesDir;
+beforeEach(function (): void {
+    $this->output      = new BufferedOutput();
+    $this->fixturesDir = dirname(__DIR__).'/Fixtures';
 
-    protected function setUp(): void
-    {
-        $this->output      = new BufferedOutput();
-        $this->fixturesDir = dirname(__DIR__).'/Fixtures';
-    }
+    $this->makeDocTest = (fn (DocTestConfig $config): DocTest => new DocTest($config, $this->output));
+});
+test('run returns 0 when all blocks pass', function (): void {
+    $config = DocTestConfig::fromArray([
+        'paths' => [$this->fixturesDir.'/basic.md'],
+    ]);
 
-    private function makeDocTest(DocTestConfig $config): DocTest
-    {
-        return new DocTest($config, $this->output);
-    }
+    $docTest  = ($this->makeDocTest)($config);
+    $exitCode = $docTest->run();
 
-    #[Test]
-    public function run_returns_0_when_all_blocks_pass(): void
-    {
-        $config = DocTestConfig::fromArray([
-            'paths' => [$this->fixturesDir.'/basic.md'],
-        ]);
+    expect($exitCode)->toBe(0);
+});
+test('run returns 1 when any block fails', function (): void {
+    // Create a temp file with a failing assertion (HTML comment syntax)
+    $tempFile = sys_get_temp_dir().'/doctest_failing_'.uniqid().'.md';
+    file_put_contents($tempFile, "```php\necho \"wrong\";\n```\n<!-- doctest: right -->\n");
 
-        $docTest  = $this->makeDocTest($config);
-        $exitCode = $docTest->run();
+    $config = DocTestConfig::fromArray([
+        'paths' => [$tempFile],
+    ]);
 
-        $this->assertSame(0, $exitCode);
-    }
+    $docTest  = ($this->makeDocTest)($config);
+    $exitCode = $docTest->run();
 
-    #[Test]
-    public function run_returns_1_when_any_block_fails(): void
-    {
-        // Create a temp file with a failing assertion (HTML comment syntax)
-        $tempFile = sys_get_temp_dir().'/doctest_failing_'.uniqid().'.md';
-        file_put_contents($tempFile, "```php\necho \"wrong\";\n```\n<!-- doctest: right -->\n");
+    unlink($tempFile);
+    expect($exitCode)->toBe(1);
+});
+test('run returns 3 when no tests found', function (): void {
+    $config = DocTestConfig::fromArray([
+        'paths' => [$this->fixturesDir.'/no-php.md'],
+    ]);
 
-        $config = DocTestConfig::fromArray([
-            'paths' => [$tempFile],
-        ]);
+    $docTest  = ($this->makeDocTest)($config);
+    $exitCode = $docTest->run();
 
-        $docTest  = $this->makeDocTest($config);
-        $exitCode = $docTest->run();
+    expect($exitCode)->toBe(3);
+});
+test('respects dry run', function (): void {
+    $config = DocTestConfig::fromArray([
+        'paths'   => [$this->fixturesDir.'/basic.md'],
+        'dry_run' => true,
+    ]);
 
-        unlink($tempFile);
-        $this->assertSame(1, $exitCode);
-    }
+    $docTest  = ($this->makeDocTest)($config);
+    $exitCode = $docTest->run();
 
-    #[Test]
-    public function run_returns_3_when_no_tests_found(): void
-    {
-        $config = DocTestConfig::fromArray([
-            'paths' => [$this->fixturesDir.'/no-php.md'],
-        ]);
+    $output = $this->output->fetch();
 
-        $docTest  = $this->makeDocTest($config);
-        $exitCode = $docTest->run();
+    expect($exitCode)->toBe(0);
+    $this->assertStringContainsString('basic.md', $output);
+});
+test('respects stop on failure', function (): void {
+    // Create a file with a failing block followed by a passing block (HTML comment syntax)
+    $tempFile = sys_get_temp_dir().'/doctest_stop_'.uniqid().'.md';
+    file_put_contents($tempFile, "```php\necho \"wrong\";\n```\n<!-- doctest: right -->\n\n```php\necho \"ok\";\n```\n<!-- doctest: ok -->\n");
 
-        $this->assertSame(3, $exitCode);
-    }
+    $config = DocTestConfig::fromArray([
+        'paths'           => [$tempFile],
+        'stop_on_failure' => true,
+    ]);
 
-    #[Test]
-    public function respects_dry_run(): void
-    {
-        $config = DocTestConfig::fromArray([
-            'paths'   => [$this->fixturesDir.'/basic.md'],
-            'dry_run' => true,
-        ]);
+    $docTest  = ($this->makeDocTest)($config);
+    $exitCode = $docTest->run();
 
-        $docTest  = $this->makeDocTest($config);
-        $exitCode = $docTest->run();
+    unlink($tempFile);
+    expect($exitCode)->toBe(1);
+});
+test('file returns execution results', function (): void {
+    $config = DocTestConfig::fromArray([
+        'paths' => [$this->fixturesDir],
+    ]);
 
-        $output = $this->output->fetch();
+    $docTest = ($this->makeDocTest)($config);
+    $results = $docTest->testFile($this->fixturesDir.'/basic.md');
 
-        $this->assertSame(0, $exitCode);
-        $this->assertStringContainsString('basic.md', $output);
-    }
+    expect($results)->not->toBeEmpty();
+    expect($results)->toHaveCount(4);
+    // 4 PHP blocks in basic.md
+});
+test('all processes all discovered files', function (): void {
+    $config = DocTestConfig::fromArray([
+        'paths' => [$this->fixturesDir],
+    ]);
 
-    #[Test]
-    public function respects_stop_on_failure(): void
-    {
-        // Create a file with a failing block followed by a passing block (HTML comment syntax)
-        $tempFile = sys_get_temp_dir().'/doctest_stop_'.uniqid().'.md';
-        file_put_contents($tempFile, "```php\necho \"wrong\";\n```\n<!-- doctest: right -->\n\n```php\necho \"ok\";\n```\n<!-- doctest: ok -->\n");
+    $docTest = ($this->makeDocTest)($config);
+    $results = $docTest->testAll();
 
-        $config = DocTestConfig::fromArray([
-            'paths'           => [$tempFile],
-            'stop_on_failure' => true,
-        ]);
-
-        $docTest  = $this->makeDocTest($config);
-        $exitCode = $docTest->run();
-
-        unlink($tempFile);
-        $this->assertSame(1, $exitCode);
-    }
-
-    #[Test]
-    public function test_file_returns_execution_results(): void
-    {
-        $config = DocTestConfig::fromArray([
-            'paths' => [$this->fixturesDir],
-        ]);
-
-        $docTest = $this->makeDocTest($config);
-        $results = $docTest->testFile($this->fixturesDir.'/basic.md');
-
-        $this->assertNotEmpty($results);
-        $this->assertCount(4, $results); // 4 PHP blocks in basic.md
-    }
-
-    #[Test]
-    public function test_all_processes_all_discovered_files(): void
-    {
-        $config = DocTestConfig::fromArray([
-            'paths' => [$this->fixturesDir],
-        ]);
-
-        $docTest = $this->makeDocTest($config);
-        $results = $docTest->testAll();
-
-        // Should have results from multiple fixture files
-        $this->assertNotEmpty($results);
-    }
-}
+    // Should have results from multiple fixture files
+    expect($results)->not->toBeEmpty();
+});

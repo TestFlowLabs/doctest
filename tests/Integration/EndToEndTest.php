@@ -1,265 +1,199 @@
 <?php
 
 declare(strict_types=1);
-
-namespace TestFlowLabs\DocTest\Tests\Integration;
-
-use PHPUnit\Framework\TestCase;
 use TestFlowLabs\DocTest\DocTest;
-use PHPUnit\Framework\Attributes\Test;
 use TestFlowLabs\DocTest\Config\DocTestConfig;
 use Symfony\Component\Console\Output\BufferedOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 
-final class EndToEndTest extends TestCase
-{
-    private BufferedOutput $output;
-    private string $fixturesDir;
+beforeEach(function (): void {
+    $this->output      = new BufferedOutput();
+    $this->fixturesDir = dirname(__DIR__).'/Fixtures';
 
-    protected function setUp(): void
-    {
-        $this->output      = new BufferedOutput();
-        $this->fixturesDir = dirname(__DIR__).'/Fixtures';
-    }
-
-    private function runDocTest(DocTestConfig $config): int
-    {
+    $this->runDocTest = function (DocTestConfig $config): int {
         $docTest = new DocTest($config, $this->output);
 
         return $docTest->run();
-    }
+    };
 
-    private function getOutput(): string
-    {
-        return $this->output->fetch();
-    }
+    $this->getOutput = (fn (): string => $this->output->fetch());
+});
+test('runs simple output test and passes', function (): void {
+    $config = DocTestConfig::fromArray([
+        'paths' => [$this->fixturesDir.'/basic.md'],
+    ]);
 
-    #[Test]
-    public function runs_simple_output_test_and_passes(): void
-    {
+    expect(($this->runDocTest)($config))->toBe(0);
+});
+test('runs failing output test and reports failure', function (): void {
+    $config = DocTestConfig::fromArray([
+        'paths' => [$this->fixturesDir.'/failing-output.md'],
+    ]);
+
+    $exitCode = ($this->runDocTest)($config);
+    $output   = ($this->getOutput)();
+
+    expect($exitCode)->toBe(1);
+    $this->assertStringContainsString('✖', $output);
+});
+test('runs ignored block and skips it', function (): void {
+    $config = DocTestConfig::fromArray([
+        'paths' => [$this->fixturesDir.'/ignore-block.md'],
+    ]);
+
+    $exitCode = ($this->runDocTest)($config);
+    $output   = ($this->getOutput)();
+
+    expect($exitCode)->toBe(0);
+    $this->assertStringContainsString('⊘', $output);
+    $this->assertStringContainsString('✔', $output);
+});
+test('runs expect assertions', function (): void {
+    $config = DocTestConfig::fromArray([
+        'paths' => [$this->fixturesDir.'/expect.md'],
+    ]);
+
+    expect(($this->runDocTest)($config))->toBe(0);
+});
+test('runs multiple files', function (): void {
+    $config = DocTestConfig::fromArray([
+        'paths' => [
+            $this->fixturesDir.'/basic.md',
+            $this->fixturesDir.'/expect.md',
+        ],
+    ]);
+
+    $exitCode = ($this->runDocTest)($config);
+
+    expect($exitCode)->toBe(0);
+});
+test('respects dry run', function (): void {
+    $config = DocTestConfig::fromArray([
+        'paths'   => [$this->fixturesDir.'/basic.md'],
+        'dry_run' => true,
+    ]);
+
+    $exitCode = ($this->runDocTest)($config);
+    $output   = ($this->getOutput)();
+
+    expect($exitCode)->toBe(0);
+    $this->assertStringContainsString('⊘', $output);
+});
+test('respects stop on failure', function (): void {
+    $tempFile = sys_get_temp_dir().'/doctest_stop_e2e_'.uniqid().'.md';
+    file_put_contents($tempFile, "```php\necho \"wrong\";\n```\n<!-- doctest: right -->\n\n```php\necho \"ok\";\n```\n<!-- doctest: ok -->\n");
+
+    try {
         $config = DocTestConfig::fromArray([
-            'paths' => [$this->fixturesDir.'/basic.md'],
+            'paths'           => [$tempFile],
+            'stop_on_failure' => true,
         ]);
 
-        $this->assertSame(0, $this->runDocTest($config));
-    }
+        $exitCode = ($this->runDocTest)($config);
+        $output   = ($this->getOutput)();
 
-    #[Test]
-    public function runs_failing_output_test_and_reports_failure(): void
-    {
-        $config = DocTestConfig::fromArray([
-            'paths' => [$this->fixturesDir.'/failing-output.md'],
-        ]);
-
-        $exitCode = $this->runDocTest($config);
-        $output   = $this->getOutput();
-
-        $this->assertSame(1, $exitCode);
-        $this->assertStringContainsString('✖', $output);
-    }
-
-    #[Test]
-    public function runs_ignored_block_and_skips_it(): void
-    {
-        $config = DocTestConfig::fromArray([
-            'paths' => [$this->fixturesDir.'/ignore-block.md'],
-        ]);
-
-        $exitCode = $this->runDocTest($config);
-        $output   = $this->getOutput();
-
-        $this->assertSame(0, $exitCode);
-        $this->assertStringContainsString('⊘', $output);
-        $this->assertStringContainsString('✔', $output);
-    }
-
-    #[Test]
-    public function runs_expect_assertions(): void
-    {
-        $config = DocTestConfig::fromArray([
-            'paths' => [$this->fixturesDir.'/expect.md'],
-        ]);
-
-        $this->assertSame(0, $this->runDocTest($config));
-    }
-
-    #[Test]
-    public function runs_multiple_files(): void
-    {
-        $config = DocTestConfig::fromArray([
-            'paths' => [
-                $this->fixturesDir.'/basic.md',
-                $this->fixturesDir.'/expect.md',
-            ],
-        ]);
-
-        $exitCode = $this->runDocTest($config);
-
-        $this->assertSame(0, $exitCode);
-    }
-
-    #[Test]
-    public function respects_dry_run(): void
-    {
-        $config = DocTestConfig::fromArray([
-            'paths'   => [$this->fixturesDir.'/basic.md'],
-            'dry_run' => true,
-        ]);
-
-        $exitCode = $this->runDocTest($config);
-        $output   = $this->getOutput();
-
-        $this->assertSame(0, $exitCode);
-        $this->assertStringContainsString('⊘', $output);
-    }
-
-    #[Test]
-    public function respects_stop_on_failure(): void
-    {
-        $tempFile = sys_get_temp_dir().'/doctest_stop_e2e_'.uniqid().'.md';
-        file_put_contents($tempFile, "```php\necho \"wrong\";\n```\n<!-- doctest: right -->\n\n```php\necho \"ok\";\n```\n<!-- doctest: ok -->\n");
-
-        try {
-            $config = DocTestConfig::fromArray([
-                'paths'           => [$tempFile],
-                'stop_on_failure' => true,
-            ]);
-
-            $exitCode = $this->runDocTest($config);
-            $output   = $this->getOutput();
-
-            $this->assertSame(1, $exitCode);
-            // Should only have one FAIL, not a second PASS (stopped early)
-            $this->assertSame(1, substr_count($output, '✖'));
-            $this->assertStringNotContainsString('✔', $output);
-        } finally {
-            if (file_exists($tempFile)) {
-                unlink($tempFile);
-            }
+        expect($exitCode)->toBe(1);
+        // Should only have one FAIL, not a second PASS (stopped early)
+        expect(substr_count((string) $output, '✖'))->toBe(1);
+        $this->assertStringNotContainsString('✔', $output);
+    } finally {
+        if (file_exists($tempFile)) {
+            unlink($tempFile);
         }
     }
+});
+test('exit code 0 when all pass', function (): void {
+    $config = DocTestConfig::fromArray([
+        'paths' => [$this->fixturesDir.'/basic.md'],
+    ]);
 
-    #[Test]
-    public function exit_code_0_when_all_pass(): void
-    {
-        $config = DocTestConfig::fromArray([
-            'paths' => [$this->fixturesDir.'/basic.md'],
-        ]);
+    expect(($this->runDocTest)($config))->toBe(0);
+});
+test('exit code 1 when any fail', function (): void {
+    $config = DocTestConfig::fromArray([
+        'paths' => [$this->fixturesDir.'/failing-output.md'],
+    ]);
 
-        $this->assertSame(0, $this->runDocTest($config));
-    }
+    expect(($this->runDocTest)($config))->toBe(1);
+});
+test('exit code 3 when no tests found', function (): void {
+    $config = DocTestConfig::fromArray([
+        'paths' => [$this->fixturesDir.'/no-php.md'],
+    ]);
 
-    #[Test]
-    public function exit_code_1_when_any_fail(): void
-    {
-        $config = DocTestConfig::fromArray([
-            'paths' => [$this->fixturesDir.'/failing-output.md'],
-        ]);
+    expect(($this->runDocTest)($config))->toBe(3);
+});
+test('handles empty markdown file', function (): void {
+    $config = DocTestConfig::fromArray([
+        'paths' => [$this->fixturesDir.'/empty.md'],
+    ]);
 
-        $this->assertSame(1, $this->runDocTest($config));
-    }
+    expect(($this->runDocTest)($config))->toBe(3);
+});
+test('handles markdown with no php blocks', function (): void {
+    $config = DocTestConfig::fromArray([
+        'paths' => [$this->fixturesDir.'/no-php.md'],
+    ]);
 
-    #[Test]
-    public function exit_code_3_when_no_tests_found(): void
-    {
-        $config = DocTestConfig::fromArray([
-            'paths' => [$this->fixturesDir.'/no-php.md'],
-        ]);
+    expect(($this->runDocTest)($config))->toBe(3);
+});
+test('runs result comment assertions', function (): void {
+    $config = DocTestConfig::fromArray([
+        'paths' => [$this->fixturesDir.'/result-comment.md'],
+    ]);
 
-        $this->assertSame(3, $this->runDocTest($config));
-    }
+    $exitCode = ($this->runDocTest)($config);
 
-    #[Test]
-    public function handles_empty_markdown_file(): void
-    {
-        $config = DocTestConfig::fromArray([
-            'paths' => [$this->fixturesDir.'/empty.md'],
-        ]);
+    expect($exitCode)->toBe(0);
+});
+test('verbose shows assertion details for result comment', function (): void {
+    $this->output->setVerbosity(OutputInterface::VERBOSITY_VERBOSE);
+    $config = DocTestConfig::fromArray([
+        'paths' => [$this->fixturesDir.'/result-comment.md'],
+    ]);
 
-        $this->assertSame(3, $this->runDocTest($config));
-    }
+    $exitCode = ($this->runDocTest)($config);
+    $output   = ($this->getOutput)();
 
-    #[Test]
-    public function handles_markdown_with_no_php_blocks(): void
-    {
-        $config = DocTestConfig::fromArray([
-            'paths' => [$this->fixturesDir.'/no-php.md'],
-        ]);
+    expect($exitCode)->toBe(0);
+    $this->assertStringContainsString('=> 42', $output);
+    $this->assertStringContainsString('$x = 42', $output);
+});
+test('verbose shows assertion details for output', function (): void {
+    $this->output->setVerbosity(OutputInterface::VERBOSITY_VERBOSE);
+    $config = DocTestConfig::fromArray([
+        'paths' => [$this->fixturesDir.'/basic.md'],
+    ]);
 
-        $this->assertSame(3, $this->runDocTest($config));
-    }
+    $exitCode = ($this->runDocTest)($config);
+    $output   = ($this->getOutput)();
 
-    #[Test]
-    public function runs_result_comment_assertions(): void
-    {
-        $config = DocTestConfig::fromArray([
-            'paths' => [$this->fixturesDir.'/result-comment.md'],
-        ]);
+    expect($exitCode)->toBe(0);
+    $this->assertStringContainsString('output:', $output);
+});
+test('normal verbosity hides assertion details', function (): void {
+    $this->output->setVerbosity(OutputInterface::VERBOSITY_NORMAL);
+    $config = DocTestConfig::fromArray([
+        'paths' => [$this->fixturesDir.'/result-comment.md'],
+    ]);
 
-        $exitCode = $this->runDocTest($config);
+    $exitCode = ($this->runDocTest)($config);
+    $output   = ($this->getOutput)();
 
-        $this->assertSame(0, $exitCode);
-    }
+    expect($exitCode)->toBe(0);
 
-    #[Test]
-    public function verbose_shows_assertion_details_for_result_comment(): void
-    {
-        $this->output->setVerbosity(OutputInterface::VERBOSITY_VERBOSE);
-        $config = DocTestConfig::fromArray([
-            'paths' => [$this->fixturesDir.'/result-comment.md'],
-        ]);
+    // Verbose detail lines are indented with 7 spaces + icon
+    $this->assertStringNotContainsString('       ✔', $output);
+});
+test('verbose shows assertion details on failure', function (): void {
+    $this->output->setVerbosity(OutputInterface::VERBOSITY_VERBOSE);
+    $config = DocTestConfig::fromArray([
+        'paths' => [$this->fixturesDir.'/failing-output.md'],
+    ]);
 
-        $exitCode = $this->runDocTest($config);
-        $output   = $this->getOutput();
+    $exitCode = ($this->runDocTest)($config);
+    $output   = ($this->getOutput)();
 
-        $this->assertSame(0, $exitCode);
-        $this->assertStringContainsString('=> 42', $output);
-        $this->assertStringContainsString('$x = 42', $output);
-    }
-
-    #[Test]
-    public function verbose_shows_assertion_details_for_output(): void
-    {
-        $this->output->setVerbosity(OutputInterface::VERBOSITY_VERBOSE);
-        $config = DocTestConfig::fromArray([
-            'paths' => [$this->fixturesDir.'/basic.md'],
-        ]);
-
-        $exitCode = $this->runDocTest($config);
-        $output   = $this->getOutput();
-
-        $this->assertSame(0, $exitCode);
-        $this->assertStringContainsString('output:', $output);
-    }
-
-    #[Test]
-    public function normal_verbosity_hides_assertion_details(): void
-    {
-        $this->output->setVerbosity(OutputInterface::VERBOSITY_NORMAL);
-        $config = DocTestConfig::fromArray([
-            'paths' => [$this->fixturesDir.'/result-comment.md'],
-        ]);
-
-        $exitCode = $this->runDocTest($config);
-        $output   = $this->getOutput();
-
-        $this->assertSame(0, $exitCode);
-        // Verbose detail lines are indented with 7 spaces + icon
-        $this->assertStringNotContainsString('       ✔', $output);
-    }
-
-    #[Test]
-    public function verbose_shows_assertion_details_on_failure(): void
-    {
-        $this->output->setVerbosity(OutputInterface::VERBOSITY_VERBOSE);
-        $config = DocTestConfig::fromArray([
-            'paths' => [$this->fixturesDir.'/failing-output.md'],
-        ]);
-
-        $exitCode = $this->runDocTest($config);
-        $output   = $this->getOutput();
-
-        $this->assertSame(1, $exitCode);
-        $this->assertStringContainsString('✖', $output);
-    }
-}
+    expect($exitCode)->toBe(1);
+    $this->assertStringContainsString('✖', $output);
+});

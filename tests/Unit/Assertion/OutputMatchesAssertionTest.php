@@ -1,28 +1,15 @@
 <?php
 
 declare(strict_types=1);
-
-namespace TestFlowLabs\DocTest\Tests\Unit\Assertion;
-
-use PHPUnit\Framework\TestCase;
-use PHPUnit\Framework\Attributes\Test;
 use TestFlowLabs\DocTest\Assertion\OutputMatchesAssertion;
 
-final class OutputMatchesAssertionTest extends TestCase
-{
-    #[Test]
-    public function type_returns_output_matches(): void
-    {
-        $assertion = new OutputMatchesAssertion('/\d+/', 1);
+test('type returns output matches', function (): void {
+    $assertion = new OutputMatchesAssertion('/\d+/', 1);
 
-        $this->assertSame('output_matches', $assertion->type());
-    }
+    expect($assertion->type())->toBe('output_matches');
+});
+test('has pattern', function (): void {
+    $assertion = new OutputMatchesAssertion('/Order #\d{4}/', 5);
 
-    #[Test]
-    public function has_pattern(): void
-    {
-        $assertion = new OutputMatchesAssertion('/Order #\d{4}/', 5);
-
-        $this->assertSame('/Order #\d{4}/', $assertion->pattern);
-    }
-}
+    expect($assertion->pattern)->toBe('/Order #\d{4}/');
+});

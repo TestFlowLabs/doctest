@@ -1,282 +1,206 @@
 <?php
 
 declare(strict_types=1);
-
-namespace TestFlowLabs\DocTest\Tests\Unit\Parser;
-
-use PHPUnit\Framework\TestCase;
-use PHPUnit\Framework\Attributes\Test;
 use TestFlowLabs\DocTest\CodeBlock\Attribute;
 use TestFlowLabs\DocTest\Parser\MarkdownParser;
 use TestFlowLabs\DocTest\Assertion\OutputAssertion;
 use TestFlowLabs\DocTest\Parser\CodeBlockExtractor;
 
-final class CodeBlockExtractorTest extends TestCase
-{
-    private CodeBlockExtractor $extractor;
-    private MarkdownParser $markdownParser;
-
-    protected function setUp(): void
-    {
-        $this->extractor      = new CodeBlockExtractor();
-        $this->markdownParser = new MarkdownParser();
-    }
-
-    #[Test]
-    public function extracts_php_blocks_from_markdown(): void
-    {
-        $markdown = file_get_contents(__DIR__.'/../../Fixtures/basic.md');
-        $document = $this->markdownParser->parse($markdown);
-
-        $blocks = $this->extractor->extract($document, 'basic.md');
-
-        $this->assertCount(4, $blocks);
-    }
-
-    #[Test]
-    public function skips_non_php_blocks(): void
-    {
-        $markdown = file_get_contents(__DIR__.'/../../Fixtures/mixed-languages.md');
-        $document = $this->markdownParser->parse($markdown);
-
-        $blocks = $this->extractor->extract($document, 'mixed-languages.md');
-
-        $this->assertCount(2, $blocks);
-        $this->assertStringContainsString('PHP works', $blocks[0]->rawCode);
-        $this->assertStringContainsString('second PHP', $blocks[1]->rawCode);
-    }
-
-    #[Test]
-    public function skips_blocks_without_language_identifier(): void
-    {
-        $markdown = "# Test\n\n```\nplain text\n```\n";
-        $document = $this->markdownParser->parse($markdown);
-
-        $blocks = $this->extractor->extract($document, 'test.md');
-
-        $this->assertCount(0, $blocks);
-    }
-
-    #[Test]
-    public function handles_case_insensitive_php(): void
-    {
-        $markdown = "```PHP\necho \"upper\";\n```\n";
-        $document = $this->markdownParser->parse($markdown);
-
-        $blocks = $this->extractor->extract($document, 'test.md');
-
-        $this->assertCount(1, $blocks);
-    }
-
-    #[Test]
-    public function strips_opening_php_tag_from_code(): void
-    {
-        $markdown = "```php\n<?php\necho \"hello\";\n```\n";
-        $document = $this->markdownParser->parse($markdown);
-
-        $blocks = $this->extractor->extract($document, 'test.md');
-
-        $this->assertCount(1, $blocks);
-        $this->assertStringNotContainsString('<?php', $blocks[0]->executableCode);
-        $this->assertStringContainsString('echo "hello"', $blocks[0]->executableCode);
-    }
-
-    #[Test]
-    public function preserves_line_numbers_from_source(): void
-    {
-        $markdown = file_get_contents(__DIR__.'/../../Fixtures/basic.md');
-        $document = $this->markdownParser->parse($markdown);
-
-        $blocks = $this->extractor->extract($document, 'basic.md');
-
-        // First code block starts at line 5 in basic.md
-        $this->assertSame(5, $blocks[0]->startLine);
-    }
-
-    #[Test]
-    public function passes_parsed_attributes_to_code_block(): void
-    {
-        $markdown = file_get_contents(__DIR__.'/../../Fixtures/attributes.md');
-        $document = $this->markdownParser->parse($markdown);
-
-        $blocks      = $this->extractor->extract($document, 'attributes.md');
-        $ignoreBlock = array_find($blocks, fn ($block) => $block->attributes->isIgnore());
-
-        $this->assertNotNull($ignoreBlock);
-        $this->assertSame(Attribute::Ignore, $ignoreBlock->attributes->attribute);
-    }
-
-    #[Test]
-    public function passes_html_comment_assertions_to_code_block(): void
-    {
-        $markdown = "```php\necho \"test\";\n```\n<!-- doctest: test -->\n";
-        $document = $this->markdownParser->parse($markdown);
-
-        $blocks = $this->extractor->extract($document, 'test.md');
-
-        $this->assertCount(1, $blocks);
-        $this->assertCount(1, $blocks[0]->assertions);
-        $this->assertInstanceOf(OutputAssertion::class, $blocks[0]->assertions[0]);
-    }
-
-    #[Test]
-    public function inline_output_comment_is_not_parsed_as_assertion(): void
-    {
-        $markdown = "```php\necho \"test\";\n// Output: test\n```\n";
-        $document = $this->markdownParser->parse($markdown);
-
-        $blocks = $this->extractor->extract($document, 'test.md');
-
-        $this->assertCount(1, $blocks);
-        $this->assertCount(0, $blocks[0]->assertions);
-        $this->assertStringContainsString('// Output: test', $blocks[0]->executableCode);
-    }
-
-    #[Test]
-    public function delegates_shiki_filtering_before_parsing(): void
-    {
-        $markdown = file_get_contents(__DIR__.'/../../Fixtures/shiki.md');
-        $document = $this->markdownParser->parse($markdown);
-
-        $blocks = $this->extractor->extract($document, 'shiki.md');
-
-        // The shiki block with [!code --] should have line removed
-        $diffBlock = $blocks[1]; // Second block has diff markers
-        $this->assertStringNotContainsString('[!code --]', $diffBlock->executableCode);
-        $this->assertStringNotContainsString('[!code ++]', $diffBlock->executableCode);
-    }
-
-    #[Test]
-    public function returns_empty_array_for_no_php_blocks(): void
-    {
-        $markdown = file_get_contents(__DIR__.'/../../Fixtures/no-php.md');
-        $document = $this->markdownParser->parse($markdown);
-
-        $blocks = $this->extractor->extract($document, 'no-php.md');
-
-        $this->assertCount(0, $blocks);
-    }
-
-    #[Test]
-    public function sets_file_path_on_code_blocks(): void
-    {
-        $markdown = "```php\necho 1;\n```\n";
-        $document = $this->markdownParser->parse($markdown);
-
-        $blocks = $this->extractor->extract($document, 'docs/example.md');
-
-        $this->assertSame('docs/example.md', $blocks[0]->file);
-    }
-
-    #[Test]
-    public function parses_html_comment_output_assertion(): void
-    {
-        $markdown = "```php\necho 'hello';\n```\n<!-- doctest: hello -->\n";
-        $document = $this->markdownParser->parse($markdown);
-
-        $blocks = $this->extractor->extract($document, 'test.md');
-
-        $this->assertCount(1, $blocks);
-        $this->assertCount(1, $blocks[0]->assertions);
-        $this->assertInstanceOf(OutputAssertion::class, $blocks[0]->assertions[0]);
-        $this->assertSame('hello', $blocks[0]->assertions[0]->expected);
-    }
-
-    #[Test]
-    public function html_comment_assertion_keeps_code_clean(): void
-    {
-        $markdown = "```php\necho 'hello';\n```\n<!-- doctest: hello -->\n";
-        $document = $this->markdownParser->parse($markdown);
-
-        $blocks = $this->extractor->extract($document, 'test.md');
-
-        $this->assertStringNotContainsString('doctest', $blocks[0]->executableCode);
-        $this->assertStringNotContainsString('Output', $blocks[0]->executableCode);
-        $this->assertSame("echo 'hello';\n", $blocks[0]->executableCode);
-    }
-
-    #[Test]
-    public function parses_multi_line_html_comment_output_assertion(): void
-    {
-        $markdown = "```php\necho \"Hello\\nWorld\";\n```\n<!-- doctest:\nHello\nWorld\n-->\n";
-        $document = $this->markdownParser->parse($markdown);
-
-        $blocks = $this->extractor->extract($document, 'test.md');
-
-        $this->assertCount(1, $blocks);
-        $this->assertCount(1, $blocks[0]->assertions);
-        $this->assertInstanceOf(OutputAssertion::class, $blocks[0]->assertions[0]);
-        $this->assertSame("Hello\nWorld", $blocks[0]->assertions[0]->expected);
-    }
-
-    #[Test]
-    public function ignores_html_comments_not_following_php_blocks(): void
-    {
-        $markdown = "<!-- doctest: orphan -->\n\n```php\necho 1;\n```\n";
-        $document = $this->markdownParser->parse($markdown);
-
-        $blocks = $this->extractor->extract($document, 'test.md');
-
-        $this->assertCount(1, $blocks);
-        $this->assertCount(0, $blocks[0]->assertions);
-    }
-
-    // --- Edge cases ---
-
-    #[Test]
-    public function collects_multiple_consecutive_html_comment_assertions(): void
-    {
-        $markdown = "```php\necho \"hello world\";\n```\n<!-- doctest: hello world -->\n<!-- doctest-contains: hello -->\n";
-        $document = $this->markdownParser->parse($markdown);
-
-        $blocks = $this->extractor->extract($document, 'test.md');
-
-        $this->assertCount(1, $blocks);
-        $this->assertCount(2, $blocks[0]->assertions);
-    }
-
-    #[Test]
-    public function extracts_php_block_with_shiki_highlight_info_string(): void
-    {
-        $markdown = "```php{1,3-5}\necho \"hi\";\n```\n";
-        $document = $this->markdownParser->parse($markdown);
-
-        $blocks = $this->extractor->extract($document, 'test.md');
-
-        $this->assertCount(1, $blocks);
-    }
-
-    #[Test]
-    public function returns_empty_for_empty_markdown(): void
-    {
-        $document = $this->markdownParser->parse('');
-
-        $blocks = $this->extractor->extract($document, 'test.md');
-
-        $this->assertCount(0, $blocks);
-    }
-
-    #[Test]
-    public function strips_php_tag_without_trailing_newline(): void
-    {
-        $markdown = "```php\n<?php echo \"hello\";\n```\n";
-        $document = $this->markdownParser->parse($markdown);
-
-        $blocks = $this->extractor->extract($document, 'test.md');
-
-        $this->assertCount(1, $blocks);
-        $this->assertStringNotContainsString('<?php', $blocks[0]->executableCode);
-        $this->assertStringContainsString('echo "hello"', $blocks[0]->executableCode);
-    }
-
-    #[Test]
-    public function preserves_raw_code_with_php_tag(): void
-    {
-        $markdown = "```php\n<?php\necho \"hello\";\n```\n";
-        $document = $this->markdownParser->parse($markdown);
-
-        $blocks = $this->extractor->extract($document, 'test.md');
-
-        $this->assertStringContainsString('<?php', $blocks[0]->rawCode);
-    }
-}
+beforeEach(function (): void {
+    $this->extractor      = new CodeBlockExtractor();
+    $this->markdownParser = new MarkdownParser();
+});
+test('extracts php blocks from markdown', function (): void {
+    $markdown = file_get_contents(__DIR__.'/../../Fixtures/basic.md');
+    $document = $this->markdownParser->parse($markdown);
+
+    $blocks = $this->extractor->extract($document, 'basic.md');
+
+    expect($blocks)->toHaveCount(4);
+});
+test('skips non php blocks', function (): void {
+    $markdown = file_get_contents(__DIR__.'/../../Fixtures/mixed-languages.md');
+    $document = $this->markdownParser->parse($markdown);
+
+    $blocks = $this->extractor->extract($document, 'mixed-languages.md');
+
+    expect($blocks)->toHaveCount(2);
+    $this->assertStringContainsString('PHP works', $blocks[0]->rawCode);
+    $this->assertStringContainsString('second PHP', $blocks[1]->rawCode);
+});
+test('skips blocks without language identifier', function (): void {
+    $markdown = "# Test\n\n```\nplain text\n```\n";
+    $document = $this->markdownParser->parse($markdown);
+
+    $blocks = $this->extractor->extract($document, 'test.md');
+
+    expect($blocks)->toHaveCount(0);
+});
+test('handles case insensitive php', function (): void {
+    $markdown = "```PHP\necho \"upper\";\n```\n";
+    $document = $this->markdownParser->parse($markdown);
+
+    $blocks = $this->extractor->extract($document, 'test.md');
+
+    expect($blocks)->toHaveCount(1);
+});
+test('strips opening php tag from code', function (): void {
+    $markdown = "```php\n<?php\necho \"hello\";\n```\n";
+    $document = $this->markdownParser->parse($markdown);
+
+    $blocks = $this->extractor->extract($document, 'test.md');
+
+    expect($blocks)->toHaveCount(1);
+    $this->assertStringNotContainsString('<?php', $blocks[0]->executableCode);
+    $this->assertStringContainsString('echo "hello"', $blocks[0]->executableCode);
+});
+test('preserves line numbers from source', function (): void {
+    $markdown = file_get_contents(__DIR__.'/../../Fixtures/basic.md');
+    $document = $this->markdownParser->parse($markdown);
+
+    $blocks = $this->extractor->extract($document, 'basic.md');
+
+    // First code block starts at line 5 in basic.md
+    expect($blocks[0]->startLine)->toBe(5);
+});
+test('passes parsed attributes to code block', function (): void {
+    $markdown = file_get_contents(__DIR__.'/../../Fixtures/attributes.md');
+    $document = $this->markdownParser->parse($markdown);
+
+    $blocks      = $this->extractor->extract($document, 'attributes.md');
+    $ignoreBlock = array_find($blocks, fn ($block) => $block->attributes->isIgnore());
+
+    expect($ignoreBlock)->not->toBeNull();
+    expect($ignoreBlock->attributes->attribute)->toBe(Attribute::Ignore);
+});
+test('passes html comment assertions to code block', function (): void {
+    $markdown = "```php\necho \"test\";\n```\n<!-- doctest: test -->\n";
+    $document = $this->markdownParser->parse($markdown);
+
+    $blocks = $this->extractor->extract($document, 'test.md');
+
+    expect($blocks)->toHaveCount(1);
+    expect($blocks[0]->assertions)->toHaveCount(1);
+    expect($blocks[0]->assertions[0])->toBeInstanceOf(OutputAssertion::class);
+});
+test('inline output comment is not parsed as assertion', function (): void {
+    $markdown = "```php\necho \"test\";\n// Output: test\n```\n";
+    $document = $this->markdownParser->parse($markdown);
+
+    $blocks = $this->extractor->extract($document, 'test.md');
+
+    expect($blocks)->toHaveCount(1);
+    expect($blocks[0]->assertions)->toHaveCount(0);
+    $this->assertStringContainsString('// Output: test', $blocks[0]->executableCode);
+});
+test('delegates shiki filtering before parsing', function (): void {
+    $markdown = file_get_contents(__DIR__.'/../../Fixtures/shiki.md');
+    $document = $this->markdownParser->parse($markdown);
+
+    $blocks = $this->extractor->extract($document, 'shiki.md');
+
+    // The shiki block with [!code --] should have line removed
+    $diffBlock = $blocks[1];
+    // Second block has diff markers
+    $this->assertStringNotContainsString('[!code --]', $diffBlock->executableCode);
+    $this->assertStringNotContainsString('[!code ++]', $diffBlock->executableCode);
+});
+test('returns empty array for no php blocks', function (): void {
+    $markdown = file_get_contents(__DIR__.'/../../Fixtures/no-php.md');
+    $document = $this->markdownParser->parse($markdown);
+
+    $blocks = $this->extractor->extract($document, 'no-php.md');
+
+    expect($blocks)->toHaveCount(0);
+});
+test('sets file path on code blocks', function (): void {
+    $markdown = "```php\necho 1;\n```\n";
+    $document = $this->markdownParser->parse($markdown);
+
+    $blocks = $this->extractor->extract($document, 'docs/example.md');
+
+    expect($blocks[0]->file)->toBe('docs/example.md');
+});
+test('parses html comment output assertion', function (): void {
+    $markdown = "```php\necho 'hello';\n```\n<!-- doctest: hello -->\n";
+    $document = $this->markdownParser->parse($markdown);
+
+    $blocks = $this->extractor->extract($document, 'test.md');
+
+    expect($blocks)->toHaveCount(1);
+    expect($blocks[0]->assertions)->toHaveCount(1);
+    expect($blocks[0]->assertions[0])->toBeInstanceOf(OutputAssertion::class);
+    expect($blocks[0]->assertions[0]->expected)->toBe('hello');
+});
+test('html comment assertion keeps code clean', function (): void {
+    $markdown = "```php\necho 'hello';\n```\n<!-- doctest: hello -->\n";
+    $document = $this->markdownParser->parse($markdown);
+
+    $blocks = $this->extractor->extract($document, 'test.md');
+
+    $this->assertStringNotContainsString('doctest', $blocks[0]->executableCode);
+    $this->assertStringNotContainsString('Output', $blocks[0]->executableCode);
+    expect($blocks[0]->executableCode)->toBe("echo 'hello';\n");
+});
+test('parses multi line html comment output assertion', function (): void {
+    $markdown = "```php\necho \"Hello\\nWorld\";\n```\n<!-- doctest:\nHello\nWorld\n-->\n";
+    $document = $this->markdownParser->parse($markdown);
+
+    $blocks = $this->extractor->extract($document, 'test.md');
+
+    expect($blocks)->toHaveCount(1);
+    expect($blocks[0]->assertions)->toHaveCount(1);
+    expect($blocks[0]->assertions[0])->toBeInstanceOf(OutputAssertion::class);
+    expect($blocks[0]->assertions[0]->expected)->toBe("Hello\nWorld");
+});
+test('ignores html comments not following php blocks', function (): void {
+    $markdown = "<!-- doctest: orphan -->\n\n```php\necho 1;\n```\n";
+    $document = $this->markdownParser->parse($markdown);
+
+    $blocks = $this->extractor->extract($document, 'test.md');
+
+    expect($blocks)->toHaveCount(1);
+    expect($blocks[0]->assertions)->toHaveCount(0);
+});
+test('collects multiple consecutive html comment assertions', function (): void {
+    $markdown = "```php\necho \"hello world\";\n```\n<!-- doctest: hello world -->\n<!-- doctest-contains: hello -->\n";
+    $document = $this->markdownParser->parse($markdown);
+
+    $blocks = $this->extractor->extract($document, 'test.md');
+
+    expect($blocks)->toHaveCount(1);
+    expect($blocks[0]->assertions)->toHaveCount(2);
+});
+test('extracts php block with shiki highlight info string', function (): void {
+    $markdown = "```php{1,3-5}\necho \"hi\";\n```\n";
+    $document = $this->markdownParser->parse($markdown);
+
+    $blocks = $this->extractor->extract($document, 'test.md');
+
+    expect($blocks)->toHaveCount(1);
+});
+test('returns empty for empty markdown', function (): void {
+    $document = $this->markdownParser->parse('');
+
+    $blocks = $this->extractor->extract($document, 'test.md');
+
+    expect($blocks)->toHaveCount(0);
+});
+test('strips php tag without trailing newline', function (): void {
+    $markdown = "```php\n<?php echo \"hello\";\n```\n";
+    $document = $this->markdownParser->parse($markdown);
+
+    $blocks = $this->extractor->extract($document, 'test.md');
+
+    expect($blocks)->toHaveCount(1);
+    $this->assertStringNotContainsString('<?php', $blocks[0]->executableCode);
+    $this->assertStringContainsString('echo "hello"', $blocks[0]->executableCode);
+});
+test('preserves raw code with php tag', function (): void {
+    $markdown = "```php\n<?php\necho \"hello\";\n```\n";
+    $document = $this->markdownParser->parse($markdown);
+
+    $blocks = $this->extractor->extract($document, 'test.md');
+
+    $this->assertStringContainsString('<?php', $blocks[0]->rawCode);
+});

@@ -1,11 +1,6 @@
 <?php
 
 declare(strict_types=1);
-
-namespace TestFlowLabs\DocTest\Tests\Unit\Reporter;
-
-use PHPUnit\Framework\TestCase;
-use PHPUnit\Framework\Attributes\Test;
 use TestFlowLabs\DocTest\CodeBlock\CodeBlock;
 use TestFlowLabs\DocTest\CodeBlock\Attributes;
 use TestFlowLabs\DocTest\Executor\ExecutionResult;
@@ -13,19 +8,11 @@ use TestFlowLabs\DocTest\Reporter\ConsoleReporter;
 use TestFlowLabs\DocTest\Assertion\AssertionParser;
 use Symfony\Component\Console\Output\BufferedOutput;
 
-final class IdeErrorFormatTest extends TestCase
-{
-    private AssertionParser $parser;
-    private BufferedOutput $output;
+beforeEach(function (): void {
+    $this->parser = new AssertionParser();
+    $this->output = new BufferedOutput();
 
-    protected function setUp(): void
-    {
-        $this->parser = new AssertionParser();
-        $this->output = new BufferedOutput();
-    }
-
-    private function makeResult(string $file, int $line, ?string $error = null): ExecutionResult
-    {
+    $this->makeResult = function (string $file, int $line, ?string $error = null): ExecutionResult {
         $parsed = $this->parser->parse('echo "test";');
 
         return new ExecutionResult(
@@ -40,58 +27,49 @@ final class IdeErrorFormatTest extends TestCase
             ),
             error: $error ?? 'Output mismatch',
         );
-    }
+    };
+});
+test('failure output includes line number', function (): void {
+    $reporter = new ConsoleReporter($this->output);
 
-    #[Test]
-    public function failure_output_includes_line_number(): void
-    {
-        $reporter = new ConsoleReporter($this->output);
+    $result = ($this->makeResult)('docs/api.md', 42);
+    $reporter->reportResult($result);
 
-        $result = $this->makeResult('docs/api.md', 42);
-        $reporter->reportResult($result);
+    $content = $this->output->fetch();
 
-        $content = $this->output->fetch();
+    $this->assertStringContainsString(':42', $content);
+    $this->assertStringContainsString('✖', $content);
+});
+test('failure includes error message', function (): void {
+    $reporter = new ConsoleReporter($this->output);
 
-        $this->assertStringContainsString(':42', $content);
-        $this->assertStringContainsString('✖', $content);
-    }
+    $result = ($this->makeResult)('test.md', 10, 'Expected "hello" but got "world"');
+    $reporter->reportResult($result);
 
-    #[Test]
-    public function failure_includes_error_message(): void
-    {
-        $reporter = new ConsoleReporter($this->output);
+    $content = $this->output->fetch();
 
-        $result = $this->makeResult('test.md', 10, 'Expected "hello" but got "world"');
-        $reporter->reportResult($result);
+    $this->assertStringContainsString(':10', $content);
+    $this->assertStringContainsString('Expected "hello" but got "world"', $content);
+});
+test('passing result shows file and line', function (): void {
+    $reporter = new ConsoleReporter($this->output);
+    $parsed   = $this->parser->parse('echo "ok";');
 
-        $content = $this->output->fetch();
+    $result = new ExecutionResult(
+        passed: true,
+        codeBlock: new CodeBlock(
+            file: 'readme.md',
+            startLine: 5,
+            rawCode: 'echo "ok";',
+            executableCode: $parsed->executableCode,
+            attributes: new Attributes(),
+            assertions: [],
+        ),
+    );
 
-        $this->assertStringContainsString(':10', $content);
-        $this->assertStringContainsString('Expected "hello" but got "world"', $content);
-    }
+    $reporter->reportResult($result);
 
-    #[Test]
-    public function passing_result_shows_file_and_line(): void
-    {
-        $reporter = new ConsoleReporter($this->output);
-        $parsed   = $this->parser->parse('echo "ok";');
+    $content = $this->output->fetch();
 
-        $result = new ExecutionResult(
-            passed: true,
-            codeBlock: new CodeBlock(
-                file: 'readme.md',
-                startLine: 5,
-                rawCode: 'echo "ok";',
-                executableCode: $parsed->executableCode,
-                attributes: new Attributes(),
-                assertions: [],
-            ),
-        );
-
-        $reporter->reportResult($result);
-
-        $content = $this->output->fetch();
-
-        $this->assertStringContainsString(':5', $content);
-    }
-}
+    $this->assertStringContainsString(':5', $content);
+});

@@ -1,11 +1,6 @@
 <?php
 
 declare(strict_types=1);
-
-namespace TestFlowLabs\DocTest\Tests\Unit\Reporter;
-
-use PHPUnit\Framework\TestCase;
-use PHPUnit\Framework\Attributes\Test;
 use TestFlowLabs\DocTest\CodeBlock\CodeBlock;
 use TestFlowLabs\DocTest\CodeBlock\Attributes;
 use TestFlowLabs\DocTest\Executor\ExecutionResult;
@@ -14,22 +9,12 @@ use Symfony\Component\Console\Output\BufferedOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 use TestFlowLabs\DocTest\Assertion\AssertionResultDetail;
 
-final class ConsoleReporterTest extends TestCase
-{
-    private BufferedOutput $output;
+beforeEach(function (): void {
+    $this->output = new BufferedOutput();
 
-    protected function setUp(): void
-    {
-        $this->output = new BufferedOutput();
-    }
+    $this->getOutput = (fn (): string => $this->output->fetch());
 
-    private function getOutput(): string
-    {
-        return $this->output->fetch();
-    }
-
-    private function makeResult(bool $passed, bool $skipped = false, ?string $error = null, ?string $diff = null): ExecutionResult
-    {
+    $this->makeResult = function (bool $passed, bool $skipped = false, ?string $error = null, ?string $diff = null): ExecutionResult {
         $block = new CodeBlock(
             file: 'docs/test.md',
             startLine: 1,
@@ -48,315 +33,267 @@ final class ConsoleReporterTest extends TestCase
             error: $error,
             skipped: $skipped,
         );
-    }
+    };
+});
+test('pass result shows checkmark symbol', function (): void {
+    $reporter = new ConsoleReporter($this->output);
+    $reporter->reportResult(($this->makeResult)(passed: true));
 
-    #[Test]
-    public function pass_result_shows_checkmark_symbol(): void
-    {
-        $reporter = new ConsoleReporter($this->output);
-        $reporter->reportResult($this->makeResult(passed: true));
+    $output = ($this->getOutput)();
+    $this->assertStringContainsString('✔', $output);
+    $this->assertStringNotContainsString('[PASS]', $output);
+});
+test('fail result shows cross symbol', function (): void {
+    $reporter = new ConsoleReporter($this->output);
+    $reporter->reportResult(($this->makeResult)(passed: false, error: 'Something failed'));
 
-        $output = $this->getOutput();
-        $this->assertStringContainsString('✔', $output);
-        $this->assertStringNotContainsString('[PASS]', $output);
-    }
+    $output = ($this->getOutput)();
+    $this->assertStringContainsString('✖', $output);
+    $this->assertStringNotContainsString('[FAIL]', $output);
+    $this->assertStringContainsString('Something failed', $output);
+});
+test('skip result shows skip symbol', function (): void {
+    $reporter = new ConsoleReporter($this->output);
+    $reporter->reportResult(($this->makeResult)(passed: true, skipped: true));
 
-    #[Test]
-    public function fail_result_shows_cross_symbol(): void
-    {
-        $reporter = new ConsoleReporter($this->output);
-        $reporter->reportResult($this->makeResult(passed: false, error: 'Something failed'));
+    $output = ($this->getOutput)();
+    $this->assertStringContainsString('⊘', $output);
+    $this->assertStringNotContainsString('[SKIP]', $output);
+});
+test('reports file header', function (): void {
+    $reporter = new ConsoleReporter($this->output);
+    $reporter->reportFile('docs/example.md');
 
-        $output = $this->getOutput();
-        $this->assertStringContainsString('✖', $output);
-        $this->assertStringNotContainsString('[FAIL]', $output);
-        $this->assertStringContainsString('Something failed', $output);
-    }
+    $this->assertStringContainsString('docs/example.md', ($this->getOutput)());
+});
+test('reports summary statistics', function (): void {
+    $reporter = new ConsoleReporter($this->output);
+    $results  = [
+        ($this->makeResult)(passed: true),
+        ($this->makeResult)(passed: true),
+        ($this->makeResult)(passed: false, error: 'fail'),
+        ($this->makeResult)(passed: true, skipped: true),
+    ];
+    $reporter->reportSummary($results, 1.5);
 
-    #[Test]
-    public function skip_result_shows_skip_symbol(): void
-    {
-        $reporter = new ConsoleReporter($this->output);
-        $reporter->reportResult($this->makeResult(passed: true, skipped: true));
+    $output = ($this->getOutput)();
+    $this->assertStringContainsString('4', $output);
+    $this->assertStringContainsString('2', $output);
+    $this->assertStringContainsString('1', $output);
+});
+test('uses symfony formatting tags', function (): void {
+    $this->output->setDecorated(true);
+    $reporter = new ConsoleReporter($this->output);
+    $reporter->reportResult(($this->makeResult)(passed: true));
 
-        $output = $this->getOutput();
-        $this->assertStringContainsString('⊘', $output);
-        $this->assertStringNotContainsString('[SKIP]', $output);
-    }
+    $output = ($this->getOutput)();
+    $this->assertStringContainsString('✔', $output);
+});
+test('shows duration at normal verbosity', function (): void {
+    $this->output->setVerbosity(OutputInterface::VERBOSITY_NORMAL);
+    $reporter = new ConsoleReporter($this->output);
+    $reporter->reportResult(($this->makeResult)(passed: true));
 
-    #[Test]
-    public function reports_file_header(): void
-    {
-        $reporter = new ConsoleReporter($this->output);
-        $reporter->reportFile('docs/example.md');
+    $output = ($this->getOutput)();
+    expect($output)->toMatch('/\d+\.\d+s/');
+});
+test('shows source at very verbose', function (): void {
+    $this->output->setVerbosity(OutputInterface::VERBOSITY_VERY_VERBOSE);
+    $reporter = new ConsoleReporter($this->output);
+    $reporter->reportResult(($this->makeResult)(passed: false, error: 'fail'));
 
-        $this->assertStringContainsString('docs/example.md', $this->getOutput());
-    }
+    $output = ($this->getOutput)();
+    $this->assertStringContainsString('Source:', $output);
+    $this->assertStringContainsString('echo "test"', $output);
+});
+test('pass result shows first code line', function (): void {
+    $reporter = new ConsoleReporter($this->output);
+    $block    = new CodeBlock(
+        file: 'docs/test.md',
+        startLine: 42,
+        rawCode: "\$name = 'World';\necho \"Hello, {\$name}!\";",
+        executableCode: 'echo "test";',
+        attributes: new Attributes(),
+        assertions: [],
+    );
+    $result = new ExecutionResult(passed: true, codeBlock: $block);
+    $reporter->reportResult($result);
 
-    #[Test]
-    public function reports_summary_statistics(): void
-    {
-        $reporter = new ConsoleReporter($this->output);
-        $results  = [
-            $this->makeResult(passed: true),
-            $this->makeResult(passed: true),
-            $this->makeResult(passed: false, error: 'fail'),
-            $this->makeResult(passed: true, skipped: true),
-        ];
-        $reporter->reportSummary($results, 1.5);
+    $output = ($this->getOutput)();
+    $this->assertStringContainsString('$name = \'World\';', $output);
+    $this->assertStringContainsString(':42', $output);
+    $this->assertStringNotContainsString('Line 42', $output);
+});
+test('skip result shows first code line', function (): void {
+    $reporter = new ConsoleReporter($this->output);
+    $block    = new CodeBlock(
+        file: 'docs/test.md',
+        startLine: 10,
+        rawCode: "// This is skipped\necho 'skip';",
+        executableCode: '',
+        attributes: new Attributes(),
+        assertions: [],
+    );
+    $result = new ExecutionResult(passed: true, codeBlock: $block, skipped: true);
+    $reporter->reportResult($result);
 
-        $output = $this->getOutput();
-        $this->assertStringContainsString('4', $output);
-        $this->assertStringContainsString('2', $output);
-        $this->assertStringContainsString('1', $output);
-    }
+    $output = ($this->getOutput)();
+    $this->assertStringContainsString('// This is skipped', $output);
+    $this->assertStringContainsString(':10', $output);
+    $this->assertStringNotContainsString('Line 10', $output);
+});
+test('long first line is truncated', function (): void {
+    $reporter = new ConsoleReporter($this->output);
+    $longLine = str_repeat('x', 80);
+    $block    = new CodeBlock(
+        file: 'docs/test.md',
+        startLine: 1,
+        rawCode: $longLine,
+        executableCode: 'echo "test";',
+        attributes: new Attributes(),
+        assertions: [],
+    );
+    $result = new ExecutionResult(passed: true, codeBlock: $block);
+    $reporter->reportResult($result);
 
-    #[Test]
-    public function uses_symfony_formatting_tags(): void
-    {
-        $this->output->setDecorated(true);
-        $reporter = new ConsoleReporter($this->output);
-        $reporter->reportResult($this->makeResult(passed: true));
+    $output = ($this->getOutput)();
+    $this->assertStringContainsString('...', $output);
+    expect(strlen((string) $output))->toBeLessThan(strlen($longLine));
+});
+test('verbose shows assertion details for output', function (): void {
+    $this->output->setVerbosity(OutputInterface::VERBOSITY_VERBOSE);
+    $reporter = new ConsoleReporter($this->output);
 
-        $output = $this->getOutput();
-        $this->assertStringContainsString('✔', $output);
-    }
+    $block = new CodeBlock(
+        file: 'test.md',
+        startLine: 1,
+        rawCode: 'echo "Hello";',
+        executableCode: 'echo "Hello";',
+        attributes: new Attributes(),
+        assertions: [],
+    );
 
-    #[Test]
-    public function shows_duration_at_normal_verbosity(): void
-    {
-        $this->output->setVerbosity(OutputInterface::VERBOSITY_NORMAL);
-        $reporter = new ConsoleReporter($this->output);
-        $reporter->reportResult($this->makeResult(passed: true));
+    $result = new ExecutionResult(
+        passed: true,
+        codeBlock: $block,
+        assertionDetails: [
+            new AssertionResultDetail(type: 'output', passed: true, expected: 'Hello', actual: 'Hello', line: 2),
+        ],
+    );
 
-        $output = $this->getOutput();
-        $this->assertMatchesRegularExpression('/\d+\.\d+s/', $output);
-    }
+    $reporter->reportResult($result);
+    $output = ($this->getOutput)();
 
-    #[Test]
-    public function shows_source_at_very_verbose(): void
-    {
-        $this->output->setVerbosity(OutputInterface::VERBOSITY_VERY_VERBOSE);
-        $reporter = new ConsoleReporter($this->output);
-        $reporter->reportResult($this->makeResult(passed: false, error: 'fail'));
+    $this->assertStringContainsString('✔', $output);
+    $this->assertStringContainsString('output', $output);
+    $this->assertStringContainsString('Hello', $output);
+});
+test('verbose shows assertion details for result comment', function (): void {
+    $this->output->setVerbosity(OutputInterface::VERBOSITY_VERBOSE);
+    $reporter = new ConsoleReporter($this->output);
 
-        $output = $this->getOutput();
-        $this->assertStringContainsString('Source:', $output);
-        $this->assertStringContainsString('echo "test"', $output);
-    }
+    $block = new CodeBlock(
+        file: 'test.md',
+        startLine: 1,
+        rawCode: '$x = 42; // => 42',
+        executableCode: '$x = 42;',
+        attributes: new Attributes(),
+        assertions: [],
+    );
 
-    #[Test]
-    public function pass_result_shows_first_code_line(): void
-    {
-        $reporter = new ConsoleReporter($this->output);
-        $block    = new CodeBlock(
-            file: 'docs/test.md',
-            startLine: 42,
-            rawCode: "\$name = 'World';\necho \"Hello, {\$name}!\";",
-            executableCode: 'echo "test";',
-            attributes: new Attributes(),
-            assertions: [],
-        );
-        $result = new ExecutionResult(passed: true, codeBlock: $block);
-        $reporter->reportResult($result);
+    $result = new ExecutionResult(
+        passed: true,
+        codeBlock: $block,
+        assertionDetails: [
+            new AssertionResultDetail(type: 'result_comment', passed: true, expected: '42', actual: '42', line: 1, expression: '$x = 42'),
+        ],
+    );
 
-        $output = $this->getOutput();
-        $this->assertStringContainsString('$name = \'World\';', $output);
-        $this->assertStringContainsString(':42', $output);
-        $this->assertStringNotContainsString('Line 42', $output);
-    }
+    $reporter->reportResult($result);
+    $output = ($this->getOutput)();
 
-    #[Test]
-    public function skip_result_shows_first_code_line(): void
-    {
-        $reporter = new ConsoleReporter($this->output);
-        $block    = new CodeBlock(
-            file: 'docs/test.md',
-            startLine: 10,
-            rawCode: "// This is skipped\necho 'skip';",
-            executableCode: '',
-            attributes: new Attributes(),
-            assertions: [],
-        );
-        $result = new ExecutionResult(passed: true, codeBlock: $block, skipped: true);
-        $reporter->reportResult($result);
+    $this->assertStringContainsString('$x = 42', $output);
+    $this->assertStringContainsString('=> 42', $output);
+});
+test('verbose shows assertion details for expect', function (): void {
+    $this->output->setVerbosity(OutputInterface::VERBOSITY_VERBOSE);
+    $reporter = new ConsoleReporter($this->output);
 
-        $output = $this->getOutput();
-        $this->assertStringContainsString('// This is skipped', $output);
-        $this->assertStringContainsString(':10', $output);
-        $this->assertStringNotContainsString('Line 10', $output);
-    }
+    $block = new CodeBlock(
+        file: 'test.md',
+        startLine: 1,
+        rawCode: "\$x = 42;\n// Expect: \$x === 42",
+        executableCode: '$x = 42;',
+        attributes: new Attributes(),
+        assertions: [],
+    );
 
-    #[Test]
-    public function long_first_line_is_truncated(): void
-    {
-        $reporter = new ConsoleReporter($this->output);
-        $longLine = str_repeat('x', 80);
-        $block    = new CodeBlock(
-            file: 'docs/test.md',
-            startLine: 1,
-            rawCode: $longLine,
-            executableCode: 'echo "test";',
-            attributes: new Attributes(),
-            assertions: [],
-        );
-        $result = new ExecutionResult(passed: true, codeBlock: $block);
-        $reporter->reportResult($result);
+    $result = new ExecutionResult(
+        passed: true,
+        codeBlock: $block,
+        assertionDetails: [
+            new AssertionResultDetail(type: 'expect', passed: true, expected: '$x === 42', actual: 'true', line: 2, expression: '$x === 42'),
+        ],
+    );
 
-        $output = $this->getOutput();
-        $this->assertStringContainsString('...', $output);
-        $this->assertLessThan(strlen($longLine), strlen($output));
-    }
+    $reporter->reportResult($result);
+    $output = ($this->getOutput)();
 
-    #[Test]
-    public function verbose_shows_assertion_details_for_output(): void
-    {
-        $this->output->setVerbosity(OutputInterface::VERBOSITY_VERBOSE);
-        $reporter = new ConsoleReporter($this->output);
+    $this->assertStringContainsString('$x === 42', $output);
+});
+test('normal verbosity does not show assertion details', function (): void {
+    $this->output->setVerbosity(OutputInterface::VERBOSITY_NORMAL);
+    $reporter = new ConsoleReporter($this->output);
 
-        $block = new CodeBlock(
-            file: 'test.md',
-            startLine: 1,
-            rawCode: 'echo "Hello";',
-            executableCode: 'echo "Hello";',
-            attributes: new Attributes(),
-            assertions: [],
-        );
+    $block = new CodeBlock(
+        file: 'test.md',
+        startLine: 1,
+        rawCode: '$x = 42; // => 42',
+        executableCode: '$x = 42;',
+        attributes: new Attributes(),
+        assertions: [],
+    );
 
-        $result = new ExecutionResult(
-            passed: true,
-            codeBlock: $block,
-            assertionDetails: [
-                new AssertionResultDetail(type: 'output', passed: true, expected: 'Hello', actual: 'Hello', line: 2),
-            ],
-        );
+    $result = new ExecutionResult(
+        passed: true,
+        codeBlock: $block,
+        assertionDetails: [
+            new AssertionResultDetail(type: 'result_comment', passed: true, expected: '42', actual: '42', line: 1, expression: '$x = 42'),
+        ],
+    );
 
-        $reporter->reportResult($result);
-        $output = $this->getOutput();
+    $reporter->reportResult($result);
+    $output = ($this->getOutput)();
 
-        $this->assertStringContainsString('✔', $output);
-        $this->assertStringContainsString('output', $output);
-        $this->assertStringContainsString('Hello', $output);
-    }
+    // Detail lines are indented with extra spaces — check for the verbose format
+    $this->assertStringNotContainsString('       ✔', $output);
+});
+test('verbose shows failed assertion detail', function (): void {
+    $this->output->setVerbosity(OutputInterface::VERBOSITY_VERBOSE);
+    $reporter = new ConsoleReporter($this->output);
 
-    #[Test]
-    public function verbose_shows_assertion_details_for_result_comment(): void
-    {
-        $this->output->setVerbosity(OutputInterface::VERBOSITY_VERBOSE);
-        $reporter = new ConsoleReporter($this->output);
+    $block = new CodeBlock(
+        file: 'test.md',
+        startLine: 1,
+        rawCode: '$x = 42; // => 99',
+        executableCode: '$x = 42;',
+        attributes: new Attributes(),
+        assertions: [],
+    );
 
-        $block = new CodeBlock(
-            file: 'test.md',
-            startLine: 1,
-            rawCode: '$x = 42; // => 42',
-            executableCode: '$x = 42;',
-            attributes: new Attributes(),
-            assertions: [],
-        );
+    $result = new ExecutionResult(
+        passed: false,
+        codeBlock: $block,
+        error: 'result_comment assertion failed: expected 99 but got 42',
+        assertionDetails: [
+            new AssertionResultDetail(type: 'result_comment', passed: false, expected: '99', actual: '42', line: 1, expression: '$x = 42'),
+        ],
+    );
 
-        $result = new ExecutionResult(
-            passed: true,
-            codeBlock: $block,
-            assertionDetails: [
-                new AssertionResultDetail(type: 'result_comment', passed: true, expected: '42', actual: '42', line: 1, expression: '$x = 42'),
-            ],
-        );
+    $reporter->reportResult($result);
+    $output = ($this->getOutput)();
 
-        $reporter->reportResult($result);
-        $output = $this->getOutput();
-
-        $this->assertStringContainsString('$x = 42', $output);
-        $this->assertStringContainsString('=> 42', $output);
-    }
-
-    #[Test]
-    public function verbose_shows_assertion_details_for_expect(): void
-    {
-        $this->output->setVerbosity(OutputInterface::VERBOSITY_VERBOSE);
-        $reporter = new ConsoleReporter($this->output);
-
-        $block = new CodeBlock(
-            file: 'test.md',
-            startLine: 1,
-            rawCode: "\$x = 42;\n// Expect: \$x === 42",
-            executableCode: '$x = 42;',
-            attributes: new Attributes(),
-            assertions: [],
-        );
-
-        $result = new ExecutionResult(
-            passed: true,
-            codeBlock: $block,
-            assertionDetails: [
-                new AssertionResultDetail(type: 'expect', passed: true, expected: '$x === 42', actual: 'true', line: 2, expression: '$x === 42'),
-            ],
-        );
-
-        $reporter->reportResult($result);
-        $output = $this->getOutput();
-
-        $this->assertStringContainsString('$x === 42', $output);
-    }
-
-    #[Test]
-    public function normal_verbosity_does_not_show_assertion_details(): void
-    {
-        $this->output->setVerbosity(OutputInterface::VERBOSITY_NORMAL);
-        $reporter = new ConsoleReporter($this->output);
-
-        $block = new CodeBlock(
-            file: 'test.md',
-            startLine: 1,
-            rawCode: '$x = 42; // => 42',
-            executableCode: '$x = 42;',
-            attributes: new Attributes(),
-            assertions: [],
-        );
-
-        $result = new ExecutionResult(
-            passed: true,
-            codeBlock: $block,
-            assertionDetails: [
-                new AssertionResultDetail(type: 'result_comment', passed: true, expected: '42', actual: '42', line: 1, expression: '$x = 42'),
-            ],
-        );
-
-        $reporter->reportResult($result);
-        $output = $this->getOutput();
-
-        // Detail lines are indented with extra spaces — check for the verbose format
-        $this->assertStringNotContainsString('       ✔', $output);
-    }
-
-    #[Test]
-    public function verbose_shows_failed_assertion_detail(): void
-    {
-        $this->output->setVerbosity(OutputInterface::VERBOSITY_VERBOSE);
-        $reporter = new ConsoleReporter($this->output);
-
-        $block = new CodeBlock(
-            file: 'test.md',
-            startLine: 1,
-            rawCode: '$x = 42; // => 99',
-            executableCode: '$x = 42;',
-            attributes: new Attributes(),
-            assertions: [],
-        );
-
-        $result = new ExecutionResult(
-            passed: false,
-            codeBlock: $block,
-            error: 'result_comment assertion failed: expected 99 but got 42',
-            assertionDetails: [
-                new AssertionResultDetail(type: 'result_comment', passed: false, expected: '99', actual: '42', line: 1, expression: '$x = 42'),
-            ],
-        );
-
-        $reporter->reportResult($result);
-        $output = $this->getOutput();
-
-        $this->assertStringContainsString('✖', $output);
-        $this->assertStringContainsString('99', $output);
-        $this->assertStringContainsString('42', $output);
-    }
-}
+    $this->assertStringContainsString('✖', $output);
+    $this->assertStringContainsString('99', $output);
+    $this->assertStringContainsString('42', $output);
+});

@@ -1,28 +1,15 @@
 <?php
 
 declare(strict_types=1);
-
-namespace TestFlowLabs\DocTest\Tests\Unit\Assertion;
-
-use PHPUnit\Framework\TestCase;
-use PHPUnit\Framework\Attributes\Test;
 use TestFlowLabs\DocTest\Assertion\OutputJsonAssertion;
 
-final class OutputJsonAssertionTest extends TestCase
-{
-    #[Test]
-    public function type_returns_output_json(): void
-    {
-        $assertion = new OutputJsonAssertion('{"key": "value"}', 1);
+test('type returns output json', function (): void {
+    $assertion = new OutputJsonAssertion('{"key": "value"}', 1);
 
-        $this->assertSame('output_json', $assertion->type());
-    }
+    expect($assertion->type())->toBe('output_json');
+});
+test('has expected json', function (): void {
+    $assertion = new OutputJsonAssertion('{"status": "ok"}', 5);
 
-    #[Test]
-    public function has_expected_json(): void
-    {
-        $assertion = new OutputJsonAssertion('{"status": "ok"}', 5);
-
-        $this->assertSame('{"status": "ok"}', $assertion->expectedJson);
-    }
-}
+    expect($assertion->expectedJson)->toBe('{"status": "ok"}');
+});

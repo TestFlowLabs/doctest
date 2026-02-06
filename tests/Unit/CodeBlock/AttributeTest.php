@@ -1,30 +1,17 @@
 <?php
 
 declare(strict_types=1);
-
-namespace TestFlowLabs\DocTest\Tests\Unit\CodeBlock;
-
-use PHPUnit\Framework\TestCase;
-use PHPUnit\Framework\Attributes\Test;
 use TestFlowLabs\DocTest\CodeBlock\Attribute;
 
-final class AttributeTest extends TestCase
-{
-    #[Test]
-    public function from_valid_string_returns_case(): void
-    {
-        $this->assertSame(Attribute::Ignore, Attribute::from('ignore'));
-        $this->assertSame(Attribute::NoRun, Attribute::from('no_run'));
-        $this->assertSame(Attribute::Throws, Attribute::from('throws'));
-        $this->assertSame(Attribute::ParseError, Attribute::from('parse_error'));
-        $this->assertSame(Attribute::Setup, Attribute::from('setup'));
-        $this->assertSame(Attribute::Teardown, Attribute::from('teardown'));
-    }
-
-    #[Test]
-    public function try_from_invalid_string_returns_null(): void
-    {
-        $this->assertNull(Attribute::tryFrom('invalid'));
-        $this->assertNull(Attribute::tryFrom(''));
-    }
-}
+test('from valid string returns case', function (): void {
+    expect(Attribute::from('ignore'))->toBe(Attribute::Ignore);
+    expect(Attribute::from('no_run'))->toBe(Attribute::NoRun);
+    expect(Attribute::from('throws'))->toBe(Attribute::Throws);
+    expect(Attribute::from('parse_error'))->toBe(Attribute::ParseError);
+    expect(Attribute::from('setup'))->toBe(Attribute::Setup);
+    expect(Attribute::from('teardown'))->toBe(Attribute::Teardown);
+});
+test('try from invalid string returns null', function (): void {
+    expect(Attribute::tryFrom('invalid'))->toBeNull();
+    expect(Attribute::tryFrom(''))->toBeNull();
+});

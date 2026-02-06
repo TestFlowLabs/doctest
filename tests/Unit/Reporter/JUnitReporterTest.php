@@ -1,30 +1,17 @@
 <?php
 
 declare(strict_types=1);
-
-namespace TestFlowLabs\DocTest\Tests\Unit\Reporter;
-
-use PHPUnit\Framework\TestCase;
-use PHPUnit\Framework\Attributes\Test;
 use TestFlowLabs\DocTest\CodeBlock\CodeBlock;
 use TestFlowLabs\DocTest\CodeBlock\Attributes;
 use TestFlowLabs\DocTest\Reporter\JUnitReporter;
 use TestFlowLabs\DocTest\Executor\ExecutionResult;
 use TestFlowLabs\DocTest\Assertion\AssertionParser;
 
-final class JUnitReporterTest extends TestCase
-{
-    private JUnitReporter $reporter;
-    private AssertionParser $parser;
+beforeEach(function (): void {
+    $this->reporter = new JUnitReporter();
+    $this->parser   = new AssertionParser();
 
-    protected function setUp(): void
-    {
-        $this->reporter = new JUnitReporter();
-        $this->parser   = new AssertionParser();
-    }
-
-    private function makeBlock(string $code, string $file = 'test.md', int $line = 1): CodeBlock
-    {
+    $this->makeBlock = function (string $code, string $file = 'test.md', int $line = 1): CodeBlock {
         $parsed = $this->parser->parse($code);
 
         return new CodeBlock(
@@ -35,197 +22,159 @@ final class JUnitReporterTest extends TestCase
             attributes: new Attributes(),
             assertions: [],
         );
+    };
+
+    $this->makeResult = (fn (bool $passed, string $file = 'test.md', int $line = 1, ?string $error = null, bool $skipped = false, float $duration = 0.1): ExecutionResult => new ExecutionResult(
+        passed: $passed,
+        codeBlock: ($this->makeBlock)('echo "test";', $file, $line),
+        error: $error,
+        duration: $duration,
+        skipped: $skipped,
+    ));
+});
+test('generates valid xml structure', function (): void {
+    $results = [
+        ($this->makeResult)(passed: true),
+    ];
+
+    $xml = $this->reporter->generate($results);
+
+    $doc = new \DOMDocument();
+    expect($doc->loadXML($xml))->toBeTrue('Generated XML is not valid');
+    expect($doc->documentElement->tagName)->toBe('testsuites');
+});
+test('suites element has correct counts', function (): void {
+    $results = [
+        ($this->makeResult)(passed: true),
+        ($this->makeResult)(passed: false, error: 'fail'),
+        ($this->makeResult)(passed: true, skipped: true),
+    ];
+
+    $xml = $this->reporter->generate($results);
+    $doc = new \DOMDocument();
+    $doc->loadXML($xml);
+
+    $testsuites = $doc->documentElement;
+    expect($testsuites->getAttribute('tests'))->toBe('3');
+    expect($testsuites->getAttribute('failures'))->toBe('1');
+});
+test('creates testsuite per file', function (): void {
+    $results = [
+        ($this->makeResult)(passed: true, file: 'docs/api.md'),
+        ($this->makeResult)(passed: true, file: 'docs/guide.md'),
+    ];
+
+    $xml = $this->reporter->generate($results);
+    $doc = new \DOMDocument();
+    $doc->loadXML($xml);
+
+    $suites = $doc->getElementsByTagName('testsuite');
+    expect($suites->length)->toBe(2);
+
+    $names = [];
+    for ($i = 0; $i < $suites->length; $i++) {
+        $names[] = $suites->item($i)->getAttribute('name');
     }
+    expect($names)->toContain('docs/api.md');
+    expect($names)->toContain('docs/guide.md');
+});
+test('creates testcase per block', function (): void {
+    $results = [
+        ($this->makeResult)(passed: true, file: 'test.md', line: 5),
+        ($this->makeResult)(passed: true, file: 'test.md', line: 15),
+    ];
 
-    private function makeResult(bool $passed, string $file = 'test.md', int $line = 1, ?string $error = null, bool $skipped = false, float $duration = 0.1): ExecutionResult
-    {
-        return new ExecutionResult(
-            passed: $passed,
-            codeBlock: $this->makeBlock('echo "test";', $file, $line),
-            error: $error,
-            duration: $duration,
-            skipped: $skipped,
-        );
-    }
+    $xml = $this->reporter->generate($results);
+    $doc = new \DOMDocument();
+    $doc->loadXML($xml);
 
-    #[Test]
-    public function generates_valid_xml_structure(): void
-    {
-        $results = [
-            $this->makeResult(passed: true),
-        ];
+    $testcases = $doc->getElementsByTagName('testcase');
+    expect($testcases->length)->toBe(2);
+});
+test('failure element includes error message', function (): void {
+    $results = [
+        ($this->makeResult)(passed: false, error: 'Expected "hello" but got "world"'),
+    ];
 
-        $xml = $this->reporter->generate($results);
+    $xml = $this->reporter->generate($results);
+    $doc = new \DOMDocument();
+    $doc->loadXML($xml);
 
-        $doc = new \DOMDocument();
-        $this->assertTrue($doc->loadXML($xml), 'Generated XML is not valid');
-        $this->assertSame('testsuites', $doc->documentElement->tagName);
-    }
+    $failures = $doc->getElementsByTagName('failure');
+    expect($failures->length)->toBe(1);
+    $this->assertStringContainsString('Expected "hello" but got "world"', $failures->item(0)->textContent);
+});
+test('skipped element for ignored blocks', function (): void {
+    $results = [
+        ($this->makeResult)(passed: true, skipped: true),
+    ];
 
-    #[Test]
-    public function testsuites_element_has_correct_counts(): void
-    {
-        $results = [
-            $this->makeResult(passed: true),
-            $this->makeResult(passed: false, error: 'fail'),
-            $this->makeResult(passed: true, skipped: true),
-        ];
+    $xml = $this->reporter->generate($results);
+    $doc = new \DOMDocument();
+    $doc->loadXML($xml);
 
-        $xml = $this->reporter->generate($results);
-        $doc = new \DOMDocument();
-        $doc->loadXML($xml);
+    $skipped = $doc->getElementsByTagName('skipped');
+    expect($skipped->length)->toBe(1);
+});
+test('writes to file path', function (): void {
+    $results = [
+        ($this->makeResult)(passed: true),
+    ];
 
-        $testsuites = $doc->documentElement;
-        $this->assertSame('3', $testsuites->getAttribute('tests'));
-        $this->assertSame('1', $testsuites->getAttribute('failures'));
-    }
+    $filePath = sys_get_temp_dir().'/doctest_junit_'.uniqid().'.xml';
 
-    #[Test]
-    public function creates_testsuite_per_file(): void
-    {
-        $results = [
-            $this->makeResult(passed: true, file: 'docs/api.md'),
-            $this->makeResult(passed: true, file: 'docs/guide.md'),
-        ];
+    $this->reporter->generateToFile($results, $filePath);
 
-        $xml = $this->reporter->generate($results);
-        $doc = new \DOMDocument();
-        $doc->loadXML($xml);
+    expect($filePath)->toBeFile();
+    $content = file_get_contents($filePath);
+    $this->assertStringContainsString('<?xml', $content);
+    $this->assertStringContainsString('testsuites', $content);
 
-        $suites = $doc->getElementsByTagName('testsuite');
-        $this->assertSame(2, $suites->length);
+    unlink($filePath);
+});
+test('case includes time attribute', function (): void {
+    $results = [
+        ($this->makeResult)(passed: true, duration: 0.25),
+    ];
 
-        $names = [];
-        for ($i = 0; $i < $suites->length; $i++) {
-            $names[] = $suites->item($i)->getAttribute('name');
-        }
-        $this->assertContains('docs/api.md', $names);
-        $this->assertContains('docs/guide.md', $names);
-    }
+    $xml = $this->reporter->generate($results);
+    $doc = new \DOMDocument();
+    $doc->loadXML($xml);
 
-    #[Test]
-    public function creates_testcase_per_block(): void
-    {
-        $results = [
-            $this->makeResult(passed: true, file: 'test.md', line: 5),
-            $this->makeResult(passed: true, file: 'test.md', line: 15),
-        ];
+    $testcase = $doc->getElementsByTagName('testcase')->item(0);
+    expect($testcase->getAttribute('time'))->toBe('0.25');
+});
+test('generates valid xml for empty results', function (): void {
+    $xml = $this->reporter->generate([]);
+    $doc = new \DOMDocument();
 
-        $xml = $this->reporter->generate($results);
-        $doc = new \DOMDocument();
-        $doc->loadXML($xml);
+    expect($doc->loadXML($xml))->toBeTrue();
+    expect($doc->documentElement->getAttribute('tests'))->toBe('0');
+});
+test('xml escapes special characters in error', function (): void {
+    $results = [
+        ($this->makeResult)(passed: false, error: 'Expected "<div>" & got \'none\''),
+    ];
 
-        $testcases = $doc->getElementsByTagName('testcase');
-        $this->assertSame(2, $testcases->length);
-    }
+    $xml = $this->reporter->generate($results);
+    $doc = new \DOMDocument();
 
-    #[Test]
-    public function failure_element_includes_error_message(): void
-    {
-        $results = [
-            $this->makeResult(passed: false, error: 'Expected "hello" but got "world"'),
-        ];
+    expect($doc->loadXML($xml))->toBeTrue('XML with special chars should be valid');
+    $failures = $doc->getElementsByTagName('failure');
+    $this->assertStringContainsString('<div>', $failures->item(0)->textContent);
+});
+test('suite has correct test count', function (): void {
+    $results = [
+        ($this->makeResult)(passed: true, file: 'a.md', line: 1),
+        ($this->makeResult)(passed: false, file: 'a.md', line: 5, error: 'fail'),
+        ($this->makeResult)(passed: true, file: 'a.md', line: 10),
+    ];
 
-        $xml = $this->reporter->generate($results);
-        $doc = new \DOMDocument();
-        $doc->loadXML($xml);
+    $xml = $this->reporter->generate($results);
+    $doc = new \DOMDocument();
+    $doc->loadXML($xml);
 
-        $failures = $doc->getElementsByTagName('failure');
-        $this->assertSame(1, $failures->length);
-        $this->assertStringContainsString('Expected "hello" but got "world"', $failures->item(0)->textContent);
-    }
-
-    #[Test]
-    public function skipped_element_for_ignored_blocks(): void
-    {
-        $results = [
-            $this->makeResult(passed: true, skipped: true),
-        ];
-
-        $xml = $this->reporter->generate($results);
-        $doc = new \DOMDocument();
-        $doc->loadXML($xml);
-
-        $skipped = $doc->getElementsByTagName('skipped');
-        $this->assertSame(1, $skipped->length);
-    }
-
-    #[Test]
-    public function writes_to_file_path(): void
-    {
-        $results = [
-            $this->makeResult(passed: true),
-        ];
-
-        $filePath = sys_get_temp_dir().'/doctest_junit_'.uniqid().'.xml';
-
-        $this->reporter->generateToFile($results, $filePath);
-
-        $this->assertFileExists($filePath);
-        $content = file_get_contents($filePath);
-        $this->assertStringContainsString('<?xml', $content);
-        $this->assertStringContainsString('testsuites', $content);
-
-        unlink($filePath);
-    }
-
-    #[Test]
-    public function testcase_includes_time_attribute(): void
-    {
-        $results = [
-            $this->makeResult(passed: true, duration: 0.25),
-        ];
-
-        $xml = $this->reporter->generate($results);
-        $doc = new \DOMDocument();
-        $doc->loadXML($xml);
-
-        $testcase = $doc->getElementsByTagName('testcase')->item(0);
-        $this->assertSame('0.25', $testcase->getAttribute('time'));
-    }
-
-    // --- Edge cases ---
-
-    #[Test]
-    public function generates_valid_xml_for_empty_results(): void
-    {
-        $xml = $this->reporter->generate([]);
-        $doc = new \DOMDocument();
-
-        $this->assertTrue($doc->loadXML($xml));
-        $this->assertSame('0', $doc->documentElement->getAttribute('tests'));
-    }
-
-    #[Test]
-    public function xml_escapes_special_characters_in_error(): void
-    {
-        $results = [
-            $this->makeResult(passed: false, error: 'Expected "<div>" & got \'none\''),
-        ];
-
-        $xml = $this->reporter->generate($results);
-        $doc = new \DOMDocument();
-
-        $this->assertTrue($doc->loadXML($xml), 'XML with special chars should be valid');
-        $failures = $doc->getElementsByTagName('failure');
-        $this->assertStringContainsString('<div>', $failures->item(0)->textContent);
-    }
-
-    #[Test]
-    public function testsuite_has_correct_test_count(): void
-    {
-        $results = [
-            $this->makeResult(passed: true, file: 'a.md', line: 1),
-            $this->makeResult(passed: false, file: 'a.md', line: 5, error: 'fail'),
-            $this->makeResult(passed: true, file: 'a.md', line: 10),
-        ];
-
-        $xml = $this->reporter->generate($results);
-        $doc = new \DOMDocument();
-        $doc->loadXML($xml);
-
-        $suite = $doc->getElementsByTagName('testsuite')->item(0);
-        $this->assertSame('3', $suite->getAttribute('tests'));
-        $this->assertSame('1', $suite->getAttribute('failures'));
-    }
-}
+    $suite = $doc->getElementsByTagName('testsuite')->item(0);
+    expect($suite->getAttribute('tests'))->toBe('3');
+    expect($suite->getAttribute('failures'))->toBe('1');
+});

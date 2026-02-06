@@ -1,162 +1,109 @@
 <?php
 
 declare(strict_types=1);
-
-namespace TestFlowLabs\DocTest\Tests\Unit\Console;
-
-use PHPUnit\Framework\TestCase;
-use PHPUnit\Framework\Attributes\Test;
 use TestFlowLabs\DocTest\Console\DocTestCommand;
 use Symfony\Component\Console\Tester\CommandTester;
 
-final class DocTestCommandTest extends TestCase
-{
-    private string $fixturesDir;
+beforeEach(function (): void {
+    $this->fixturesDir = dirname(__DIR__, 2).'/Fixtures';
+});
+test('command has correct name', function (): void {
+    $command = new DocTestCommand();
 
-    protected function setUp(): void
-    {
-        $this->fixturesDir = dirname(__DIR__, 2).'/Fixtures';
-    }
+    expect($command->getName())->toBe('doctest');
+});
+test('command has description', function (): void {
+    $command = new DocTestCommand();
 
-    #[Test]
-    public function command_has_correct_name(): void
-    {
-        $command = new DocTestCommand();
+    expect($command->getDescription())->not->toBeEmpty();
+});
+test('command accepts file arguments', function (): void {
+    $command    = new DocTestCommand();
+    $definition = $command->getDefinition();
 
-        $this->assertSame('doctest', $command->getName());
-    }
+    expect($definition->hasArgument('files'))->toBeTrue();
+    expect($definition->getArgument('files')->isArray())->toBeTrue();
+});
+test('command has filter option', function (): void {
+    $command = new DocTestCommand();
 
-    #[Test]
-    public function command_has_description(): void
-    {
-        $command = new DocTestCommand();
+    expect($command->getDefinition()->hasOption('filter'))->toBeTrue();
+});
+test('command has exclude option', function (): void {
+    $command = new DocTestCommand();
 
-        $this->assertNotEmpty($command->getDescription());
-    }
+    expect($command->getDefinition()->hasOption('exclude'))->toBeTrue();
+});
+test('command has dry run option', function (): void {
+    $command = new DocTestCommand();
 
-    #[Test]
-    public function command_accepts_file_arguments(): void
-    {
-        $command    = new DocTestCommand();
-        $definition = $command->getDefinition();
+    expect($command->getDefinition()->hasOption('dry-run'))->toBeTrue();
+});
+test('command has stop on failure option', function (): void {
+    $command = new DocTestCommand();
 
-        $this->assertTrue($definition->hasArgument('files'));
-        $this->assertTrue($definition->getArgument('files')->isArray());
-    }
+    expect($command->getDefinition()->hasOption('stop-on-failure'))->toBeTrue();
+});
+test('command has config option', function (): void {
+    $command = new DocTestCommand();
 
-    #[Test]
-    public function command_has_filter_option(): void
-    {
-        $command = new DocTestCommand();
+    expect($command->getDefinition()->hasOption('config'))->toBeTrue();
+});
+test('execute returns zero for passing fixture', function (): void {
+    $command = new DocTestCommand();
+    $tester  = new CommandTester($command);
 
-        $this->assertTrue($command->getDefinition()->hasOption('filter'));
-    }
+    $tester->execute(['files' => [$this->fixturesDir.'/basic.md']]);
 
-    #[Test]
-    public function command_has_exclude_option(): void
-    {
-        $command = new DocTestCommand();
+    expect($tester->getStatusCode())->toBe(0);
+});
+test('execute returns one for failing fixture', function (): void {
+    $command = new DocTestCommand();
+    $tester  = new CommandTester($command);
 
-        $this->assertTrue($command->getDefinition()->hasOption('exclude'));
-    }
+    $tester->execute(['files' => [$this->fixturesDir.'/failing-output.md']]);
 
-    #[Test]
-    public function command_has_dry_run_option(): void
-    {
-        $command = new DocTestCommand();
+    expect($tester->getStatusCode())->toBe(1);
+});
+test('execute returns three when no files found', function (): void {
+    $command = new DocTestCommand();
+    $tester  = new CommandTester($command);
 
-        $this->assertTrue($command->getDefinition()->hasOption('dry-run'));
-    }
+    $tester->execute(['files' => ['/nonexistent/path.md']]);
 
-    #[Test]
-    public function command_has_stop_on_failure_option(): void
-    {
-        $command = new DocTestCommand();
+    expect($tester->getStatusCode())->toBe(3);
+});
+test('execute with dry run returns zero', function (): void {
+    $command = new DocTestCommand();
+    $tester  = new CommandTester($command);
 
-        $this->assertTrue($command->getDefinition()->hasOption('stop-on-failure'));
-    }
+    $tester->execute(['files' => [$this->fixturesDir.'/basic.md'], '--dry-run' => true]);
 
-    #[Test]
-    public function command_has_config_option(): void
-    {
-        $command = new DocTestCommand();
+    expect($tester->getStatusCode())->toBe(0);
+});
+test('execute output contains pass for passing fixture', function (): void {
+    $command = new DocTestCommand();
+    $tester  = new CommandTester($command);
 
-        $this->assertTrue($command->getDefinition()->hasOption('config'));
-    }
+    $tester->execute(['files' => [$this->fixturesDir.'/basic.md']]);
 
-    #[Test]
-    public function execute_returns_zero_for_passing_fixture(): void
-    {
-        $command = new DocTestCommand();
-        $tester  = new CommandTester($command);
+    $this->assertStringContainsString('✔', $tester->getDisplay());
+});
+test('execute with stop on failure stops early', function (): void {
+    $tempFile = sys_get_temp_dir().'/doctest_cmd_stop_'.uniqid().'.md';
+    file_put_contents($tempFile, "```php\necho \"wrong\";\n```\n<!-- doctest: right -->\n\n```php\necho \"ok\";\n```\n<!-- doctest: ok -->\n");
 
-        $tester->execute(['files' => [$this->fixturesDir.'/basic.md']]);
-
-        $this->assertSame(0, $tester->getStatusCode());
-    }
-
-    #[Test]
-    public function execute_returns_one_for_failing_fixture(): void
-    {
-        $command = new DocTestCommand();
-        $tester  = new CommandTester($command);
-
-        $tester->execute(['files' => [$this->fixturesDir.'/failing-output.md']]);
-
-        $this->assertSame(1, $tester->getStatusCode());
-    }
-
-    #[Test]
-    public function execute_returns_three_when_no_files_found(): void
-    {
+    try {
         $command = new DocTestCommand();
         $tester  = new CommandTester($command);
 
-        $tester->execute(['files' => ['/nonexistent/path.md']]);
+        $tester->execute(['files' => [$tempFile], '--stop-on-failure' => true]);
 
-        $this->assertSame(3, $tester->getStatusCode());
-    }
-
-    #[Test]
-    public function execute_with_dry_run_returns_zero(): void
-    {
-        $command = new DocTestCommand();
-        $tester  = new CommandTester($command);
-
-        $tester->execute(['files' => [$this->fixturesDir.'/basic.md'], '--dry-run' => true]);
-
-        $this->assertSame(0, $tester->getStatusCode());
-    }
-
-    #[Test]
-    public function execute_output_contains_pass_for_passing_fixture(): void
-    {
-        $command = new DocTestCommand();
-        $tester  = new CommandTester($command);
-
-        $tester->execute(['files' => [$this->fixturesDir.'/basic.md']]);
-
-        $this->assertStringContainsString('✔', $tester->getDisplay());
-    }
-
-    #[Test]
-    public function execute_with_stop_on_failure_stops_early(): void
-    {
-        $tempFile = sys_get_temp_dir().'/doctest_cmd_stop_'.uniqid().'.md';
-        file_put_contents($tempFile, "```php\necho \"wrong\";\n```\n<!-- doctest: right -->\n\n```php\necho \"ok\";\n```\n<!-- doctest: ok -->\n");
-
-        try {
-            $command = new DocTestCommand();
-            $tester  = new CommandTester($command);
-
-            $tester->execute(['files' => [$tempFile], '--stop-on-failure' => true]);
-
-            $this->assertSame(1, $tester->getStatusCode());
-            $this->assertSame(1, substr_count($tester->getDisplay(), '✖'));
-        } finally {
-            if (file_exists($tempFile)) {
-                unlink($tempFile);
-            }
+        expect($tester->getStatusCode())->toBe(1);
+        expect(substr_count($tester->getDisplay(), '✖'))->toBe(1);
+    } finally {
+        if (file_exists($tempFile)) {
+            unlink($tempFile);
         }
     }
-}
+});

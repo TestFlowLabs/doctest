@@ -1,121 +1,116 @@
 <?php
 
 declare(strict_types=1);
-
-namespace TestFlowLabs\DocTest\Tests\Unit\Config;
-
-use PHPUnit\Framework\TestCase;
-use PHPUnit\Framework\Attributes\Test;
 use TestFlowLabs\DocTest\Config\FileFinder;
 
-final class FileFinderTest extends TestCase
-{
-    private string $fixturesDir;
-    private FileFinder $finder;
+beforeEach(function (): void {
+    $this->fixturesDir = __DIR__.'/../../Fixtures';
+    $this->finder      = new FileFinder();
+});
+test('finds markdown files in directory', function (): void {
+    $files = $this->finder->find([$this->fixturesDir], []);
 
-    protected function setUp(): void
-    {
-        $this->fixturesDir = __DIR__.'/../../Fixtures';
-        $this->finder      = new FileFinder();
+    expect($files)->not->toBeEmpty();
+    foreach ($files as $file) {
+        expect($file)->toEndWith('.md');
     }
+});
+test('finds single file when path is a file', function (): void {
+    $file  = $this->fixturesDir.'/basic.md';
+    $files = $this->finder->find([$file], []);
 
-    #[Test]
-    public function finds_markdown_files_in_directory(): void
-    {
-        $files = $this->finder->find([$this->fixturesDir], []);
+    expect($files)->toHaveCount(1);
+    expect($files[0])->toEndWith('basic.md');
+});
+test('excludes patterns', function (): void {
+    $files = $this->finder->find([$this->fixturesDir], ['**/empty.md']);
 
-        $this->assertNotEmpty($files);
-        foreach ($files as $file) {
-            $this->assertStringEndsWith('.md', $file);
-        }
+    foreach ($files as $file) {
+        $this->assertStringNotContainsString('empty.md', $file);
     }
+});
+test('returns empty array for nonexistent path', function (): void {
+    $files = $this->finder->find(['/nonexistent/path'], []);
 
-    #[Test]
-    public function finds_single_file_when_path_is_a_file(): void
-    {
-        $file  = $this->fixturesDir.'/basic.md';
-        $files = $this->finder->find([$file], []);
+    expect($files)->toBe([]);
+});
+test('returns sorted unique list', function (): void {
+    $file  = $this->fixturesDir.'/basic.md';
+    $files = $this->finder->find([$file, $file, $this->fixturesDir], []);
 
-        $this->assertCount(1, $files);
-        $this->assertStringEndsWith('basic.md', $files[0]);
-    }
+    $sorted = $files;
+    sort($sorted);
+    expect($files)->toBe($sorted);
+    expect($files)->toBe(array_unique($files));
+});
+test('handles mix of files and directories', function (): void {
+    $file  = $this->fixturesDir.'/basic.md';
+    $files = $this->finder->find([$file, $this->fixturesDir], []);
 
-    #[Test]
-    public function excludes_patterns(): void
-    {
-        $files = $this->finder->find([$this->fixturesDir], ['**/empty.md']);
+    expect($files)->not->toBeEmpty();
+    expect(array_map(realpath(...), $files))->toContain(realpath($file));
+});
+test('excludes directory path without glob wildcards', function (): void {
+    $baseDir = sys_get_temp_dir().'/doctest_finder_test_'.uniqid();
+    mkdir($baseDir.'/subdir', 0o777, true);
+    mkdir($baseDir.'/excluded/nested', 0o777, true);
+    file_put_contents($baseDir.'/subdir/keep.md', '# Keep');
+    file_put_contents($baseDir.'/excluded/nested/skip.md', '# Skip');
 
-        foreach ($files as $file) {
-            $this->assertStringNotContainsString('empty.md', $file);
-        }
-    }
+    $files = $this->finder->find([$baseDir], ['excluded']);
 
-    #[Test]
-    public function returns_empty_array_for_nonexistent_path(): void
-    {
-        $files = $this->finder->find(['/nonexistent/path'], []);
+    expect($files)->toHaveCount(1);
+    $this->assertStringContainsString('keep.md', $files[0]);
 
-        $this->assertSame([], $files);
-    }
+    // Cleanup
+    unlink($baseDir.'/subdir/keep.md');
+    unlink($baseDir.'/excluded/nested/skip.md');
+    rmdir($baseDir.'/excluded/nested');
+    rmdir($baseDir.'/excluded');
+    rmdir($baseDir.'/subdir');
+    rmdir($baseDir);
+});
+test('excludes nested directory path', function (): void {
+    $baseDir = sys_get_temp_dir().'/doctest_finder_test_'.uniqid();
+    mkdir($baseDir.'/docs/node_modules/pkg', 0o777, true);
+    mkdir($baseDir.'/docs/guide', 0o777, true);
+    file_put_contents($baseDir.'/docs/guide/intro.md', '# Intro');
+    file_put_contents($baseDir.'/docs/node_modules/pkg/README.md', '# Pkg');
 
-    #[Test]
-    public function returns_sorted_unique_list(): void
-    {
-        $file  = $this->fixturesDir.'/basic.md';
-        $files = $this->finder->find([$file, $file, $this->fixturesDir], []);
+    $files = $this->finder->find([$baseDir], ['docs/node_modules']);
 
-        $sorted = $files;
-        sort($sorted);
-        $this->assertSame($sorted, $files);
-        $this->assertSame(array_unique($files), $files);
-    }
+    expect($files)->toHaveCount(1);
+    $this->assertStringContainsString('intro.md', $files[0]);
 
-    #[Test]
-    public function handles_mix_of_files_and_directories(): void
-    {
-        $file  = $this->fixturesDir.'/basic.md';
-        $files = $this->finder->find([$file, $this->fixturesDir], []);
+    // Cleanup
+    unlink($baseDir.'/docs/guide/intro.md');
+    unlink($baseDir.'/docs/node_modules/pkg/README.md');
+    rmdir($baseDir.'/docs/node_modules/pkg');
+    rmdir($baseDir.'/docs/node_modules');
+    rmdir($baseDir.'/docs/guide');
+    rmdir($baseDir.'/docs');
+    rmdir($baseDir);
+});
+test('excludes directory path with relative input', function (): void {
+    $baseDir = sys_get_temp_dir().'/doctest_finder_reltest_'.uniqid();
+    mkdir($baseDir.'/docs/node_modules/pkg', 0o777, true);
+    mkdir($baseDir.'/docs/guide', 0o777, true);
+    file_put_contents($baseDir.'/docs/guide/intro.md', '# Intro');
+    file_put_contents($baseDir.'/docs/node_modules/pkg/README.md', '# Pkg');
 
-        $this->assertNotEmpty($files);
-        $this->assertContains(realpath($file), array_map(realpath(...), $files));
-    }
+    $originalDir = getcwd();
+    chdir($baseDir);
 
-    #[Test]
-    public function excludes_directory_path_without_glob_wildcards(): void
-    {
-        $baseDir = sys_get_temp_dir().'/doctest_finder_test_'.uniqid();
-        mkdir($baseDir.'/subdir', 0o777, true);
-        mkdir($baseDir.'/excluded/nested', 0o777, true);
-        file_put_contents($baseDir.'/subdir/keep.md', '# Keep');
-        file_put_contents($baseDir.'/excluded/nested/skip.md', '# Skip');
+    try {
+        $files = $this->finder->find(['docs'], ['docs/node_modules']);
 
-        $files = $this->finder->find([$baseDir], ['excluded']);
-
-        $this->assertCount(1, $files);
-        $this->assertStringContainsString('keep.md', $files[0]);
-
-        // Cleanup
-        unlink($baseDir.'/subdir/keep.md');
-        unlink($baseDir.'/excluded/nested/skip.md');
-        rmdir($baseDir.'/excluded/nested');
-        rmdir($baseDir.'/excluded');
-        rmdir($baseDir.'/subdir');
-        rmdir($baseDir);
-    }
-
-    #[Test]
-    public function excludes_nested_directory_path(): void
-    {
-        $baseDir = sys_get_temp_dir().'/doctest_finder_test_'.uniqid();
-        mkdir($baseDir.'/docs/node_modules/pkg', 0o777, true);
-        mkdir($baseDir.'/docs/guide', 0o777, true);
-        file_put_contents($baseDir.'/docs/guide/intro.md', '# Intro');
-        file_put_contents($baseDir.'/docs/node_modules/pkg/README.md', '# Pkg');
-
-        $files = $this->finder->find([$baseDir], ['docs/node_modules']);
-
-        $this->assertCount(1, $files);
+        expect($files)->toHaveCount(1);
         $this->assertStringContainsString('intro.md', $files[0]);
+        foreach ($files as $file) {
+            $this->assertStringNotContainsString('node_modules', $file);
+        }
+    } finally {
+        chdir($originalDir);
 
         // Cleanup
         unlink($baseDir.'/docs/guide/intro.md');
@@ -126,135 +121,84 @@ final class FileFinderTest extends TestCase
         rmdir($baseDir.'/docs');
         rmdir($baseDir);
     }
+});
+test('excludes simple directory name with relative input', function (): void {
+    $baseDir = sys_get_temp_dir().'/doctest_finder_reltest2_'.uniqid();
+    mkdir($baseDir.'/docs/node_modules/pkg', 0o777, true);
+    mkdir($baseDir.'/docs/guide', 0o777, true);
+    file_put_contents($baseDir.'/docs/guide/intro.md', '# Intro');
+    file_put_contents($baseDir.'/docs/node_modules/pkg/README.md', '# Pkg');
 
-    #[Test]
-    public function excludes_directory_path_with_relative_input(): void
-    {
-        $baseDir = sys_get_temp_dir().'/doctest_finder_reltest_'.uniqid();
-        mkdir($baseDir.'/docs/node_modules/pkg', 0o777, true);
-        mkdir($baseDir.'/docs/guide', 0o777, true);
-        file_put_contents($baseDir.'/docs/guide/intro.md', '# Intro');
-        file_put_contents($baseDir.'/docs/node_modules/pkg/README.md', '# Pkg');
+    $originalDir = getcwd();
+    chdir($baseDir);
 
-        $originalDir = getcwd();
-        chdir($baseDir);
+    try {
+        $files = $this->finder->find(['docs'], ['node_modules']);
 
-        try {
-            $files = $this->finder->find(['docs'], ['docs/node_modules']);
-
-            $this->assertCount(1, $files);
-            $this->assertStringContainsString('intro.md', $files[0]);
-            foreach ($files as $file) {
-                $this->assertStringNotContainsString('node_modules', $file);
-            }
-        } finally {
-            chdir($originalDir);
-
-            // Cleanup
-            unlink($baseDir.'/docs/guide/intro.md');
-            unlink($baseDir.'/docs/node_modules/pkg/README.md');
-            rmdir($baseDir.'/docs/node_modules/pkg');
-            rmdir($baseDir.'/docs/node_modules');
-            rmdir($baseDir.'/docs/guide');
-            rmdir($baseDir.'/docs');
-            rmdir($baseDir);
+        expect($files)->toHaveCount(1);
+        $this->assertStringContainsString('intro.md', $files[0]);
+        foreach ($files as $file) {
+            $this->assertStringNotContainsString('node_modules', $file);
         }
-    }
+    } finally {
+        chdir($originalDir);
 
-    #[Test]
-    public function excludes_simple_directory_name_with_relative_input(): void
-    {
-        $baseDir = sys_get_temp_dir().'/doctest_finder_reltest2_'.uniqid();
-        mkdir($baseDir.'/docs/node_modules/pkg', 0o777, true);
-        mkdir($baseDir.'/docs/guide', 0o777, true);
-        file_put_contents($baseDir.'/docs/guide/intro.md', '# Intro');
-        file_put_contents($baseDir.'/docs/node_modules/pkg/README.md', '# Pkg');
-
-        $originalDir = getcwd();
-        chdir($baseDir);
-
-        try {
-            $files = $this->finder->find(['docs'], ['node_modules']);
-
-            $this->assertCount(1, $files);
-            $this->assertStringContainsString('intro.md', $files[0]);
-            foreach ($files as $file) {
-                $this->assertStringNotContainsString('node_modules', $file);
-            }
-        } finally {
-            chdir($originalDir);
-
-            // Cleanup
-            unlink($baseDir.'/docs/guide/intro.md');
-            unlink($baseDir.'/docs/node_modules/pkg/README.md');
-            rmdir($baseDir.'/docs/node_modules/pkg');
-            rmdir($baseDir.'/docs/node_modules');
-            rmdir($baseDir.'/docs/guide');
-            rmdir($baseDir.'/docs');
-            rmdir($baseDir);
-        }
-    }
-
-    // --- Edge cases ---
-
-    #[Test]
-    public function empty_paths_returns_empty(): void
-    {
-        $files = $this->finder->find([], []);
-
-        $this->assertSame([], $files);
-    }
-
-    #[Test]
-    public function directory_with_no_md_files_returns_empty(): void
-    {
-        $baseDir = sys_get_temp_dir().'/doctest_finder_nomd_'.uniqid();
-        mkdir($baseDir, 0o777, true);
-        file_put_contents($baseDir.'/readme.txt', 'not markdown');
-
-        $files = $this->finder->find([$baseDir], []);
-
-        $this->assertSame([], $files);
-
-        unlink($baseDir.'/readme.txt');
+        // Cleanup
+        unlink($baseDir.'/docs/guide/intro.md');
+        unlink($baseDir.'/docs/node_modules/pkg/README.md');
+        rmdir($baseDir.'/docs/node_modules/pkg');
+        rmdir($baseDir.'/docs/node_modules');
+        rmdir($baseDir.'/docs/guide');
+        rmdir($baseDir.'/docs');
         rmdir($baseDir);
     }
+});
+test('empty paths returns empty', function (): void {
+    $files = $this->finder->find([], []);
 
-    #[Test]
-    public function excludes_by_filename_pattern(): void
-    {
-        $baseDir = sys_get_temp_dir().'/doctest_finder_fnmatch_'.uniqid();
-        mkdir($baseDir, 0o777, true);
-        file_put_contents($baseDir.'/keep.md', '# Keep');
-        file_put_contents($baseDir.'/draft-intro.md', '# Draft');
+    expect($files)->toBe([]);
+});
+test('directory with no md files returns empty', function (): void {
+    $baseDir = sys_get_temp_dir().'/doctest_finder_nomd_'.uniqid();
+    mkdir($baseDir, 0o777, true);
+    file_put_contents($baseDir.'/readme.txt', 'not markdown');
 
-        $files = $this->finder->find([$baseDir], ['draft-*.md']);
+    $files = $this->finder->find([$baseDir], []);
 
-        $this->assertCount(1, $files);
-        $this->assertStringContainsString('keep.md', $files[0]);
+    expect($files)->toBe([]);
 
-        unlink($baseDir.'/keep.md');
-        unlink($baseDir.'/draft-intro.md');
-        rmdir($baseDir);
-    }
+    unlink($baseDir.'/readme.txt');
+    rmdir($baseDir);
+});
+test('excludes by filename pattern', function (): void {
+    $baseDir = sys_get_temp_dir().'/doctest_finder_fnmatch_'.uniqid();
+    mkdir($baseDir, 0o777, true);
+    file_put_contents($baseDir.'/keep.md', '# Keep');
+    file_put_contents($baseDir.'/draft-intro.md', '# Draft');
 
-    #[Test]
-    public function multiple_exclude_patterns(): void
-    {
-        $baseDir = sys_get_temp_dir().'/doctest_finder_multi_'.uniqid();
-        mkdir($baseDir, 0o777, true);
-        file_put_contents($baseDir.'/keep.md', '# Keep');
-        file_put_contents($baseDir.'/draft.md', '# Draft');
-        file_put_contents($baseDir.'/temp.md', '# Temp');
+    $files = $this->finder->find([$baseDir], ['draft-*.md']);
 
-        $files = $this->finder->find([$baseDir], ['draft.md', 'temp.md']);
+    expect($files)->toHaveCount(1);
+    $this->assertStringContainsString('keep.md', $files[0]);
 
-        $this->assertCount(1, $files);
-        $this->assertStringContainsString('keep.md', $files[0]);
+    unlink($baseDir.'/keep.md');
+    unlink($baseDir.'/draft-intro.md');
+    rmdir($baseDir);
+});
+test('multiple exclude patterns', function (): void {
+    $baseDir = sys_get_temp_dir().'/doctest_finder_multi_'.uniqid();
+    mkdir($baseDir, 0o777, true);
+    file_put_contents($baseDir.'/keep.md', '# Keep');
+    file_put_contents($baseDir.'/draft.md', '# Draft');
+    file_put_contents($baseDir.'/temp.md', '# Temp');
 
-        unlink($baseDir.'/keep.md');
-        unlink($baseDir.'/draft.md');
-        unlink($baseDir.'/temp.md');
-        rmdir($baseDir);
-    }
-}
+    $files = $this->finder->find([$baseDir], ['draft.md', 'temp.md']);
+
+    expect($files)->toHaveCount(1);
+    $this->assertStringContainsString('keep.md', $files[0]);
+
+    unlink($baseDir.'/keep.md');
+    unlink($baseDir.'/draft.md');
+    unlink($baseDir.'/temp.md');
+    rmdir($baseDir);
+});

@@ -1,251 +1,166 @@
 <?php
 
 declare(strict_types=1);
-
-namespace TestFlowLabs\DocTest\Tests\Unit\Assertion;
-
-use PHPUnit\Framework\TestCase;
-use PHPUnit\Framework\Attributes\Test;
 use TestFlowLabs\DocTest\Assertion\AssertionParser;
 use TestFlowLabs\DocTest\Assertion\ResultCommentAssertion;
 
-final class AssertionParserTest extends TestCase
-{
-    private AssertionParser $parser;
+beforeEach(function (): void {
+    $this->parser = new AssertionParser();
+});
+test('preserves non assertion comments', function (): void {
+    $result = $this->parser->parse("// This is a regular comment\n\$x = 1;");
 
-    protected function setUp(): void
-    {
-        $this->parser = new AssertionParser();
-    }
+    $this->assertStringContainsString('// This is a regular comment', $result->executableCode);
+});
+test('handles block with no assertions', function (): void {
+    $result = $this->parser->parse('$x = 42;');
 
-    #[Test]
-    public function preserves_non_assertion_comments(): void
-    {
-        $result = $this->parser->parse("// This is a regular comment\n\$x = 1;");
+    expect($result->resultComments)->toBeEmpty();
+    expect($result->executableCode)->toBe('$x = 42;');
+});
+test('output comment is treated as regular comment', function (): void {
+    $result = $this->parser->parse("echo \"Hello\";\n// Output: Hello");
 
-        $this->assertStringContainsString('// This is a regular comment', $result->executableCode);
-    }
+    expect($result->resultComments)->toBeEmpty();
+    $this->assertStringContainsString('// Output: Hello', $result->executableCode);
+});
+test('expect comment is treated as regular comment', function (): void {
+    $result = $this->parser->parse("\$sum = 1 + 2;\n// Expect: \$sum === 3");
 
-    #[Test]
-    public function handles_block_with_no_assertions(): void
-    {
-        $result = $this->parser->parse('$x = 42;');
+    expect($result->resultComments)->toBeEmpty();
+    $this->assertStringContainsString('// Expect: $sum === 3', $result->executableCode);
+});
+test('output contains comment is treated as regular comment', function (): void {
+    $result = $this->parser->parse("echo \"Hello World\";\n// OutputContains: World");
 
-        $this->assertEmpty($result->resultComments);
-        $this->assertSame('$x = 42;', $result->executableCode);
-    }
+    expect($result->resultComments)->toBeEmpty();
+    $this->assertStringContainsString('// OutputContains: World', $result->executableCode);
+});
+test('output matches comment is treated as regular comment', function (): void {
+    $result = $this->parser->parse("echo \"Order #1234\";\n// OutputMatches: /Order #\\d{4}/");
 
-    #[Test]
-    public function output_comment_is_treated_as_regular_comment(): void
-    {
-        $result = $this->parser->parse("echo \"Hello\";\n// Output: Hello");
+    expect($result->resultComments)->toBeEmpty();
+    $this->assertStringContainsString('// OutputMatches:', $result->executableCode);
+});
+test('output json comment is treated as regular comment', function (): void {
+    $result = $this->parser->parse("echo json_encode(['key' => 'val']);\n// OutputJson: {\"key\": \"val\"}");
 
-        $this->assertEmpty($result->resultComments);
-        $this->assertStringContainsString('// Output: Hello', $result->executableCode);
-    }
+    expect($result->resultComments)->toBeEmpty();
+    $this->assertStringContainsString('// OutputJson:', $result->executableCode);
+});
+test('finds simple result comment', function (): void {
+    $result = $this->parser->parse('$x = 42; // => 42');
 
-    #[Test]
-    public function expect_comment_is_treated_as_regular_comment(): void
-    {
-        $result = $this->parser->parse("\$sum = 1 + 2;\n// Expect: \$sum === 3");
+    expect($result->resultComments)->toHaveCount(1);
+    expect($result->resultComments[0])->toBeInstanceOf(ResultCommentAssertion::class);
+    expect($result->resultComments[0]->expression)->toBe('$x = 42');
+    expect($result->resultComments[0]->expectedValue)->toBe('42');
+});
+test('finds boolean result comment', function (): void {
+    $result = $this->parser->parse('$state->matches(\'green\'); // => true');
 
-        $this->assertEmpty($result->resultComments);
-        $this->assertStringContainsString('// Expect: $sum === 3', $result->executableCode);
-    }
+    expect($result->resultComments)->toHaveCount(1);
+    expect($result->resultComments[0]->expression)->toBe('$state->matches(\'green\')');
+    expect($result->resultComments[0]->expectedValue)->toBe('true');
+});
+test('finds string result comment', function (): void {
+    $result = $this->parser->parse('$name = \'Alice\'; // => \'Alice\'');
 
-    #[Test]
-    public function output_contains_comment_is_treated_as_regular_comment(): void
-    {
-        $result = $this->parser->parse("echo \"Hello World\";\n// OutputContains: World");
+    expect($result->resultComments)->toHaveCount(1);
+    expect($result->resultComments[0]->expression)->toBe('$name = \'Alice\'');
+    expect($result->resultComments[0]->expectedValue)->toBe('\'Alice\'');
+});
+test('finds null result comment', function (): void {
+    $result = $this->parser->parse('$result = null; // => NULL');
 
-        $this->assertEmpty($result->resultComments);
-        $this->assertStringContainsString('// OutputContains: World', $result->executableCode);
-    }
+    expect($result->resultComments)->toHaveCount(1);
+    expect($result->resultComments[0]->expression)->toBe('$result = null');
+    expect($result->resultComments[0]->expectedValue)->toBe('NULL');
+});
+test('strips semicolon from result comment expression', function (): void {
+    $result = $this->parser->parse('$x = 42; // => 42');
 
-    #[Test]
-    public function output_matches_comment_is_treated_as_regular_comment(): void
-    {
-        $result = $this->parser->parse("echo \"Order #1234\";\n// OutputMatches: /Order #\\d{4}/");
+    expect($result->resultComments[0]->expression)->toBe('$x = 42');
+});
+test('result comment preserves line number', function (): void {
+    $result = $this->parser->parse("\$a = 1;\n\$b = 2; // => 2");
 
-        $this->assertEmpty($result->resultComments);
-        $this->assertStringContainsString('// OutputMatches:', $result->executableCode);
-    }
+    expect($result->resultComments)->toHaveCount(1);
+    expect($result->resultComments[0]->line())->toBe(2);
+});
+test('result comment keeps expression in executable code', function (): void {
+    $result = $this->parser->parse('$x = 42; // => 42');
 
-    #[Test]
-    public function output_json_comment_is_treated_as_regular_comment(): void
-    {
-        $result = $this->parser->parse("echo json_encode(['key' => 'val']);\n// OutputJson: {\"key\": \"val\"}");
+    $this->assertStringContainsString('$x = 42;', $result->executableCode);
+    $this->assertStringNotContainsString('// =>', $result->executableCode);
+});
+test('handles multiple result comments', function (): void {
+    $code   = "\$x = 1; // => 1\n\$y = 2; // => 2\n\$z = 3; // => 3";
+    $result = $this->parser->parse($code);
 
-        $this->assertEmpty($result->resultComments);
-        $this->assertStringContainsString('// OutputJson:', $result->executableCode);
-    }
+    expect($result->resultComments)->toHaveCount(3);
+    expect($result->resultComments[0]->expectedValue)->toBe('1');
+    expect($result->resultComments[1]->expectedValue)->toBe('2');
+    expect($result->resultComments[2]->expectedValue)->toBe('3');
+});
+test('result comment does not match regular comments', function (): void {
+    $result = $this->parser->parse("// This is a regular comment\n\$x = 1;");
 
-    #[Test]
-    public function finds_simple_result_comment(): void
-    {
-        $result = $this->parser->parse('$x = 42; // => 42');
+    expect($result->resultComments)->toBeEmpty();
+});
+test('result comment does not match arrow in array', function (): void {
+    $result = $this->parser->parse("\$arr = ['key' => 'value'];");
 
-        $this->assertCount(1, $result->resultComments);
-        $this->assertInstanceOf(ResultCommentAssertion::class, $result->resultComments[0]);
-        $this->assertSame('$x = 42', $result->resultComments[0]->expression);
-        $this->assertSame('42', $result->resultComments[0]->expectedValue);
-    }
+    expect($result->resultComments)->toBeEmpty();
+});
+test('result comment handles spacing variations', function (): void {
+    $result1 = $this->parser->parse('$x = 1; //=> 1');
+    $result2 = $this->parser->parse('$x = 1; // =>1');
+    $result3 = $this->parser->parse('$x = 1; //=>1');
 
-    #[Test]
-    public function finds_boolean_result_comment(): void
-    {
-        $result = $this->parser->parse('$state->matches(\'green\'); // => true');
+    expect($result1->resultComments)->toHaveCount(1);
+    expect($result2->resultComments)->toHaveCount(1);
+    expect($result3->resultComments)->toHaveCount(1);
+    expect($result1->resultComments[0]->expectedValue)->toBe('1');
+    expect($result2->resultComments[0]->expectedValue)->toBe('1');
+    expect($result3->resultComments[0]->expectedValue)->toBe('1');
+});
+test('result comment without semicolon', function (): void {
+    $result = $this->parser->parse('is_string($x) // => false');
 
-        $this->assertCount(1, $result->resultComments);
-        $this->assertSame('$state->matches(\'green\')', $result->resultComments[0]->expression);
-        $this->assertSame('true', $result->resultComments[0]->expectedValue);
-    }
+    expect($result->resultComments)->toHaveCount(1);
+    expect($result->resultComments[0]->expression)->toBe('is_string($x)');
+    expect($result->resultComments[0]->expectedValue)->toBe('false');
+});
+test('handles empty code', function (): void {
+    $result = $this->parser->parse('');
 
-    #[Test]
-    public function finds_string_result_comment(): void
-    {
-        $result = $this->parser->parse('$name = \'Alice\'; // => \'Alice\'');
+    expect($result->resultComments)->toBeEmpty();
+    expect($result->executableCode)->toBe('');
+});
+test('result comment adds semicolon to executable code', function (): void {
+    $result = $this->parser->parse('is_string($x) // => false');
 
-        $this->assertCount(1, $result->resultComments);
-        $this->assertSame('$name = \'Alice\'', $result->resultComments[0]->expression);
-        $this->assertSame('\'Alice\'', $result->resultComments[0]->expectedValue);
-    }
+    $this->assertStringContainsString('is_string($x);', $result->executableCode);
+});
+test('url in code is not treated as result comment', function (): void {
+    $result = $this->parser->parse('$url = "https://example.com";');
 
-    #[Test]
-    public function finds_null_result_comment(): void
-    {
-        $result = $this->parser->parse('$result = null; // => NULL');
+    expect($result->resultComments)->toBeEmpty();
+    $this->assertStringContainsString('https://example.com', $result->executableCode);
+});
+test('result comment with array expected value', function (): void {
+    $result = $this->parser->parse('$arr = [1, 2, 3]; // => array (0 => 1, 1 => 2, 2 => 3)');
 
-        $this->assertCount(1, $result->resultComments);
-        $this->assertSame('$result = null', $result->resultComments[0]->expression);
-        $this->assertSame('NULL', $result->resultComments[0]->expectedValue);
-    }
+    expect($result->resultComments)->toHaveCount(1);
+    expect($result->resultComments[0]->expectedValue)->toBe('array (0 => 1, 1 => 2, 2 => 3)');
+});
+test('mixed result comments and regular lines', function (): void {
+    $code   = "\$x = 1;\n\$y = \$x + 1; // => 2\n\$z = 3;";
+    $result = $this->parser->parse($code);
 
-    #[Test]
-    public function strips_semicolon_from_result_comment_expression(): void
-    {
-        $result = $this->parser->parse('$x = 42; // => 42');
-
-        $this->assertSame('$x = 42', $result->resultComments[0]->expression);
-    }
-
-    #[Test]
-    public function result_comment_preserves_line_number(): void
-    {
-        $result = $this->parser->parse("\$a = 1;\n\$b = 2; // => 2");
-
-        $this->assertCount(1, $result->resultComments);
-        $this->assertSame(2, $result->resultComments[0]->line());
-    }
-
-    #[Test]
-    public function result_comment_keeps_expression_in_executable_code(): void
-    {
-        $result = $this->parser->parse('$x = 42; // => 42');
-
-        $this->assertStringContainsString('$x = 42;', $result->executableCode);
-        $this->assertStringNotContainsString('// =>', $result->executableCode);
-    }
-
-    #[Test]
-    public function handles_multiple_result_comments(): void
-    {
-        $code   = "\$x = 1; // => 1\n\$y = 2; // => 2\n\$z = 3; // => 3";
-        $result = $this->parser->parse($code);
-
-        $this->assertCount(3, $result->resultComments);
-        $this->assertSame('1', $result->resultComments[0]->expectedValue);
-        $this->assertSame('2', $result->resultComments[1]->expectedValue);
-        $this->assertSame('3', $result->resultComments[2]->expectedValue);
-    }
-
-    #[Test]
-    public function result_comment_does_not_match_regular_comments(): void
-    {
-        $result = $this->parser->parse("// This is a regular comment\n\$x = 1;");
-
-        $this->assertEmpty($result->resultComments);
-    }
-
-    #[Test]
-    public function result_comment_does_not_match_arrow_in_array(): void
-    {
-        $result = $this->parser->parse("\$arr = ['key' => 'value'];");
-
-        $this->assertEmpty($result->resultComments);
-    }
-
-    #[Test]
-    public function result_comment_handles_spacing_variations(): void
-    {
-        $result1 = $this->parser->parse('$x = 1; //=> 1');
-        $result2 = $this->parser->parse('$x = 1; // =>1');
-        $result3 = $this->parser->parse('$x = 1; //=>1');
-
-        $this->assertCount(1, $result1->resultComments);
-        $this->assertCount(1, $result2->resultComments);
-        $this->assertCount(1, $result3->resultComments);
-        $this->assertSame('1', $result1->resultComments[0]->expectedValue);
-        $this->assertSame('1', $result2->resultComments[0]->expectedValue);
-        $this->assertSame('1', $result3->resultComments[0]->expectedValue);
-    }
-
-    #[Test]
-    public function result_comment_without_semicolon(): void
-    {
-        $result = $this->parser->parse('is_string($x) // => false');
-
-        $this->assertCount(1, $result->resultComments);
-        $this->assertSame('is_string($x)', $result->resultComments[0]->expression);
-        $this->assertSame('false', $result->resultComments[0]->expectedValue);
-    }
-
-    // --- Edge cases ---
-
-    #[Test]
-    public function handles_empty_code(): void
-    {
-        $result = $this->parser->parse('');
-
-        $this->assertEmpty($result->resultComments);
-        $this->assertSame('', $result->executableCode);
-    }
-
-    #[Test]
-    public function result_comment_adds_semicolon_to_executable_code(): void
-    {
-        $result = $this->parser->parse('is_string($x) // => false');
-
-        $this->assertStringContainsString('is_string($x);', $result->executableCode);
-    }
-
-    #[Test]
-    public function url_in_code_is_not_treated_as_result_comment(): void
-    {
-        $result = $this->parser->parse('$url = "https://example.com";');
-
-        $this->assertEmpty($result->resultComments);
-        $this->assertStringContainsString('https://example.com', $result->executableCode);
-    }
-
-    #[Test]
-    public function result_comment_with_array_expected_value(): void
-    {
-        $result = $this->parser->parse('$arr = [1, 2, 3]; // => array (0 => 1, 1 => 2, 2 => 3)');
-
-        $this->assertCount(1, $result->resultComments);
-        $this->assertSame('array (0 => 1, 1 => 2, 2 => 3)', $result->resultComments[0]->expectedValue);
-    }
-
-    #[Test]
-    public function mixed_result_comments_and_regular_lines(): void
-    {
-        $code   = "\$x = 1;\n\$y = \$x + 1; // => 2\n\$z = 3;";
-        $result = $this->parser->parse($code);
-
-        $this->assertCount(1, $result->resultComments);
-        $this->assertSame('2', $result->resultComments[0]->expectedValue);
-        $this->assertStringContainsString('$x = 1;', $result->executableCode);
-        $this->assertStringContainsString('$z = 3;', $result->executableCode);
-    }
-}
+    expect($result->resultComments)->toHaveCount(1);
+    expect($result->resultComments[0]->expectedValue)->toBe('2');
+    $this->assertStringContainsString('$x = 1;', $result->executableCode);
+    $this->assertStringContainsString('$z = 3;', $result->executableCode);
+});

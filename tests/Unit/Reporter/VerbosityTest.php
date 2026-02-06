@@ -1,11 +1,6 @@
 <?php
 
 declare(strict_types=1);
-
-namespace TestFlowLabs\DocTest\Tests\Unit\Reporter;
-
-use PHPUnit\Framework\TestCase;
-use PHPUnit\Framework\Attributes\Test;
 use TestFlowLabs\DocTest\CodeBlock\CodeBlock;
 use TestFlowLabs\DocTest\CodeBlock\Attributes;
 use TestFlowLabs\DocTest\Executor\ExecutionResult;
@@ -13,22 +8,12 @@ use TestFlowLabs\DocTest\Reporter\ConsoleReporter;
 use Symfony\Component\Console\Output\BufferedOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 
-final class VerbosityTest extends TestCase
-{
-    private BufferedOutput $output;
+beforeEach(function (): void {
+    $this->output = new BufferedOutput();
 
-    protected function setUp(): void
-    {
-        $this->output = new BufferedOutput();
-    }
+    $this->getOutput = (fn (): string => $this->output->fetch());
 
-    private function getOutput(): string
-    {
-        return $this->output->fetch();
-    }
-
-    private function makeResult(bool $passed, float $duration = 0.12, ?string $error = null): ExecutionResult
-    {
+    $this->makeResult = function (bool $passed, float $duration = 0.12, ?string $error = null): ExecutionResult {
         $block = new CodeBlock(
             file: 'docs/test.md',
             startLine: 42,
@@ -44,50 +29,38 @@ final class VerbosityTest extends TestCase
             error: $error,
             duration: $duration,
         );
-    }
+    };
+});
+test('verbose shows execution time', function (): void {
+    $this->output->setVerbosity(OutputInterface::VERBOSITY_VERBOSE);
+    $reporter = new ConsoleReporter($this->output);
+    $reporter->reportResult(($this->makeResult)(passed: true, duration: 0.12));
 
-    #[Test]
-    public function verbose_shows_execution_time(): void
-    {
-        $this->output->setVerbosity(OutputInterface::VERBOSITY_VERBOSE);
-        $reporter = new ConsoleReporter($this->output);
-        $reporter->reportResult($this->makeResult(passed: true, duration: 0.12));
+    $output = ($this->getOutput)();
+    $this->assertStringContainsString('0.12s', $output);
+});
+test('very verbose shows source code on failure', function (): void {
+    $this->output->setVerbosity(OutputInterface::VERBOSITY_VERY_VERBOSE);
+    $reporter = new ConsoleReporter($this->output);
+    $reporter->reportResult(($this->makeResult)(passed: false, error: 'Failed'));
 
-        $output = $this->getOutput();
-        $this->assertStringContainsString('0.12s', $output);
-    }
+    $output = ($this->getOutput)();
+    $this->assertStringContainsString('echo "hello"', $output);
+});
+test('normal shows timing', function (): void {
+    $this->output->setVerbosity(OutputInterface::VERBOSITY_NORMAL);
+    $reporter = new ConsoleReporter($this->output);
+    $reporter->reportResult(($this->makeResult)(passed: true, duration: 0.12));
 
-    #[Test]
-    public function very_verbose_shows_source_code_on_failure(): void
-    {
-        $this->output->setVerbosity(OutputInterface::VERBOSITY_VERY_VERBOSE);
-        $reporter = new ConsoleReporter($this->output);
-        $reporter->reportResult($this->makeResult(passed: false, error: 'Failed'));
+    $output = ($this->getOutput)();
+    $this->assertStringContainsString('0.12s', $output);
+});
+test('normal does not show full source on failure', function (): void {
+    $this->output->setVerbosity(OutputInterface::VERBOSITY_NORMAL);
+    $reporter = new ConsoleReporter($this->output);
+    $reporter->reportResult(($this->makeResult)(passed: false, error: 'Failed'));
 
-        $output = $this->getOutput();
-        $this->assertStringContainsString('echo "hello"', $output);
-    }
-
-    #[Test]
-    public function normal_shows_timing(): void
-    {
-        $this->output->setVerbosity(OutputInterface::VERBOSITY_NORMAL);
-        $reporter = new ConsoleReporter($this->output);
-        $reporter->reportResult($this->makeResult(passed: true, duration: 0.12));
-
-        $output = $this->getOutput();
-        $this->assertStringContainsString('0.12s', $output);
-    }
-
-    #[Test]
-    public function normal_does_not_show_full_source_on_failure(): void
-    {
-        $this->output->setVerbosity(OutputInterface::VERBOSITY_NORMAL);
-        $reporter = new ConsoleReporter($this->output);
-        $reporter->reportResult($this->makeResult(passed: false, error: 'Failed'));
-
-        $output = $this->getOutput();
-        $this->assertStringNotContainsString('Source:', $output);
-        $this->assertStringNotContainsString('// Output: hello', $output);
-    }
-}
+    $output = ($this->getOutput)();
+    $this->assertStringNotContainsString('Source:', $output);
+    $this->assertStringNotContainsString('// Output: hello', $output);
+});

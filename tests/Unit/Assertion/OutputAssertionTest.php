@@ -1,54 +1,32 @@
 <?php
 
 declare(strict_types=1);
-
-namespace TestFlowLabs\DocTest\Tests\Unit\Assertion;
-
-use PHPUnit\Framework\TestCase;
-use PHPUnit\Framework\Attributes\Test;
 use TestFlowLabs\DocTest\Assertion\Assertion;
 use TestFlowLabs\DocTest\Assertion\OutputAssertion;
 
-final class OutputAssertionTest extends TestCase
-{
-    #[Test]
-    public function implements_assertion_interface(): void
-    {
-        $assertion = new OutputAssertion('Hello', 5);
+test('implements assertion interface', function (): void {
+    $assertion = new OutputAssertion('Hello', 5);
 
-        $this->assertInstanceOf(Assertion::class, $assertion);
-    }
+    expect($assertion)->toBeInstanceOf(Assertion::class);
+});
+test('type returns output', function (): void {
+    $assertion = new OutputAssertion('Hello', 5);
 
-    #[Test]
-    public function type_returns_output(): void
-    {
-        $assertion = new OutputAssertion('Hello', 5);
+    expect($assertion->type())->toBe('output');
+});
+test('line returns correct value', function (): void {
+    $assertion = new OutputAssertion('Hello', 42);
 
-        $this->assertSame('output', $assertion->type());
-    }
+    expect($assertion->line())->toBe(42);
+});
+test('expected property is accessible', function (): void {
+    $assertion = new OutputAssertion('Hello, World!', 10);
 
-    #[Test]
-    public function line_returns_correct_value(): void
-    {
-        $assertion = new OutputAssertion('Hello', 42);
+    expect($assertion->expected)->toBe('Hello, World!');
+});
+test('handles multiline expected', function (): void {
+    $expected  = "Line 1\nLine 2\nLine 3";
+    $assertion = new OutputAssertion($expected, 15);
 
-        $this->assertSame(42, $assertion->line());
-    }
-
-    #[Test]
-    public function expected_property_is_accessible(): void
-    {
-        $assertion = new OutputAssertion('Hello, World!', 10);
-
-        $this->assertSame('Hello, World!', $assertion->expected);
-    }
-
-    #[Test]
-    public function handles_multiline_expected(): void
-    {
-        $expected  = "Line 1\nLine 2\nLine 3";
-        $assertion = new OutputAssertion($expected, 15);
-
-        $this->assertSame($expected, $assertion->expected);
-    }
-}
+    expect($assertion->expected)->toBe($expected);
+});

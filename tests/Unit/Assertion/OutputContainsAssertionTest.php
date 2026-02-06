@@ -1,36 +1,20 @@
 <?php
 
 declare(strict_types=1);
-
-namespace TestFlowLabs\DocTest\Tests\Unit\Assertion;
-
-use PHPUnit\Framework\TestCase;
-use PHPUnit\Framework\Attributes\Test;
 use TestFlowLabs\DocTest\Assertion\OutputContainsAssertion;
 
-final class OutputContainsAssertionTest extends TestCase
-{
-    #[Test]
-    public function type_returns_output_contains(): void
-    {
-        $assertion = new OutputContainsAssertion('hello', 1);
+test('type returns output contains', function (): void {
+    $assertion = new OutputContainsAssertion('hello', 1);
 
-        $this->assertSame('output_contains', $assertion->type());
-    }
+    expect($assertion->type())->toBe('output_contains');
+});
+test('has expected substring', function (): void {
+    $assertion = new OutputContainsAssertion('world', 5);
 
-    #[Test]
-    public function has_expected_substring(): void
-    {
-        $assertion = new OutputContainsAssertion('world', 5);
+    expect($assertion->expected)->toBe('world');
+});
+test('line returns correct line', function (): void {
+    $assertion = new OutputContainsAssertion('test', 42);
 
-        $this->assertSame('world', $assertion->expected);
-    }
-
-    #[Test]
-    public function line_returns_correct_line(): void
-    {
-        $assertion = new OutputContainsAssertion('test', 42);
-
-        $this->assertSame(42, $assertion->line());
-    }
-}
+    expect($assertion->line())->toBe(42);
+});

@@ -1,39 +1,17 @@
 <?php
 
 declare(strict_types=1);
-
-namespace TestFlowLabs\DocTest\Tests\Unit\Reporter;
-
-use PHPUnit\Framework\TestCase;
-use PHPUnit\Framework\Attributes\Test;
 use TestFlowLabs\DocTest\CodeBlock\CodeBlock;
 use TestFlowLabs\DocTest\CodeBlock\Attributes;
 use TestFlowLabs\DocTest\Reporter\JsonReporter;
 use TestFlowLabs\DocTest\Executor\ExecutionResult;
 use TestFlowLabs\DocTest\Assertion\AssertionParser;
 
-final class JsonReporterTest extends TestCase
-{
-    private JsonReporter $reporter;
-    private AssertionParser $parser;
+beforeEach(function (): void {
+    $this->reporter = new JsonReporter();
+    $this->parser   = new AssertionParser();
 
-    protected function setUp(): void
-    {
-        $this->reporter = new JsonReporter();
-        $this->parser   = new AssertionParser();
-    }
-
-    private function makeResult(
-        bool $passed,
-        string $file = 'test.md',
-        int $line = 1,
-        ?string $error = null,
-        ?string $actualOutput = null,
-        ?string $expectedOutput = null,
-        ?string $diff = null,
-        bool $skipped = false,
-        float $duration = 0.1,
-    ): ExecutionResult {
+    $this->makeResult = function (bool $passed, string $file = 'test.md', int $line = 1, ?string $error = null, ?string $actualOutput = null, ?string $expectedOutput = null, ?string $diff = null, bool $skipped = false, float $duration = 0.1): ExecutionResult {
         $parsed = $this->parser->parse('echo "test";');
 
         return new ExecutionResult(
@@ -53,145 +31,110 @@ final class JsonReporterTest extends TestCase
             duration: $duration,
             skipped: $skipped,
         );
-    }
+    };
+});
+test('generates valid json', function (): void {
+    $results = [($this->makeResult)(passed: true)];
 
-    #[Test]
-    public function generates_valid_json(): void
-    {
-        $results = [$this->makeResult(passed: true)];
+    $json    = $this->reporter->generate($results);
+    $decoded = json_decode((string) $json, true);
 
-        $json    = $this->reporter->generate($results);
-        $decoded = json_decode($json, true);
+    expect($decoded)->not->toBeNull('Generated output is not valid JSON');
+});
+test('contains file and block results', function (): void {
+    $results = [
+        ($this->makeResult)(passed: true, file: 'docs/api.md', line: 5),
+        ($this->makeResult)(passed: true, file: 'docs/api.md', line: 15),
+    ];
 
-        $this->assertNotNull($decoded, 'Generated output is not valid JSON');
-    }
+    $json = $this->reporter->generate($results);
+    $data = json_decode((string) $json, true);
 
-    #[Test]
-    public function contains_file_and_block_results(): void
-    {
-        $results = [
-            $this->makeResult(passed: true, file: 'docs/api.md', line: 5),
-            $this->makeResult(passed: true, file: 'docs/api.md', line: 15),
-        ];
+    expect($data)->toHaveKey('files');
+    expect($data['files'])->toHaveCount(1);
+    expect($data['files'][0]['file'])->toBe('docs/api.md');
+    expect($data['files'][0]['blocks'])->toHaveCount(2);
+});
+test('failure details include expected actual diff', function (): void {
+    $results = [
+        ($this->makeResult)(passed: false, error: 'Output mismatch', actualOutput: 'world', expectedOutput: 'hello', diff: '- hello\n+ world'),
+    ];
 
-        $json = $this->reporter->generate($results);
-        $data = json_decode($json, true);
+    $json = $this->reporter->generate($results);
+    $data = json_decode((string) $json, true);
 
-        $this->assertArrayHasKey('files', $data);
-        $this->assertCount(1, $data['files']);
-        $this->assertSame('docs/api.md', $data['files'][0]['file']);
-        $this->assertCount(2, $data['files'][0]['blocks']);
-    }
+    $block = $data['files'][0]['blocks'][0];
+    expect($block['passed'])->toBeFalse();
+    expect($block['error'])->toBe('Output mismatch');
+    expect($block['expected'])->toBe('hello');
+    expect($block['actual'])->toBe('world');
+    expect($block['diff'])->toBe('- hello\n+ world');
+});
+test('skipped blocks marked', function (): void {
+    $results = [($this->makeResult)(passed: true, skipped: true)];
 
-    #[Test]
-    public function failure_details_include_expected_actual_diff(): void
-    {
-        $results = [
-            $this->makeResult(
-                passed: false,
-                error: 'Output mismatch',
-                actualOutput: 'world',
-                expectedOutput: 'hello',
-                diff: '- hello\n+ world',
-            ),
-        ];
+    $json = $this->reporter->generate($results);
+    $data = json_decode((string) $json, true);
 
-        $json = $this->reporter->generate($results);
-        $data = json_decode($json, true);
+    expect($data['files'][0]['blocks'][0]['skipped'])->toBeTrue();
+});
+test('summary statistics included', function (): void {
+    $results = [
+        ($this->makeResult)(passed: true),
+        ($this->makeResult)(passed: false, error: 'fail'),
+        ($this->makeResult)(passed: true, skipped: true),
+    ];
 
-        $block = $data['files'][0]['blocks'][0];
-        $this->assertFalse($block['passed']);
-        $this->assertSame('Output mismatch', $block['error']);
-        $this->assertSame('hello', $block['expected']);
-        $this->assertSame('world', $block['actual']);
-        $this->assertSame('- hello\n+ world', $block['diff']);
-    }
+    $json = $this->reporter->generate($results);
+    $data = json_decode((string) $json, true);
 
-    #[Test]
-    public function skipped_blocks_marked(): void
-    {
-        $results = [$this->makeResult(passed: true, skipped: true)];
+    expect($data)->toHaveKey('summary');
+    expect($data['summary']['total'])->toBe(3);
+    expect($data['summary']['passed'])->toBe(1);
+    expect($data['summary']['failed'])->toBe(1);
+    expect($data['summary']['skipped'])->toBe(1);
+});
+test('writes to file path', function (): void {
+    $results  = [($this->makeResult)(passed: true)];
+    $filePath = sys_get_temp_dir().'/doctest_json_'.uniqid().'.json';
 
-        $json = $this->reporter->generate($results);
-        $data = json_decode($json, true);
+    $this->reporter->generateToFile($results, $filePath);
 
-        $this->assertTrue($data['files'][0]['blocks'][0]['skipped']);
-    }
+    expect($filePath)->toBeFile();
+    $content = file_get_contents($filePath);
+    $decoded = json_decode($content, true);
+    expect($decoded)->not->toBeNull();
+    expect($decoded)->toHaveKey('summary');
 
-    #[Test]
-    public function summary_statistics_included(): void
-    {
-        $results = [
-            $this->makeResult(passed: true),
-            $this->makeResult(passed: false, error: 'fail'),
-            $this->makeResult(passed: true, skipped: true),
-        ];
+    unlink($filePath);
+});
+test('generates valid json for empty results', function (): void {
+    $json = $this->reporter->generate([]);
+    $data = json_decode((string) $json, true);
 
-        $json = $this->reporter->generate($results);
-        $data = json_decode($json, true);
+    expect($data)->not->toBeNull();
+    expect($data['files'])->toBe([]);
+    expect($data['summary']['total'])->toBe(0);
+});
+test('groups multiple files correctly', function (): void {
+    $results = [
+        ($this->makeResult)(passed: true, file: 'a.md', line: 1),
+        ($this->makeResult)(passed: true, file: 'b.md', line: 1),
+        ($this->makeResult)(passed: false, file: 'a.md', line: 5, error: 'fail'),
+    ];
 
-        $this->assertArrayHasKey('summary', $data);
-        $this->assertSame(3, $data['summary']['total']);
-        $this->assertSame(1, $data['summary']['passed']);
-        $this->assertSame(1, $data['summary']['failed']);
-        $this->assertSame(1, $data['summary']['skipped']);
-    }
+    $json = $this->reporter->generate($results);
+    $data = json_decode((string) $json, true);
 
-    #[Test]
-    public function writes_to_file_path(): void
-    {
-        $results  = [$this->makeResult(passed: true)];
-        $filePath = sys_get_temp_dir().'/doctest_json_'.uniqid().'.json';
+    expect($data['files'])->toHaveCount(2);
+});
+test('block includes duration', function (): void {
+    $results = [($this->makeResult)(passed: true, duration: 1.23)];
 
-        $this->reporter->generateToFile($results, $filePath);
+    $json  = $this->reporter->generate($results);
+    $data  = json_decode((string) $json, true);
+    $block = $data['files'][0]['blocks'][0];
 
-        $this->assertFileExists($filePath);
-        $content = file_get_contents($filePath);
-        $decoded = json_decode($content, true);
-        $this->assertNotNull($decoded);
-        $this->assertArrayHasKey('summary', $decoded);
-
-        unlink($filePath);
-    }
-
-    // --- Edge cases ---
-
-    #[Test]
-    public function generates_valid_json_for_empty_results(): void
-    {
-        $json = $this->reporter->generate([]);
-        $data = json_decode($json, true);
-
-        $this->assertNotNull($data);
-        $this->assertSame([], $data['files']);
-        $this->assertSame(0, $data['summary']['total']);
-    }
-
-    #[Test]
-    public function groups_multiple_files_correctly(): void
-    {
-        $results = [
-            $this->makeResult(passed: true, file: 'a.md', line: 1),
-            $this->makeResult(passed: true, file: 'b.md', line: 1),
-            $this->makeResult(passed: false, file: 'a.md', line: 5, error: 'fail'),
-        ];
-
-        $json = $this->reporter->generate($results);
-        $data = json_decode($json, true);
-
-        $this->assertCount(2, $data['files']);
-    }
-
-    #[Test]
-    public function block_includes_duration(): void
-    {
-        $results = [$this->makeResult(passed: true, duration: 1.23)];
-
-        $json  = $this->reporter->generate($results);
-        $data  = json_decode($json, true);
-        $block = $data['files'][0]['blocks'][0];
-
-        $this->assertArrayHasKey('duration', $block);
-        $this->assertSame(1.23, $block['duration']);
-    }
-}
+    expect($block)->toHaveKey('duration');
+    expect($block['duration'])->toBe(1.23);
+});

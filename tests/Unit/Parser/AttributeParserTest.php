@@ -1,181 +1,114 @@
 <?php
 
 declare(strict_types=1);
-
-namespace TestFlowLabs\DocTest\Tests\Unit\Parser;
-
-use PHPUnit\Framework\TestCase;
-use PHPUnit\Framework\Attributes\Test;
 use TestFlowLabs\DocTest\CodeBlock\Attribute;
 use TestFlowLabs\DocTest\Parser\AttributeParser;
 
-final class AttributeParserTest extends TestCase
-{
-    private AttributeParser $parser;
+beforeEach(function (): void {
+    $this->parser = new AttributeParser();
+});
+test('parses empty info string', function (): void {
+    $attributes = $this->parser->parse('php');
 
-    protected function setUp(): void
-    {
-        $this->parser = new AttributeParser();
-    }
+    expect($attributes->attribute)->toBeNull();
+    expect($attributes->group)->toBeNull();
+});
+test('parses ignore', function (): void {
+    $attributes = $this->parser->parse('php ignore');
 
-    #[Test]
-    public function parses_empty_info_string(): void
-    {
-        $attributes = $this->parser->parse('php');
+    expect($attributes->attribute)->toBe(Attribute::Ignore);
+});
+test('parses no run', function (): void {
+    $attributes = $this->parser->parse('php no_run');
 
-        $this->assertNull($attributes->attribute);
-        $this->assertNull($attributes->group);
-    }
+    expect($attributes->attribute)->toBe(Attribute::NoRun);
+});
+test('parses bare throws', function (): void {
+    $attributes = $this->parser->parse('php throws');
 
-    #[Test]
-    public function parses_ignore(): void
-    {
-        $attributes = $this->parser->parse('php ignore');
+    expect($attributes->attribute)->toBe(Attribute::Throws);
+    expect($attributes->throwsClass)->toBeNull();
+    expect($attributes->throwsMessage)->toBeNull();
+});
+test('parses throws with class', function (): void {
+    $attributes = $this->parser->parse('php throws(InvalidArgumentException)');
 
-        $this->assertSame(Attribute::Ignore, $attributes->attribute);
-    }
+    expect($attributes->attribute)->toBe(Attribute::Throws);
+    expect($attributes->throwsClass)->toBe('InvalidArgumentException');
+    expect($attributes->throwsMessage)->toBeNull();
+});
+test('parses throws with class and message', function (): void {
+    $attributes = $this->parser->parse('php throws(InvalidArgumentException, "Bad input")');
 
-    #[Test]
-    public function parses_no_run(): void
-    {
-        $attributes = $this->parser->parse('php no_run');
+    expect($attributes->attribute)->toBe(Attribute::Throws);
+    expect($attributes->throwsClass)->toBe('InvalidArgumentException');
+    expect($attributes->throwsMessage)->toBe('Bad input');
+});
+test('parses parse error', function (): void {
+    $attributes = $this->parser->parse('php parse_error');
 
-        $this->assertSame(Attribute::NoRun, $attributes->attribute);
-    }
+    expect($attributes->attribute)->toBe(Attribute::ParseError);
+});
+test('parses setup', function (): void {
+    $attributes = $this->parser->parse('php setup');
 
-    #[Test]
-    public function parses_bare_throws(): void
-    {
-        $attributes = $this->parser->parse('php throws');
+    expect($attributes->attribute)->toBe(Attribute::Setup);
+});
+test('parses teardown', function (): void {
+    $attributes = $this->parser->parse('php teardown');
 
-        $this->assertSame(Attribute::Throws, $attributes->attribute);
-        $this->assertNull($attributes->throwsClass);
-        $this->assertNull($attributes->throwsMessage);
-    }
+    expect($attributes->attribute)->toBe(Attribute::Teardown);
+});
+test('parses group', function (): void {
+    $attributes = $this->parser->parse('php group="order-flow"');
 
-    #[Test]
-    public function parses_throws_with_class(): void
-    {
-        $attributes = $this->parser->parse('php throws(InvalidArgumentException)');
+    expect($attributes->group)->toBe('order-flow');
+});
+test('ignores unknown attributes', function (): void {
+    $attributes = $this->parser->parse('php unknown_thing');
 
-        $this->assertSame(Attribute::Throws, $attributes->attribute);
-        $this->assertSame('InvalidArgumentException', $attributes->throwsClass);
-        $this->assertNull($attributes->throwsMessage);
-    }
+    expect($attributes->attribute)->toBeNull();
+});
+test('group combined with attribute', function (): void {
+    $attributes = $this->parser->parse('php group="test" throws');
 
-    #[Test]
-    public function parses_throws_with_class_and_message(): void
-    {
-        $attributes = $this->parser->parse('php throws(InvalidArgumentException, "Bad input")');
+    expect($attributes->attribute)->toBe(Attribute::Throws);
+    expect($attributes->group)->toBe('test');
+});
+test('parses throws with namespaced class', function (): void {
+    $attributes = $this->parser->parse('php throws(App\\Exceptions\\CustomException)');
 
-        $this->assertSame(Attribute::Throws, $attributes->attribute);
-        $this->assertSame('InvalidArgumentException', $attributes->throwsClass);
-        $this->assertSame('Bad input', $attributes->throwsMessage);
-    }
+    expect($attributes->attribute)->toBe(Attribute::Throws);
+    expect($attributes->throwsClass)->toBe('App\\Exceptions\\CustomException');
+});
+test('group combined with throws class and message', function (): void {
+    $attributes = $this->parser->parse('php group="grp" throws(RuntimeException, "msg")');
 
-    #[Test]
-    public function parses_parse_error(): void
-    {
-        $attributes = $this->parser->parse('php parse_error');
+    expect($attributes->attribute)->toBe(Attribute::Throws);
+    expect($attributes->throwsClass)->toBe('RuntimeException');
+    expect($attributes->throwsMessage)->toBe('msg');
+    expect($attributes->group)->toBe('grp');
+});
+test('first attribute wins when multiple present', function (): void {
+    $attributes = $this->parser->parse('php ignore no_run');
 
-        $this->assertSame(Attribute::ParseError, $attributes->attribute);
-    }
+    expect($attributes->attribute)->toBe(Attribute::Ignore);
+});
+test('strips shiki highlight before parsing attributes', function (): void {
+    $attributes = $this->parser->parse('php{1,4-6} ignore');
 
-    #[Test]
-    public function parses_setup(): void
-    {
-        $attributes = $this->parser->parse('php setup');
+    expect($attributes->attribute)->toBe(Attribute::Ignore);
+});
+test('empty string returns no attributes', function (): void {
+    $attributes = $this->parser->parse('');
 
-        $this->assertSame(Attribute::Setup, $attributes->attribute);
-    }
+    expect($attributes->attribute)->toBeNull();
+    expect($attributes->group)->toBeNull();
+});
+test('throws with empty message returns null message', function (): void {
+    $attributes = $this->parser->parse('php throws(RuntimeException, "")');
 
-    #[Test]
-    public function parses_teardown(): void
-    {
-        $attributes = $this->parser->parse('php teardown');
-
-        $this->assertSame(Attribute::Teardown, $attributes->attribute);
-    }
-
-    #[Test]
-    public function parses_group(): void
-    {
-        $attributes = $this->parser->parse('php group="order-flow"');
-
-        $this->assertSame('order-flow', $attributes->group);
-    }
-
-    #[Test]
-    public function ignores_unknown_attributes(): void
-    {
-        $attributes = $this->parser->parse('php unknown_thing');
-
-        $this->assertNull($attributes->attribute);
-    }
-
-    #[Test]
-    public function group_combined_with_attribute(): void
-    {
-        $attributes = $this->parser->parse('php group="test" throws');
-
-        $this->assertSame(Attribute::Throws, $attributes->attribute);
-        $this->assertSame('test', $attributes->group);
-    }
-
-    // --- Edge cases ---
-
-    #[Test]
-    public function parses_throws_with_namespaced_class(): void
-    {
-        $attributes = $this->parser->parse('php throws(App\\Exceptions\\CustomException)');
-
-        $this->assertSame(Attribute::Throws, $attributes->attribute);
-        $this->assertSame('App\\Exceptions\\CustomException', $attributes->throwsClass);
-    }
-
-    #[Test]
-    public function group_combined_with_throws_class_and_message(): void
-    {
-        $attributes = $this->parser->parse('php group="grp" throws(RuntimeException, "msg")');
-
-        $this->assertSame(Attribute::Throws, $attributes->attribute);
-        $this->assertSame('RuntimeException', $attributes->throwsClass);
-        $this->assertSame('msg', $attributes->throwsMessage);
-        $this->assertSame('grp', $attributes->group);
-    }
-
-    #[Test]
-    public function first_attribute_wins_when_multiple_present(): void
-    {
-        $attributes = $this->parser->parse('php ignore no_run');
-
-        $this->assertSame(Attribute::Ignore, $attributes->attribute);
-    }
-
-    #[Test]
-    public function strips_shiki_highlight_before_parsing_attributes(): void
-    {
-        $attributes = $this->parser->parse('php{1,4-6} ignore');
-
-        $this->assertSame(Attribute::Ignore, $attributes->attribute);
-    }
-
-    #[Test]
-    public function empty_string_returns_no_attributes(): void
-    {
-        $attributes = $this->parser->parse('');
-
-        $this->assertNull($attributes->attribute);
-        $this->assertNull($attributes->group);
-    }
-
-    #[Test]
-    public function throws_with_empty_message_returns_null_message(): void
-    {
-        $attributes = $this->parser->parse('php throws(RuntimeException, "")');
-
-        $this->assertSame(Attribute::Throws, $attributes->attribute);
-        $this->assertSame('RuntimeException', $attributes->throwsClass);
-        $this->assertNull($attributes->throwsMessage);
-    }
-}
+    expect($attributes->attribute)->toBe(Attribute::Throws);
+    expect($attributes->throwsClass)->toBe('RuntimeException');
+    expect($attributes->throwsMessage)->toBeNull();
+});

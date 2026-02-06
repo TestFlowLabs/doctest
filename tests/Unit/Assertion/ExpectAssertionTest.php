@@ -1,45 +1,26 @@
 <?php
 
 declare(strict_types=1);
-
-namespace TestFlowLabs\DocTest\Tests\Unit\Assertion;
-
-use PHPUnit\Framework\TestCase;
-use PHPUnit\Framework\Attributes\Test;
 use TestFlowLabs\DocTest\Assertion\Assertion;
 use TestFlowLabs\DocTest\Assertion\ExpectAssertion;
 
-final class ExpectAssertionTest extends TestCase
-{
-    #[Test]
-    public function implements_assertion_interface(): void
-    {
-        $assertion = new ExpectAssertion('$x === 5', 10);
+test('implements assertion interface', function (): void {
+    $assertion = new ExpectAssertion('$x === 5', 10);
 
-        $this->assertInstanceOf(Assertion::class, $assertion);
-    }
+    expect($assertion)->toBeInstanceOf(Assertion::class);
+});
+test('type returns expect', function (): void {
+    $assertion = new ExpectAssertion('$x === 5', 10);
 
-    #[Test]
-    public function type_returns_expect(): void
-    {
-        $assertion = new ExpectAssertion('$x === 5', 10);
+    expect($assertion->type())->toBe('expect');
+});
+test('line returns correct value', function (): void {
+    $assertion = new ExpectAssertion('$x === 5', 42);
 
-        $this->assertSame('expect', $assertion->type());
-    }
+    expect($assertion->line())->toBe(42);
+});
+test('expression property is accessible', function (): void {
+    $assertion = new ExpectAssertion('count($items) > 0', 7);
 
-    #[Test]
-    public function line_returns_correct_value(): void
-    {
-        $assertion = new ExpectAssertion('$x === 5', 42);
-
-        $this->assertSame(42, $assertion->line());
-    }
-
-    #[Test]
-    public function expression_property_is_accessible(): void
-    {
-        $assertion = new ExpectAssertion('count($items) > 0', 7);
-
-        $this->assertSame('count($items) > 0', $assertion->expression);
-    }
-}
+    expect($assertion->expression)->toBe('count($items) > 0');
+});

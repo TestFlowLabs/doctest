@@ -1,11 +1,6 @@
 <?php
 
 declare(strict_types=1);
-
-namespace TestFlowLabs\DocTest\Tests\Unit\Executor;
-
-use PHPUnit\Framework\TestCase;
-use PHPUnit\Framework\Attributes\Test;
 use TestFlowLabs\DocTest\CodeBlock\CodeBlock;
 use TestFlowLabs\DocTest\CodeBlock\Attributes;
 use TestFlowLabs\DocTest\Executor\CodeGenerator;
@@ -13,31 +8,14 @@ use TestFlowLabs\DocTest\Assertion\AssertionParser;
 use TestFlowLabs\DocTest\Assertion\ExpectAssertion;
 use TestFlowLabs\DocTest\Assertion\OutputAssertion;
 
-final class CodeGeneratorSetupTeardownTest extends TestCase
-{
-    private CodeGenerator $generator;
-    private AssertionParser $parser;
+beforeEach(function (): void {
+    $this->generator = new CodeGenerator();
+    $this->parser    = new AssertionParser();
 
-    protected function setUp(): void
-    {
-        $this->generator = new CodeGenerator();
-        $this->parser    = new AssertionParser();
-    }
-
-    protected function tearDown(): void
-    {
-        $dir = sys_get_temp_dir().'/doctest';
-
-        if (is_dir($dir)) {
-            array_map(unlink(...), glob($dir.'/*.php') ?: []);
-        }
-    }
-
-    /**
+    /*
      * @param  array<\TestFlowLabs\DocTest\Assertion\Assertion>  $assertions
      */
-    private function makeBlock(string $code, array $assertions = []): CodeBlock
-    {
+    $this->makeBlock = function (string $code, array $assertions = []): CodeBlock {
         $parsed = $this->parser->parse($code);
 
         return new CodeBlock(
@@ -48,124 +26,104 @@ final class CodeGeneratorSetupTeardownTest extends TestCase
             attributes: new Attributes(),
             assertions: $assertions,
         );
+    };
+});
+afterEach(function (): void {
+    $dir = sys_get_temp_dir().'/doctest';
+
+    if (is_dir($dir)) {
+        array_map(unlink(...), glob($dir.'/*.php') ?: []);
     }
+});
+test('prepends setup code before block code', function (): void {
+    $block = ($this->makeBlock)('echo $greeting;');
+    $setup = '$greeting = "hello";';
 
-    #[Test]
-    public function prepends_setup_code_before_block_code(): void
-    {
-        $block = $this->makeBlock('echo $greeting;');
-        $setup = '$greeting = "hello";';
+    $filePath = $this->generator->generate($block, setup: $setup);
+    $content  = file_get_contents($filePath);
 
-        $filePath = $this->generator->generate($block, setup: $setup);
-        $content  = file_get_contents($filePath);
+    $setupPos = strpos($content, '$greeting = "hello"');
+    $codePos  = strpos($content, 'echo $greeting');
 
-        $setupPos = strpos($content, '$greeting = "hello"');
-        $codePos  = strpos($content, 'echo $greeting');
+    $this->assertNotFalse($setupPos);
+    $this->assertNotFalse($codePos);
+    expect($setupPos)->toBeLessThan($codePos);
+});
+test('appends teardown code after block code', function (): void {
+    $block    = ($this->makeBlock)('$resource = "open";');
+    $teardown = '$resource = null;';
 
-        $this->assertNotFalse($setupPos);
-        $this->assertNotFalse($codePos);
-        $this->assertLessThan($codePos, $setupPos);
-    }
+    $filePath = $this->generator->generate($block, teardown: $teardown);
+    $content  = file_get_contents($filePath);
 
-    #[Test]
-    public function appends_teardown_code_after_block_code(): void
-    {
-        $block    = $this->makeBlock('$resource = "open";');
-        $teardown = '$resource = null;';
+    $codePos     = strpos($content, '$resource = "open"');
+    $teardownPos = strpos($content, '$resource = null');
 
-        $filePath = $this->generator->generate($block, teardown: $teardown);
-        $content  = file_get_contents($filePath);
+    $this->assertNotFalse($codePos);
+    $this->assertNotFalse($teardownPos);
+    expect($codePos)->toBeLessThan($teardownPos);
+});
+test('setup and teardown together in correct order', function (): void {
+    $block    = ($this->makeBlock)('echo $x;');
+    $setup    = '$x = 42;';
+    $teardown = 'unset($x);';
 
-        $codePos     = strpos($content, '$resource = "open"');
-        $teardownPos = strpos($content, '$resource = null');
+    $filePath = $this->generator->generate($block, setup: $setup, teardown: $teardown);
+    $content  = file_get_contents($filePath);
 
-        $this->assertNotFalse($codePos);
-        $this->assertNotFalse($teardownPos);
-        $this->assertLessThan($teardownPos, $codePos);
-    }
+    $setupPos    = strpos($content, '$x = 42');
+    $codePos     = strpos($content, 'echo $x');
+    $teardownPos = strpos($content, 'unset($x)');
 
-    #[Test]
-    public function setup_and_teardown_together_in_correct_order(): void
-    {
-        $block    = $this->makeBlock('echo $x;');
-        $setup    = '$x = 42;';
-        $teardown = 'unset($x);';
+    $this->assertNotFalse($setupPos);
+    $this->assertNotFalse($codePos);
+    $this->assertNotFalse($teardownPos);
+    expect($setupPos)->toBeLessThan($codePos);
+    expect($codePos)->toBeLessThan($teardownPos);
+});
+test('null setup teardown produces no change', function (): void {
+    $block = ($this->makeBlock)('echo "test";');
 
-        $filePath = $this->generator->generate($block, setup: $setup, teardown: $teardown);
-        $content  = file_get_contents($filePath);
+    $withoutParams  = $this->generator->generate($block);
+    $contentWithout = file_get_contents($withoutParams);
 
-        $setupPos    = strpos($content, '$x = 42');
-        $codePos     = strpos($content, 'echo $x');
-        $teardownPos = strpos($content, 'unset($x)');
+    // Generate new file with null params explicitly
+    $withNullParams = $this->generator->generate($block, setup: null, teardown: null);
+    $contentWith    = file_get_contents($withNullParams);
 
-        $this->assertNotFalse($setupPos);
-        $this->assertNotFalse($codePos);
-        $this->assertNotFalse($teardownPos);
-        $this->assertLessThan($codePos, $setupPos);
-        $this->assertLessThan($teardownPos, $codePos);
-    }
+    // Both should produce structurally identical content (ignoring file path differences)
+    expect(preg_replace('/doctest_[a-f0-9]+/', 'doctest_X', $contentWith))->toBe(preg_replace('/doctest_[a-f0-9]+/', 'doctest_X', $contentWithout));
+});
+test('setup variables accessible in block scope', function (): void {
+    $block = ($this->makeBlock)('echo $greeting;', assertions: [new OutputAssertion('hello world', 1)]);
+    $setup = '$greeting = "hello world";';
 
-    #[Test]
-    public function null_setup_teardown_produces_no_change(): void
-    {
-        $block = $this->makeBlock('echo "test";');
+    $filePath = $this->generator->generate($block, setup: $setup);
 
-        $withoutParams  = $this->generator->generate($block);
-        $contentWithout = file_get_contents($withoutParams);
+    $output   = [];
+    $exitCode = 0;
+    exec(PHP_BINARY.' -l '.escapeshellarg((string) $filePath).' 2>&1', $output, $exitCode);
 
-        // Generate new file with null params explicitly
-        $withNullParams = $this->generator->generate($block, setup: null, teardown: null);
-        $contentWith    = file_get_contents($withNullParams);
+    expect($exitCode)->toBe(0, 'Generated file with setup has syntax errors: '.implode("\n", $output));
+});
+test('group generation supports setup and teardown', function (): void {
+    $blocks = [
+        ($this->makeBlock)('$counter++;'),
+        ($this->makeBlock)('$counter++;', assertions: [new ExpectAssertion('$counter === 2', 2)]),
+    ];
+    $setup    = '$counter = 0;';
+    $teardown = 'unset($counter);';
 
-        // Both should produce structurally identical content (ignoring file path differences)
-        $this->assertSame(
-            preg_replace('/doctest_[a-f0-9]+/', 'doctest_X', $contentWithout),
-            preg_replace('/doctest_[a-f0-9]+/', 'doctest_X', $contentWith),
-        );
-    }
+    $filePath = $this->generator->generateGroup($blocks, setup: $setup, teardown: $teardown);
+    $content  = file_get_contents($filePath);
 
-    #[Test]
-    public function setup_variables_accessible_in_block_scope(): void
-    {
-        $block = $this->makeBlock(
-            'echo $greeting;',
-            assertions: [new OutputAssertion('hello world', 1)],
-        );
-        $setup = '$greeting = "hello world";';
+    $setupPos      = strpos($content, '$counter = 0');
+    $firstBlockPos = strpos($content, '$counter++');
+    $teardownPos   = strpos($content, 'unset($counter)');
 
-        $filePath = $this->generator->generate($block, setup: $setup);
-
-        $output   = [];
-        $exitCode = 0;
-        exec(PHP_BINARY.' -l '.escapeshellarg($filePath).' 2>&1', $output, $exitCode);
-
-        $this->assertSame(0, $exitCode, 'Generated file with setup has syntax errors: '.implode("\n", $output));
-    }
-
-    #[Test]
-    public function group_generation_supports_setup_and_teardown(): void
-    {
-        $blocks = [
-            $this->makeBlock('$counter++;'),
-            $this->makeBlock(
-                '$counter++;',
-                assertions: [new ExpectAssertion('$counter === 2', 2)],
-            ),
-        ];
-        $setup    = '$counter = 0;';
-        $teardown = 'unset($counter);';
-
-        $filePath = $this->generator->generateGroup($blocks, setup: $setup, teardown: $teardown);
-        $content  = file_get_contents($filePath);
-
-        $setupPos      = strpos($content, '$counter = 0');
-        $firstBlockPos = strpos($content, '$counter++');
-        $teardownPos   = strpos($content, 'unset($counter)');
-
-        $this->assertNotFalse($setupPos);
-        $this->assertNotFalse($firstBlockPos);
-        $this->assertNotFalse($teardownPos);
-        $this->assertLessThan($firstBlockPos, $setupPos);
-        $this->assertLessThan($teardownPos, $firstBlockPos);
-    }
-}
+    $this->assertNotFalse($setupPos);
+    $this->assertNotFalse($firstBlockPos);
+    $this->assertNotFalse($teardownPos);
+    expect($setupPos)->toBeLessThan($firstBlockPos);
+    expect($firstBlockPos)->toBeLessThan($teardownPos);
+});

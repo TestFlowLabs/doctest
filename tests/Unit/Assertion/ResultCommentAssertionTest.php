@@ -1,53 +1,31 @@
 <?php
 
 declare(strict_types=1);
-
-namespace TestFlowLabs\DocTest\Tests\Unit\Assertion;
-
-use PHPUnit\Framework\TestCase;
-use PHPUnit\Framework\Attributes\Test;
 use TestFlowLabs\DocTest\Assertion\Assertion;
 use TestFlowLabs\DocTest\Assertion\ResultCommentAssertion;
 
-final class ResultCommentAssertionTest extends TestCase
-{
-    #[Test]
-    public function implements_assertion_interface(): void
-    {
-        $assertion = new ResultCommentAssertion('$x', 'true', 1);
+test('implements assertion interface', function (): void {
+    $assertion = new ResultCommentAssertion('$x', 'true', 1);
 
-        $this->assertInstanceOf(Assertion::class, $assertion);
-    }
+    expect($assertion)->toBeInstanceOf(Assertion::class);
+});
+test('returns result comment type', function (): void {
+    $assertion = new ResultCommentAssertion('$x', 'true', 1);
 
-    #[Test]
-    public function returns_result_comment_type(): void
-    {
-        $assertion = new ResultCommentAssertion('$x', 'true', 1);
+    expect($assertion->type())->toBe('result_comment');
+});
+test('stores expression', function (): void {
+    $assertion = new ResultCommentAssertion('$state->matches(\'green\')', 'true', 5);
 
-        $this->assertSame('result_comment', $assertion->type());
-    }
+    expect($assertion->expression)->toBe('$state->matches(\'green\')');
+});
+test('stores expected value', function (): void {
+    $assertion = new ResultCommentAssertion('$x', '42', 3);
 
-    #[Test]
-    public function stores_expression(): void
-    {
-        $assertion = new ResultCommentAssertion('$state->matches(\'green\')', 'true', 5);
+    expect($assertion->expectedValue)->toBe('42');
+});
+test('stores line number', function (): void {
+    $assertion = new ResultCommentAssertion('$x', 'true', 10);
 
-        $this->assertSame('$state->matches(\'green\')', $assertion->expression);
-    }
-
-    #[Test]
-    public function stores_expected_value(): void
-    {
-        $assertion = new ResultCommentAssertion('$x', '42', 3);
-
-        $this->assertSame('42', $assertion->expectedValue);
-    }
-
-    #[Test]
-    public function stores_line_number(): void
-    {
-        $assertion = new ResultCommentAssertion('$x', 'true', 10);
-
-        $this->assertSame(10, $assertion->line());
-    }
-}
+    expect($assertion->line())->toBe(10);
+});
