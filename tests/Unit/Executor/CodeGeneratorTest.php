@@ -7,6 +7,8 @@ namespace TestFlowLabs\DocTest\Tests\Unit\Executor;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use TestFlowLabs\DocTest\Assertion\AssertionParser;
+use TestFlowLabs\DocTest\Assertion\ExpectAssertion;
+use TestFlowLabs\DocTest\Assertion\OutputAssertion;
 use TestFlowLabs\DocTest\CodeBlock\Attribute;
 use TestFlowLabs\DocTest\CodeBlock\Attributes;
 use TestFlowLabs\DocTest\CodeBlock\CodeBlock;
@@ -34,7 +36,10 @@ final class CodeGeneratorTest extends TestCase
         }
     }
 
-    private function makeBlock(string $code, ?Attribute $attribute = null, ?string $throwsClass = null, ?string $throwsMessage = null): CodeBlock
+    /**
+     * @param array<\TestFlowLabs\DocTest\Assertion\Assertion> $assertions
+     */
+    private function makeBlock(string $code, ?Attribute $attribute = null, ?string $throwsClass = null, ?string $throwsMessage = null, array $assertions = []): CodeBlock
     {
         $parsed = $this->assertionParser->parse($code);
 
@@ -48,7 +53,7 @@ final class CodeGeneratorTest extends TestCase
                 throwsClass: $throwsClass,
                 throwsMessage: $throwsMessage,
             ),
-            assertions: $parsed->assertions,
+            assertions: $assertions,
         );
     }
 
@@ -63,9 +68,12 @@ final class CodeGeneratorTest extends TestCase
     }
 
     #[Test]
-    public function generates_segment_based_output_capture(): void
+    public function generates_output_capture_with_html_assertion(): void
     {
-        $block = $this->makeBlock("echo \"Hello\";\n// Output: Hello");
+        $block = $this->makeBlock(
+            'echo "Hello";',
+            assertions: [new OutputAssertion('Hello', 1)],
+        );
         $filePath = $this->generator->generate($block);
         $content = file_get_contents($filePath);
 
@@ -74,20 +82,12 @@ final class CodeGeneratorTest extends TestCase
     }
 
     #[Test]
-    public function generates_multiple_segments_for_multiple_output_assertions(): void
-    {
-        $block = $this->makeBlock("echo \"a\";\n// Output: a\necho \"b\";\n// Output: b");
-        $filePath = $this->generator->generate($block);
-        $content = file_get_contents($filePath);
-
-        $this->assertSame(2, substr_count($content, 'ob_start()'));
-        $this->assertSame(2, substr_count($content, 'ob_get_clean()'));
-    }
-
-    #[Test]
     public function generates_expect_assertion_evaluation(): void
     {
-        $block = $this->makeBlock("\$x = 42;\n// Expect: \$x === 42");
+        $block = $this->makeBlock(
+            "\$x = 42;",
+            assertions: [new ExpectAssertion('$x === 42', 2)],
+        );
         $filePath = $this->generator->generate($block);
         $content = file_get_contents($filePath);
 
@@ -125,7 +125,10 @@ final class CodeGeneratorTest extends TestCase
     #[Test]
     public function writes_results_to_stderr_as_json(): void
     {
-        $block = $this->makeBlock("echo \"test\";\n// Output: test");
+        $block = $this->makeBlock(
+            'echo "test";',
+            assertions: [new OutputAssertion('test', 1)],
+        );
         $filePath = $this->generator->generate($block);
         $content = file_get_contents($filePath);
 
@@ -148,7 +151,13 @@ final class CodeGeneratorTest extends TestCase
     #[Test]
     public function handles_mixed_output_and_expect(): void
     {
-        $block = $this->makeBlock("echo \"Hi\";\n// Output: Hi\n\$x = 1;\n// Expect: \$x === 1");
+        $block = $this->makeBlock(
+            "echo \"Hi\";\n\$x = 1;",
+            assertions: [
+                new OutputAssertion('Hi', 1),
+                new ExpectAssertion('$x === 1', 2),
+            ],
+        );
         $filePath = $this->generator->generate($block);
         $content = file_get_contents($filePath);
 
@@ -159,7 +168,10 @@ final class CodeGeneratorTest extends TestCase
     #[Test]
     public function generated_file_passes_syntax_check(): void
     {
-        $block = $this->makeBlock("echo \"Hello\";\n// Output: Hello");
+        $block = $this->makeBlock(
+            'echo "Hello";',
+            assertions: [new OutputAssertion('Hello', 1)],
+        );
         $filePath = $this->generator->generate($block);
 
         $output = [];
@@ -231,9 +243,12 @@ final class CodeGeneratorTest extends TestCase
     }
 
     #[Test]
-    public function result_comment_mixed_with_output_assertion(): void
+    public function result_comment_mixed_with_html_output_assertion(): void
     {
-        $block = $this->makeBlock("\$x = 42; // => 42\necho \$x;\n// Output: 42");
+        $block = $this->makeBlock(
+            "\$x = 42; // => 42\necho \$x;",
+            assertions: [new OutputAssertion('42', 3)],
+        );
         $filePath = $this->generator->generate($block);
         $content = file_get_contents($filePath);
 
