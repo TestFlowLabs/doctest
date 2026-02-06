@@ -9,6 +9,7 @@ use PHPUnit\Framework\TestCase;
 use TestFlowLabs\DocTest\Assertion\AssertionParser;
 use TestFlowLabs\DocTest\Assertion\ExpectAssertion;
 use TestFlowLabs\DocTest\Assertion\OutputAssertion;
+use TestFlowLabs\DocTest\Assertion\ResultCommentAssertion;
 
 final class AssertionParserTest extends TestCase
 {
@@ -125,5 +126,135 @@ final class AssertionParserTest extends TestCase
         $result = $this->parser->parse($code);
 
         $this->assertSame('  indented', $result->assertions[0]->expected);
+    }
+
+    #[Test]
+    public function finds_simple_result_comment(): void
+    {
+        $result = $this->parser->parse('$x = 42; // => 42');
+
+        $this->assertCount(1, $result->resultComments);
+        $this->assertInstanceOf(ResultCommentAssertion::class, $result->resultComments[0]);
+        $this->assertSame('$x = 42', $result->resultComments[0]->expression);
+        $this->assertSame('42', $result->resultComments[0]->expectedValue);
+    }
+
+    #[Test]
+    public function finds_boolean_result_comment(): void
+    {
+        $result = $this->parser->parse('$state->matches(\'green\'); // => true');
+
+        $this->assertCount(1, $result->resultComments);
+        $this->assertSame('$state->matches(\'green\')', $result->resultComments[0]->expression);
+        $this->assertSame('true', $result->resultComments[0]->expectedValue);
+    }
+
+    #[Test]
+    public function finds_string_result_comment(): void
+    {
+        $result = $this->parser->parse('$name = \'Alice\'; // => \'Alice\'');
+
+        $this->assertCount(1, $result->resultComments);
+        $this->assertSame('$name = \'Alice\'', $result->resultComments[0]->expression);
+        $this->assertSame('\'Alice\'', $result->resultComments[0]->expectedValue);
+    }
+
+    #[Test]
+    public function finds_null_result_comment(): void
+    {
+        $result = $this->parser->parse('$result = null; // => NULL');
+
+        $this->assertCount(1, $result->resultComments);
+        $this->assertSame('$result = null', $result->resultComments[0]->expression);
+        $this->assertSame('NULL', $result->resultComments[0]->expectedValue);
+    }
+
+    #[Test]
+    public function strips_semicolon_from_result_comment_expression(): void
+    {
+        $result = $this->parser->parse('$x = 42; // => 42');
+
+        $this->assertSame('$x = 42', $result->resultComments[0]->expression);
+    }
+
+    #[Test]
+    public function result_comment_preserves_line_number(): void
+    {
+        $result = $this->parser->parse("\$a = 1;\n\$b = 2; // => 2");
+
+        $this->assertCount(1, $result->resultComments);
+        $this->assertSame(2, $result->resultComments[0]->line());
+    }
+
+    #[Test]
+    public function result_comment_keeps_expression_in_executable_code(): void
+    {
+        $result = $this->parser->parse('$x = 42; // => 42');
+
+        $this->assertStringContainsString('$x = 42;', $result->executableCode);
+        $this->assertStringNotContainsString('// =>', $result->executableCode);
+    }
+
+    #[Test]
+    public function handles_multiple_result_comments(): void
+    {
+        $code = "\$x = 1; // => 1\n\$y = 2; // => 2\n\$z = 3; // => 3";
+        $result = $this->parser->parse($code);
+
+        $this->assertCount(3, $result->resultComments);
+        $this->assertSame('1', $result->resultComments[0]->expectedValue);
+        $this->assertSame('2', $result->resultComments[1]->expectedValue);
+        $this->assertSame('3', $result->resultComments[2]->expectedValue);
+    }
+
+    #[Test]
+    public function result_comment_does_not_match_regular_comments(): void
+    {
+        $result = $this->parser->parse("// This is a regular comment\n\$x = 1;");
+
+        $this->assertEmpty($result->resultComments);
+    }
+
+    #[Test]
+    public function result_comment_does_not_match_arrow_in_array(): void
+    {
+        $result = $this->parser->parse("\$arr = ['key' => 'value'];");
+
+        $this->assertEmpty($result->resultComments);
+    }
+
+    #[Test]
+    public function mixed_result_comments_and_output_assertions(): void
+    {
+        $code = "\$x = 42; // => 42\necho \$x;\n// Output: 42";
+        $result = $this->parser->parse($code);
+
+        $this->assertCount(1, $result->resultComments);
+        $this->assertCount(1, $result->assertions);
+    }
+
+    #[Test]
+    public function result_comment_handles_spacing_variations(): void
+    {
+        $result1 = $this->parser->parse('$x = 1; //=> 1');
+        $result2 = $this->parser->parse('$x = 1; // =>1');
+        $result3 = $this->parser->parse('$x = 1; //=>1');
+
+        $this->assertCount(1, $result1->resultComments);
+        $this->assertCount(1, $result2->resultComments);
+        $this->assertCount(1, $result3->resultComments);
+        $this->assertSame('1', $result1->resultComments[0]->expectedValue);
+        $this->assertSame('1', $result2->resultComments[0]->expectedValue);
+        $this->assertSame('1', $result3->resultComments[0]->expectedValue);
+    }
+
+    #[Test]
+    public function result_comment_without_semicolon(): void
+    {
+        $result = $this->parser->parse('is_string($x) // => false');
+
+        $this->assertCount(1, $result->resultComments);
+        $this->assertSame('is_string($x)', $result->resultComments[0]->expression);
+        $this->assertSame('false', $result->resultComments[0]->expectedValue);
     }
 }
