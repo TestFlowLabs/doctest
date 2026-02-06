@@ -39,7 +39,7 @@ Use the [JUnit reporter](/reporters/junit) for CI dashboards that parse test res
 
 Create a `doctest.php` config:
 
-```php
+```php ignore
 return [
     'reporters' => [
         'console' => true,
