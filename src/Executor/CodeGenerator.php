@@ -9,13 +9,18 @@ use TestFlowLabs\DocTest\Assertion\AssertionParser;
 
 final readonly class CodeGenerator
 {
+    public function __construct(
+        private ?string $bootstrapCode = null,
+    ) {}
+
     public function generate(CodeBlock $block, ?string $setup = null, ?string $teardown = null): string
     {
         $dir      = $this->ensureTempDir();
         $filePath = $dir.'/doctest_'.bin2hex(random_bytes(16)).'.php';
 
         if ($block->attributes->isParseError()) {
-            $content = "<?php\n".$block->rawCode."\n";
+            $bootstrapLine = $this->bootstrapCode !== null ? $this->bootstrapCode."\n" : '';
+            $content       = "<?php\n".$bootstrapLine.$block->rawCode."\n";
             $this->writeFile($filePath, $content);
 
             return $filePath;
@@ -36,7 +41,13 @@ final readonly class CodeGenerator
         $filePath = $dir.'/doctest_group_'.bin2hex(random_bytes(16)).'.php';
         $parser   = new AssertionParser();
 
-        $lines   = ["<?php\n"];
+        $lines = ["<?php\n"];
+
+        if ($this->bootstrapCode !== null) {
+            $lines[] = $this->bootstrapCode;
+            $lines[] = '';
+        }
+
         $lines[] = '$__doctest_results = [];';
         $lines[] = '';
 
@@ -110,6 +121,11 @@ final readonly class CodeGenerator
         $parsed = $parser->parse($block->rawCode);
 
         $lines = ["<?php\n"];
+
+        if ($this->bootstrapCode !== null) {
+            $lines[] = $this->bootstrapCode;
+            $lines[] = '';
+        }
 
         if ($block->attributes->isThrows()) {
             $lines[] = $this->generateThrowsWrapper($block, $parsed->executableCode);
