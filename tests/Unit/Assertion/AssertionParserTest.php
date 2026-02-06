@@ -7,8 +7,6 @@ namespace TestFlowLabs\DocTest\Tests\Unit\Assertion;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use TestFlowLabs\DocTest\Assertion\AssertionParser;
-use TestFlowLabs\DocTest\Assertion\ExpectAssertion;
-use TestFlowLabs\DocTest\Assertion\OutputAssertion;
 use TestFlowLabs\DocTest\Assertion\ResultCommentAssertion;
 
 final class AssertionParserTest extends TestCase
@@ -21,46 +19,6 @@ final class AssertionParserTest extends TestCase
     }
 
     #[Test]
-    public function finds_single_line_output(): void
-    {
-        $result = $this->parser->parse("echo \"Hello\";\n// Output: Hello");
-
-        $this->assertCount(1, $result->assertions);
-        $this->assertInstanceOf(OutputAssertion::class, $result->assertions[0]);
-        $this->assertSame('Hello', $result->assertions[0]->expected);
-    }
-
-    #[Test]
-    public function finds_multiline_output(): void
-    {
-        $code = "print_r([1, 2]);\n// Output:\n// Array\n// (\n//     [0] => 1\n//     [1] => 2\n// )";
-        $result = $this->parser->parse($code);
-
-        $this->assertCount(1, $result->assertions);
-        $this->assertInstanceOf(OutputAssertion::class, $result->assertions[0]);
-        $expected = "Array\n(\n    [0] => 1\n    [1] => 2\n)";
-        $this->assertSame($expected, $result->assertions[0]->expected);
-    }
-
-    #[Test]
-    public function finds_expect_assertion(): void
-    {
-        $result = $this->parser->parse("\$sum = 1 + 2;\n// Expect: \$sum === 3");
-
-        $this->assertCount(1, $result->expects);
-        $this->assertInstanceOf(ExpectAssertion::class, $result->expects[0]);
-        $this->assertSame('$sum === 3', $result->expects[0]->expression);
-    }
-
-    #[Test]
-    public function strips_assertion_comments_from_executable_code(): void
-    {
-        $result = $this->parser->parse("echo \"Hi\";\n// Output: Hi");
-
-        $this->assertSame("echo \"Hi\";", trim($result->executableCode));
-    }
-
-    #[Test]
     public function preserves_non_assertion_comments(): void
     {
         $result = $this->parser->parse("// This is a regular comment\n\$x = 1;");
@@ -69,63 +27,57 @@ final class AssertionParserTest extends TestCase
     }
 
     #[Test]
-    public function handles_multiple_assertions(): void
-    {
-        $code = "echo \"a\";\n// Output: a\necho \"b\";\n// Output: b";
-        $result = $this->parser->parse($code);
-
-        $this->assertCount(2, $result->assertions);
-    }
-
-    #[Test]
     public function handles_block_with_no_assertions(): void
     {
-        $result = $this->parser->parse("\$x = 42;");
+        $result = $this->parser->parse('$x = 42;');
 
-        $this->assertEmpty($result->assertions);
-        $this->assertEmpty($result->expects);
+        $this->assertEmpty($result->resultComments);
         $this->assertSame('$x = 42;', $result->executableCode);
     }
 
     #[Test]
-    public function handles_mixed_output_and_expect(): void
+    public function output_comment_is_treated_as_regular_comment(): void
     {
-        $code = "echo \"Hi\";\n// Output: Hi\n\$x = 1;\n// Expect: \$x === 1";
-        $result = $this->parser->parse($code);
+        $result = $this->parser->parse("echo \"Hello\";\n// Output: Hello");
 
-        $this->assertCount(1, $result->assertions);
-        $this->assertCount(1, $result->expects);
+        $this->assertEmpty($result->resultComments);
+        $this->assertStringContainsString('// Output: Hello', $result->executableCode);
     }
 
     #[Test]
-    public function segments_code_at_output_boundaries(): void
+    public function expect_comment_is_treated_as_regular_comment(): void
     {
-        $code = "echo \"a\";\n// Output: a\necho \"b\";\n// Output: b";
-        $result = $this->parser->parse($code);
+        $result = $this->parser->parse("\$sum = 1 + 2;\n// Expect: \$sum === 3");
 
-        $this->assertCount(2, $result->segments);
-        $this->assertSame('echo "a";', trim($result->segments[0]->code));
-        $this->assertSame('echo "b";', trim($result->segments[1]->code));
-        $this->assertNotNull($result->segments[0]->outputAssertion);
-        $this->assertSame('a', $result->segments[0]->outputAssertion->expected);
+        $this->assertEmpty($result->resultComments);
+        $this->assertStringContainsString('// Expect: $sum === 3', $result->executableCode);
     }
 
     #[Test]
-    public function multiline_continuation_strips_prefix(): void
+    public function output_contains_comment_is_treated_as_regular_comment(): void
     {
-        $code = "echo \"line1\\nline2\";\n// Output:\n// line1\n// line2";
-        $result = $this->parser->parse($code);
+        $result = $this->parser->parse("echo \"Hello World\";\n// OutputContains: World");
 
-        $this->assertSame("line1\nline2", $result->assertions[0]->expected);
+        $this->assertEmpty($result->resultComments);
+        $this->assertStringContainsString('// OutputContains: World', $result->executableCode);
     }
 
     #[Test]
-    public function preserves_internal_indentation_in_multiline(): void
+    public function output_matches_comment_is_treated_as_regular_comment(): void
     {
-        $code = "echo \"  indented\";\n// Output:\n//   indented";
-        $result = $this->parser->parse($code);
+        $result = $this->parser->parse("echo \"Order #1234\";\n// OutputMatches: /Order #\\d{4}/");
 
-        $this->assertSame('  indented', $result->assertions[0]->expected);
+        $this->assertEmpty($result->resultComments);
+        $this->assertStringContainsString('// OutputMatches:', $result->executableCode);
+    }
+
+    #[Test]
+    public function output_json_comment_is_treated_as_regular_comment(): void
+    {
+        $result = $this->parser->parse("echo json_encode(['key' => 'val']);\n// OutputJson: {\"key\": \"val\"}");
+
+        $this->assertEmpty($result->resultComments);
+        $this->assertStringContainsString('// OutputJson:', $result->executableCode);
     }
 
     #[Test]
@@ -221,16 +173,6 @@ final class AssertionParserTest extends TestCase
         $result = $this->parser->parse("\$arr = ['key' => 'value'];");
 
         $this->assertEmpty($result->resultComments);
-    }
-
-    #[Test]
-    public function mixed_result_comments_and_output_assertions(): void
-    {
-        $code = "\$x = 42; // => 42\necho \$x;\n// Output: 42";
-        $result = $this->parser->parse($code);
-
-        $this->assertCount(1, $result->resultComments);
-        $this->assertCount(1, $result->assertions);
     }
 
     #[Test]
