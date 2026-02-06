@@ -10,6 +10,7 @@ use TestFlowLabs\DocTest\Executor\Executor;
 use TestFlowLabs\DocTest\CodeBlock\Attribute;
 use TestFlowLabs\DocTest\CodeBlock\CodeBlock;
 use TestFlowLabs\DocTest\CodeBlock\Attributes;
+use TestFlowLabs\DocTest\Executor\ExecutionResult;
 use TestFlowLabs\DocTest\Assertion\AssertionParser;
 use TestFlowLabs\DocTest\Assertion\ExpectAssertion;
 use TestFlowLabs\DocTest\Assertion\OutputAssertion;
@@ -314,5 +315,57 @@ final class ExecutorTest extends TestCase
         $this->assertTrue($result->passed);
         $this->assertCount(1, $result->assertionDetails);
         $this->assertSame('ab', $result->assertionDetails[0]->expected);
+    }
+
+    #[Test]
+    public function execute_all_calls_on_result_callback_for_each_block(): void
+    {
+        $blocks = [
+            $this->makeBlock('echo "a";', assertions: [new OutputAssertion('a', 1)]),
+            $this->makeBlock('$x = 42;'),
+            $this->makeBlock('echo "b";', assertions: [new OutputAssertion('b', 1)]),
+        ];
+
+        /** @var array<ExecutionResult> $callbackResults */
+        $callbackResults = [];
+        $results         = $this->executor->executeAll($blocks, onResult: function (ExecutionResult $result) use (&$callbackResults): void {
+            $callbackResults[] = $result;
+        });
+
+        $this->assertCount(3, $results);
+        $this->assertCount(3, $callbackResults);
+        $this->assertSame($results, $callbackResults);
+    }
+
+    #[Test]
+    public function execute_all_streams_results_in_execution_order(): void
+    {
+        $blocks = [
+            $this->makeBlock('echo "first";', assertions: [new OutputAssertion('first', 1)]),
+            $this->makeBlock('echo "second";', assertions: [new OutputAssertion('second', 1)]),
+        ];
+
+        /** @var array<string> $order */
+        $order = [];
+        $this->executor->executeAll($blocks, onResult: function (ExecutionResult $result) use (&$order): void {
+            $order[] = $result->actualOutput ?? 'no-output';
+        });
+
+        $this->assertSame(['first', 'second'], $order);
+    }
+
+    #[Test]
+    public function execute_all_without_callback_still_returns_results(): void
+    {
+        $blocks = [
+            $this->makeBlock('echo "a";', assertions: [new OutputAssertion('a', 1)]),
+            $this->makeBlock('$x = 1;'),
+        ];
+
+        $results = $this->executor->executeAll($blocks);
+
+        $this->assertCount(2, $results);
+        $this->assertTrue($results[0]->passed);
+        $this->assertTrue($results[1]->passed);
     }
 }
