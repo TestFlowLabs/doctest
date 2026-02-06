@@ -54,7 +54,10 @@ final class JUnitReporter
     public function generateToFile(array $results, string $filePath): void
     {
         $xml = $this->generate($results);
-        file_put_contents($filePath, $xml);
+
+        if (file_put_contents($filePath, $xml) === false) {
+            throw new \RuntimeException("Failed to write JUnit report to {$filePath}");
+        }
     }
 
     /**
