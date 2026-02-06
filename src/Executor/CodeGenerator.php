@@ -85,6 +85,7 @@ final readonly class CodeGenerator
                 $lines[] = "    'type' => 'result_comment',";
                 $lines[] = "    'expected' => " . var_export($rc->expectedValue, true) . ',';
                 $lines[] = "    'actual' => var_export(\$__doctest_result, true),";
+                $lines[] = "    'expression' => " . var_export($rc->expression, true) . ',';
                 $lines[] = "    'line' => " . $rc->line() . ',';
                 $lines[] = '];';
                 $lines[] = '';
@@ -200,6 +201,7 @@ final readonly class CodeGenerator
                 $lines[] = "    'type' => 'result_comment',";
                 $lines[] = "    'expected' => " . var_export($rc->expectedValue, true) . ',';
                 $lines[] = "    'actual' => var_export(\$__doctest_result, true),";
+                $lines[] = "    'expression' => " . var_export($rc->expression, true) . ',';
                 $lines[] = "    'line' => " . $rc->line() . ',';
                 $lines[] = '];';
                 $lines[] = '';
