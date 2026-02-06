@@ -73,7 +73,7 @@ final readonly class CodeBlockExtractor
                 $nextNode = $nextNode->next();
             }
 
-            $allAssertions = array_merge($assertionResult->assertions, $htmlAssertions);
+            $allAssertions = $htmlAssertions;
 
             $blocks[] = new CodeBlock(
                 file: $filePath,
