@@ -346,62 +346,29 @@ final readonly class Executor
                 $actual = $result['actual'] ?? '';
                 $capturedOutput[] = $actual;
 
-                $expectedDecoded = json_decode($expectedJson, true);
-                if (json_last_error() !== JSON_ERROR_NONE) {
-                    $assertionDetails[] = new \TestFlowLabs\DocTest\Assertion\AssertionResultDetail(
-                        type: 'output_json',
-                        passed: false,
-                        expected: $expectedJson,
-                        actual: $actual,
-                        line: $result['line'] ?? 0,
-                    );
-
-                    return new ExecutionResult(
-                        passed: false,
-                        codeBlock: $block,
-                        error: 'Expected JSON is invalid: ' . json_last_error_msg(),
-                        duration: $processResult->duration,
-                        assertionDetails: $assertionDetails,
-                    );
-                }
-
-                $actualDecoded = json_decode($actual, true);
-                if (json_last_error() !== JSON_ERROR_NONE) {
-                    $assertionDetails[] = new \TestFlowLabs\DocTest\Assertion\AssertionResultDetail(
-                        type: 'output_json',
-                        passed: false,
-                        expected: $expectedJson,
-                        actual: $actual,
-                        line: $result['line'] ?? 0,
-                    );
-
-                    return new ExecutionResult(
-                        passed: false,
-                        codeBlock: $block,
-                        actualOutput: $actual,
-                        error: 'Actual JSON output is invalid: ' . json_last_error_msg(),
-                        duration: $processResult->duration,
-                        assertionDetails: $assertionDetails,
-                    );
-                }
-
-                $passed = $expectedDecoded === $actualDecoded;
+                $jsonResult = $this->comparator->compareJson($expectedJson, $actual);
 
                 $assertionDetails[] = new \TestFlowLabs\DocTest\Assertion\AssertionResultDetail(
                     type: 'output_json',
-                    passed: $passed,
+                    passed: $jsonResult->passed,
                     expected: $expectedJson,
                     actual: $actual,
                     line: $result['line'] ?? 0,
                 );
 
-                if (! $passed) {
+                if (! $jsonResult->passed) {
+                    $error = match (true) {
+                        str_contains($jsonResult->normalizedExpected, 'Expected JSON is invalid') => $jsonResult->normalizedExpected,
+                        str_contains($jsonResult->normalizedActual, 'Actual JSON output is invalid') => $jsonResult->normalizedActual,
+                        default => 'JSON output does not match expected structure',
+                    };
+
                     return new ExecutionResult(
                         passed: false,
                         codeBlock: $block,
                         actualOutput: $actual,
                         expectedOutput: $expectedJson,
-                        error: 'JSON output does not match expected structure',
+                        error: $error,
                         duration: $processResult->duration,
                         assertionDetails: $assertionDetails,
                     );
