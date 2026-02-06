@@ -58,7 +58,7 @@ jobs:
 
 For this to work, configure the JUnit reporter in `doctest.php`:
 
-```php
+```php ignore
 return [
     'reporters' => [
         'console' => true,
