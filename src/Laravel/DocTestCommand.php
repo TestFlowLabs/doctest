@@ -9,7 +9,6 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Console\Output\StreamOutput;
 use TestFlowLabs\DocTest\Config\DocTestConfig;
 use TestFlowLabs\DocTest\DocTest;
 
@@ -44,8 +43,7 @@ final class DocTestCommand extends Command
             verbosity: $baseConfig->verbosity,
         );
 
-        $stream = $output instanceof StreamOutput ? $output->getStream() : null;
-        $doctest = new DocTest($config, $stream);
+        $doctest = new DocTest($config, $output);
 
         return $doctest->run();
     }
