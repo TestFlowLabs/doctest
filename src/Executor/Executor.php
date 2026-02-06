@@ -18,10 +18,12 @@ final readonly class Executor
     public function __construct(
         int $timeout = 5,
         string $memoryLimit = '128M',
+        bool $normalizeWhitespace = true,
+        bool $trimTrailing = true,
     ) {
         $this->codeGenerator = new CodeGenerator();
         $this->processRunner = new ProcessRunner($timeout, $memoryLimit);
-        $this->comparator    = new OutputComparator();
+        $this->comparator    = new OutputComparator($normalizeWhitespace, $trimTrailing);
         $this->diffGenerator = new DiffGenerator();
     }
 
