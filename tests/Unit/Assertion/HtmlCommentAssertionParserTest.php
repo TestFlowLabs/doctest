@@ -73,6 +73,42 @@ final class HtmlCommentAssertionParserTest extends TestCase
     }
 
     #[Test]
+    public function parses_multi_line_output_assertion(): void
+    {
+        $html = "<!-- doctest:\nHello\nWorld\n-->";
+
+        $result = $this->parser->parse($html);
+
+        $this->assertCount(1, $result);
+        $this->assertInstanceOf(OutputAssertion::class, $result[0]);
+        $this->assertSame("Hello\nWorld", $result[0]->expected);
+    }
+
+    #[Test]
+    public function parses_multi_line_json_assertion(): void
+    {
+        $html = "<!-- doctest-json:\n{\n  \"key\": \"value\"\n}\n-->";
+
+        $result = $this->parser->parse($html);
+
+        $this->assertCount(1, $result);
+        $this->assertInstanceOf(OutputJsonAssertion::class, $result[0]);
+        $this->assertSame("{\n  \"key\": \"value\"\n}", $result[0]->expectedJson);
+    }
+
+    #[Test]
+    public function parses_multi_line_output_with_empty_lines(): void
+    {
+        $html = "<!-- doctest:\nLine 1\n\nLine 3\n-->";
+
+        $result = $this->parser->parse($html);
+
+        $this->assertCount(1, $result);
+        $this->assertInstanceOf(OutputAssertion::class, $result[0]);
+        $this->assertSame("Line 1\n\nLine 3", $result[0]->expected);
+    }
+
+    #[Test]
     public function returns_empty_for_non_doctest_comment(): void
     {
         $result = $this->parser->parse('<!-- just a regular comment -->');
