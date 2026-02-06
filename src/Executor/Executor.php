@@ -252,7 +252,18 @@ final readonly class Executor
                 $actual = $result['actual'] ?? '';
                 $capturedOutput[] = $actual;
 
-                if (preg_match($pattern, $actual) !== 1) {
+                $matchResult = @preg_match($pattern, $actual);
+
+                if ($matchResult === false) {
+                    return new ExecutionResult(
+                        passed: false,
+                        codeBlock: $block,
+                        error: "Invalid regex pattern: {$pattern}",
+                        duration: $processResult->duration,
+                    );
+                }
+
+                if ($matchResult !== 1) {
                     return new ExecutionResult(
                         passed: false,
                         codeBlock: $block,
