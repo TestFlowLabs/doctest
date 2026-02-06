@@ -188,4 +188,16 @@ final class EndToEndTest extends TestCase
 
         $this->assertSame(3, $this->runDocTest($config));
     }
+
+    #[Test]
+    public function runs_result_comment_assertions(): void
+    {
+        $config = DocTestConfig::fromArray([
+            'paths' => [$this->fixturesDir . '/result-comment.md'],
+        ]);
+
+        $exitCode = $this->runDocTest($config);
+
+        $this->assertSame(0, $exitCode);
+    }
 }
