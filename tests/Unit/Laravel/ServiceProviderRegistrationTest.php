@@ -10,57 +10,69 @@ use TestFlowLabs\DocTest\Laravel\LaravelBootstrap;
 
 final class ServiceProviderRegistrationTest extends TestCase
 {
+    private string $tempDir;
+
+    protected function setUp(): void
+    {
+        $this->tempDir = sys_get_temp_dir() . '/doctest_laravel_' . bin2hex(random_bytes(8));
+        mkdir($this->tempDir . '/bootstrap', 0777, true);
+        file_put_contents($this->tempDir . '/bootstrap/app.php', '<?php return new stdClass();');
+    }
+
+    protected function tearDown(): void
+    {
+        $this->removeDir($this->tempDir);
+    }
+
     #[Test]
     public function generates_provider_registration_code(): void
     {
-        $tempDir = sys_get_temp_dir() . '/doctest_laravel_' . uniqid();
-        mkdir($tempDir . '/bootstrap', 0777, true);
-        file_put_contents($tempDir . '/bootstrap/app.php', '<?php return new stdClass();');
-
-        $bootstrap = new LaravelBootstrap($tempDir);
+        $bootstrap = new LaravelBootstrap($this->tempDir);
         $providers = ['App\\Providers\\CustomProvider', 'App\\Providers\\AnotherProvider'];
         $code = $bootstrap->getProviderRegistrationCode($providers);
 
         $this->assertStringContainsString('App\\Providers\\CustomProvider', $code);
         $this->assertStringContainsString('App\\Providers\\AnotherProvider', $code);
         $this->assertStringContainsString('register', $code);
-
-        unlink($tempDir . '/bootstrap/app.php');
-        rmdir($tempDir . '/bootstrap');
-        rmdir($tempDir);
     }
 
     #[Test]
     public function empty_providers_returns_empty_string(): void
     {
-        $tempDir = sys_get_temp_dir() . '/doctest_laravel_' . uniqid();
-        mkdir($tempDir . '/bootstrap', 0777, true);
-        file_put_contents($tempDir . '/bootstrap/app.php', '<?php return new stdClass();');
-
-        $bootstrap = new LaravelBootstrap($tempDir);
+        $bootstrap = new LaravelBootstrap($this->tempDir);
         $code = $bootstrap->getProviderRegistrationCode([]);
 
         $this->assertSame('', $code);
-
-        unlink($tempDir . '/bootstrap/app.php');
-        rmdir($tempDir . '/bootstrap');
-        rmdir($tempDir);
     }
 
     #[Test]
     public function provider_code_calls_register_on_app(): void
     {
-        $tempDir = sys_get_temp_dir() . '/doctest_laravel_' . uniqid();
-        mkdir($tempDir . '/bootstrap', 0777, true);
-        file_put_contents($tempDir . '/bootstrap/app.php', '<?php return new stdClass();');
-
-        $bootstrap = new LaravelBootstrap($tempDir);
+        $bootstrap = new LaravelBootstrap($this->tempDir);
         $code = $bootstrap->getProviderRegistrationCode(['App\\MyProvider']);
 
         $this->assertStringContainsString('$app->register', $code);
+    }
 
-        unlink($tempDir . '/bootstrap/app.php');
-        rmdir($tempDir . '/bootstrap');
-        rmdir($tempDir);
+    private function removeDir(string $dir): void
+    {
+        if (! is_dir($dir)) {
+            return;
+        }
+
+        $files = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($dir, \FilesystemIterator::SKIP_DOTS),
+            \RecursiveIteratorIterator::CHILD_FIRST,
+        );
+
+        foreach ($files as $file) {
+            if ($file->isDir()) {
+                rmdir($file->getPathname());
+            } else {
+                unlink($file->getPathname());
+            }
+        }
+
+        rmdir($dir);
     }
 }
