@@ -41,13 +41,13 @@ final class ConsoleReporter
             : '';
 
         if ($result->skipped) {
-            $this->output->writeln("  <fg=gray>[SKIP]</> Line {$result->codeBlock->startLine}{$progress}");
+            $this->output->writeln("  <fg=gray>⊘</> Line {$result->codeBlock->startLine}{$progress}");
 
             return;
         }
 
         if ($result->passed) {
-            $line = "  <fg=green>[PASS]</> Line {$result->codeBlock->startLine}{$progress}";
+            $line = "  <fg=green>✔</> Line {$result->codeBlock->startLine}{$progress}";
 
             if ($this->output->isVerbose()) {
                 $line .= sprintf(' [%.2fs]', $result->duration);
@@ -58,7 +58,7 @@ final class ConsoleReporter
             return;
         }
 
-        $line = "  <fg=red>[FAIL]</> {$result->codeBlock->file}:{$result->codeBlock->startLine}{$progress}";
+        $line = "  <fg=red>✖</> {$result->codeBlock->file}:{$result->codeBlock->startLine}{$progress}";
 
         if ($this->output->isVerbose()) {
             $line .= sprintf(' [%.2fs]', $result->duration);
