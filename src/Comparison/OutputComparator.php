@@ -8,9 +8,12 @@ final readonly class OutputComparator
 {
     private Normalizer $normalizer;
 
+    private WildcardMatcher $wildcardMatcher;
+
     public function __construct()
     {
         $this->normalizer = new Normalizer();
+        $this->wildcardMatcher = new WildcardMatcher();
     }
 
     public function compare(string $expected, string $actual): ComparisonResult
@@ -18,8 +21,14 @@ final readonly class OutputComparator
         $normalizedExpected = $this->normalizer->normalize($expected);
         $normalizedActual = $this->normalizer->normalize($actual);
 
+        if ($this->wildcardMatcher->hasWildcards($normalizedExpected)) {
+            $passed = $this->wildcardMatcher->matches($normalizedActual, $normalizedExpected);
+        } else {
+            $passed = $normalizedExpected === $normalizedActual;
+        }
+
         return new ComparisonResult(
-            passed: $normalizedExpected === $normalizedActual,
+            passed: $passed,
             normalizedExpected: $normalizedExpected,
             normalizedActual: $normalizedActual,
         );
