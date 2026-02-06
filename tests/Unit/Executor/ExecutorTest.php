@@ -219,4 +219,68 @@ final class ExecutorTest extends TestCase
 
         $this->assertTrue($result->passed);
     }
+
+    #[Test]
+    public function populates_assertion_details_for_output(): void
+    {
+        $block = $this->makeBlock("echo \"Hello\";\n// Output: Hello");
+        $result = $this->executor->execute($block);
+
+        $this->assertTrue($result->passed);
+        $this->assertCount(1, $result->assertionDetails);
+        $this->assertSame('output', $result->assertionDetails[0]->type);
+        $this->assertTrue($result->assertionDetails[0]->passed);
+        $this->assertSame('Hello', $result->assertionDetails[0]->expected);
+        $this->assertSame('Hello', $result->assertionDetails[0]->actual);
+    }
+
+    #[Test]
+    public function populates_assertion_details_for_result_comment(): void
+    {
+        $block = $this->makeBlock('$x = 42; // => 42');
+        $result = $this->executor->execute($block);
+
+        $this->assertTrue($result->passed);
+        $this->assertCount(1, $result->assertionDetails);
+        $this->assertSame('result_comment', $result->assertionDetails[0]->type);
+        $this->assertTrue($result->assertionDetails[0]->passed);
+        $this->assertSame('42', $result->assertionDetails[0]->expected);
+        $this->assertSame('$x = 42', $result->assertionDetails[0]->expression);
+    }
+
+    #[Test]
+    public function populates_assertion_details_for_expect(): void
+    {
+        $block = $this->makeBlock("\$x = 42;\n// Expect: \$x === 42");
+        $result = $this->executor->execute($block);
+
+        $this->assertTrue($result->passed);
+        $this->assertCount(1, $result->assertionDetails);
+        $this->assertSame('expect', $result->assertionDetails[0]->type);
+        $this->assertTrue($result->assertionDetails[0]->passed);
+    }
+
+    #[Test]
+    public function populates_assertion_details_on_failure(): void
+    {
+        $block = $this->makeBlock("\$x = 1; // => 1\n\$y = 2; // => 99");
+        $result = $this->executor->execute($block);
+
+        $this->assertFalse($result->passed);
+        $this->assertCount(2, $result->assertionDetails);
+        $this->assertTrue($result->assertionDetails[0]->passed);
+        $this->assertFalse($result->assertionDetails[1]->passed);
+    }
+
+    #[Test]
+    public function populates_multiple_assertion_details(): void
+    {
+        $block = $this->makeBlock("echo \"a\";\n// Output: a\necho \"b\";\n// Output: b");
+        $result = $this->executor->execute($block);
+
+        $this->assertTrue($result->passed);
+        $this->assertCount(2, $result->assertionDetails);
+        $this->assertSame('a', $result->assertionDetails[0]->expected);
+        $this->assertSame('b', $result->assertionDetails[1]->expected);
+    }
 }
