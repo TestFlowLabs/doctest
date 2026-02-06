@@ -121,4 +121,128 @@ final class ProcessRunnerTest extends TestCase
         new ProcessRunner(timeout: 5, memoryLimit: '1024K');
         new ProcessRunner(timeout: 5, memoryLimit: '-1');
     }
+
+    // --- Timeout edge cases ---
+
+    #[Test]
+    public function timeout_returns_exit_code_137(): void
+    {
+        $runner = new ProcessRunner(timeout: 1, memoryLimit: '128M');
+        $file   = $this->writeTmpFile('while(true) { usleep(1000); }');
+        $result = $runner->run($file);
+
+        $this->assertSame(137, $result->exitCode);
+    }
+
+    #[Test]
+    public function fast_process_completes_before_timeout(): void
+    {
+        $runner = new ProcessRunner(timeout: 5, memoryLimit: '128M');
+        $file   = $this->writeTmpFile('echo "quick";');
+        $result = $runner->run($file);
+
+        $this->assertSame(0, $result->exitCode);
+        $this->assertSame('quick', $result->stdout);
+        $this->assertLessThan(2.0, $result->duration);
+    }
+
+    // --- Output edge cases ---
+
+    #[Test]
+    public function handles_large_stdout(): void
+    {
+        $file   = $this->writeTmpFile('echo str_repeat("X", 100_000);');
+        $result = $this->runner->run($file);
+
+        $this->assertSame(0, $result->exitCode);
+        $this->assertSame(100_000, strlen($result->stdout));
+    }
+
+    #[Test]
+    public function handles_empty_output(): void
+    {
+        $file   = $this->writeTmpFile('$x = 1;');
+        $result = $this->runner->run($file);
+
+        $this->assertSame(0, $result->exitCode);
+        $this->assertSame('', $result->stdout);
+        $this->assertSame('', $result->stderr);
+    }
+
+    #[Test]
+    public function captures_interleaved_stdout_and_stderr(): void
+    {
+        $file   = $this->writeTmpFile('echo "out"; fwrite(STDERR, "err");');
+        $result = $this->runner->run($file);
+
+        $this->assertSame('out', $result->stdout);
+        $this->assertSame('err', $result->stderr);
+    }
+
+    // --- Exit code edge cases ---
+
+    #[Test]
+    public function captures_custom_exit_code(): void
+    {
+        $file   = $this->writeTmpFile('exit(42);');
+        $result = $this->runner->run($file);
+
+        $this->assertSame(42, $result->exitCode);
+    }
+
+    #[Test]
+    public function handles_fatal_error_exit_code(): void
+    {
+        $file   = $this->writeTmpFile('$x = new NonExistentClass();');
+        $result = $this->runner->run($file);
+
+        $this->assertNotSame(0, $result->exitCode);
+    }
+
+    // --- Memory limit edge cases ---
+
+    #[Test]
+    public function rejects_memory_limit_without_unit_and_not_negative(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+
+        new ProcessRunner(timeout: 5, memoryLimit: 'abc');
+    }
+
+    #[Test]
+    public function accepts_zero_memory_limit(): void
+    {
+        $this->expectNotToPerformAssertions();
+
+        new ProcessRunner(timeout: 5, memoryLimit: '0');
+    }
+
+    #[Test]
+    public function rejects_memory_limit_with_whitespace(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+
+        new ProcessRunner(timeout: 5, memoryLimit: '128 M');
+    }
+
+    #[Test]
+    public function memory_limit_enforced_at_runtime(): void
+    {
+        $runner = new ProcessRunner(timeout: 5, memoryLimit: '8M');
+        $file   = $this->writeTmpFile('$a = str_repeat("X", 100_000_000);');
+        $result = $runner->run($file);
+
+        $this->assertNotSame(0, $result->exitCode);
+    }
+
+    // --- File handling ---
+
+    #[Test]
+    public function handles_nonexistent_file(): void
+    {
+        $result = $this->runner->run('/tmp/nonexistent_doctest_file.php');
+
+        $this->assertNotSame(0, $result->exitCode);
+        $this->assertGreaterThan(0.0, $result->duration);
+    }
 }
