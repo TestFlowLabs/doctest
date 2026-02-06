@@ -21,13 +21,13 @@ final readonly class CodeGenerator
 
         if ($block->attributes->isParseError()) {
             $content = "<?php\n" . $block->rawCode . "\n";
-            file_put_contents($filePath, $content);
+            $this->writeFile($filePath, $content);
 
             return $filePath;
         }
 
         $content = $this->generateInstrumented($block, $setup, $teardown);
-        file_put_contents($filePath, $content);
+        $this->writeFile($filePath, $content);
 
         return $filePath;
     }
@@ -97,7 +97,7 @@ final readonly class CodeGenerator
 
         $lines[] = 'fwrite(STDERR, json_encode($__doctest_results));';
 
-        file_put_contents($filePath, implode("\n", $lines));
+        $this->writeFile($filePath, implode("\n", $lines));
 
         return $filePath;
     }
@@ -179,6 +179,13 @@ final readonly class CodeGenerator
             $assertion instanceof \TestFlowLabs\DocTest\Assertion\OutputJsonAssertion => $assertion->expectedJson,
             default => '',
         };
+    }
+
+    private function writeFile(string $filePath, string $content): void
+    {
+        if (file_put_contents($filePath, $content) === false) {
+            throw new \RuntimeException("Failed to write generated code to {$filePath}");
+        }
     }
 
     private function generateThrowsWrapper(CodeBlock $block, string $executableCode): string
