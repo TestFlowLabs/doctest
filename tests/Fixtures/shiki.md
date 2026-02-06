@@ -5,8 +5,8 @@ Line highlighting:
 ```php{1,4-6}
 $highlighted = true;
 echo "works";
-// Output: works
 ```
+<!-- doctest: works -->
 
 Diff markers:
 
@@ -14,8 +14,8 @@ Diff markers:
 $before = 'old'; // [!code --]
 $after = 'new';  // [!code ++]
 echo $after;
-// Output: new
 ```
+<!-- doctest: new -->
 
 Both combined:
 
@@ -23,5 +23,5 @@ Both combined:
 $keep = true; // [!code ++]
 $remove = false; // [!code --]
 echo $keep ? 'yes' : 'no';
-// Output: yes
 ```
+<!-- doctest: yes -->
