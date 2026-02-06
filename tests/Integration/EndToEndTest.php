@@ -118,7 +118,7 @@ final class EndToEndTest extends TestCase
     public function respects_stop_on_failure(): void
     {
         $tempFile = sys_get_temp_dir() . '/doctest_stop_e2e_' . uniqid() . '.md';
-        file_put_contents($tempFile, "```php\necho \"wrong\";\n// Output: right\n```\n\n```php\necho \"ok\";\n// Output: ok\n```\n");
+        file_put_contents($tempFile, "```php\necho \"wrong\";\n```\n<!-- doctest: right -->\n\n```php\necho \"ok\";\n```\n<!-- doctest: ok -->\n");
 
         try {
             $config = DocTestConfig::fromArray([
