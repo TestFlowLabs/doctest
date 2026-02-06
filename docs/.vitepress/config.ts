@@ -34,7 +34,7 @@ export default defineConfig({
           { text: 'Reporters', link: '/reporters/' },
           { text: 'Framework Bootstrap', link: '/framework-bootstrap/' },
           { text: 'CI/CD', link: '/ci-cd/' },
-          { text: 'Integrations', link: '/integrations/claude-code' },
+          { text: 'Integrations', link: '/integrations/' },
         ],
       },
     ],
@@ -113,11 +113,9 @@ export default defineConfig({
         link: '/ci-cd/',
       },
       {
-        text: 'Integrations',
+        text: 'AI Agent Integration',
         collapsed: true,
-        items: [
-          { text: 'Claude Code', link: '/integrations/claude-code' },
-        ],
+        link: '/integrations/',
       },
       {
         text: 'Advanced',
