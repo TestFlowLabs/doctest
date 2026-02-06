@@ -4,15 +4,6 @@ The `Expect` assertion evaluates a **PHP expression** that must be truthy.
 
 ## Syntax
 
-### Inline Comment
-
-```php
-$result = array_sum([1, 2, 3, 4, 5]);
-// Expect: $result === 15
-```
-
-### HTML Comment
-
 ````markdown
 ```php
 $result = array_sum([1, 2, 3, 4, 5]);
@@ -31,25 +22,29 @@ $result = array_sum([1, 2, 3, 4, 5]);
 
 The expression has access to all variables defined in the code block:
 
+````markdown
 ```php
 $items = [1, 2, 3];
 $count = count($items);
 $sum = array_sum($items);
-// Expect: $count === 3
-// Expect: $sum === 6
 ```
+<!-- doctest-expect: $count === 3 -->
+<!-- doctest-expect: $sum === 6 -->
+````
 
 ## Multiple Expects
 
 You can have multiple `Expect` assertions on the same block:
 
+````markdown
 ```php
 $name = 'DocTest';
 $version = 1;
-// Expect: is_string($name)
-// Expect: $version >= 1
-// Expect: strlen($name) > 0
 ```
+<!-- doctest-expect: is_string($name) -->
+<!-- doctest-expect: $version >= 1 -->
+<!-- doctest-expect: strlen($name) > 0 -->
+````
 
 ## When to Use
 
@@ -61,4 +56,4 @@ $version = 1;
 
 - The expression must be a valid PHP expression
 - Use strict comparisons (`===`) when possible
-- You can call functions in the expression: `// Expect: is_array($result)`
+- You can call functions in the expression: `<!-- doctest-expect: is_array($result) -->`
