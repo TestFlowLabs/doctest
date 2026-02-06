@@ -21,3 +21,4 @@ composer.lock
 
 # Build
 /build/
+.phpunit.cache/
