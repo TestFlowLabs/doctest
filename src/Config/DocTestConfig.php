@@ -23,7 +23,6 @@ final readonly class DocTestConfig
         public bool $normalizeWhitespace = true,
         public bool $trimTrailing = true,
         public bool $reporterConsole = true,
-        public ?string $reporterJunit = null,
         public ?string $reporterJson = null,
     ) {}
 
@@ -57,7 +56,6 @@ final readonly class DocTestConfig
             normalizeWhitespace: (bool) ($output['normalize_whitespace'] ?? true),
             trimTrailing: (bool) ($output['trim_trailing'] ?? true),
             reporterConsole: (bool) ($reporters['console'] ?? true),
-            reporterJunit: is_string($reporters['junit'] ?? null) ? $reporters['junit'] : null,
             reporterJson: is_string($reporters['json'] ?? null) ? $reporters['json'] : null,
         );
     }
