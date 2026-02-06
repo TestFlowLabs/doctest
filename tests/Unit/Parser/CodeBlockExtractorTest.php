@@ -108,9 +108,9 @@ final class CodeBlockExtractorTest extends TestCase
     }
 
     #[Test]
-    public function passes_parsed_assertions_to_code_block(): void
+    public function passes_html_comment_assertions_to_code_block(): void
     {
-        $markdown = "```php\necho \"test\";\n// Output: test\n```\n";
+        $markdown = "```php\necho \"test\";\n```\n<!-- doctest: test -->\n";
         $document = $this->markdownParser->parse($markdown);
 
         $blocks = $this->extractor->extract($document, 'test.md');
@@ -118,6 +118,19 @@ final class CodeBlockExtractorTest extends TestCase
         $this->assertCount(1, $blocks);
         $this->assertCount(1, $blocks[0]->assertions);
         $this->assertInstanceOf(OutputAssertion::class, $blocks[0]->assertions[0]);
+    }
+
+    #[Test]
+    public function inline_output_comment_is_not_parsed_as_assertion(): void
+    {
+        $markdown = "```php\necho \"test\";\n// Output: test\n```\n";
+        $document = $this->markdownParser->parse($markdown);
+
+        $blocks = $this->extractor->extract($document, 'test.md');
+
+        $this->assertCount(1, $blocks);
+        $this->assertCount(0, $blocks[0]->assertions);
+        $this->assertStringContainsString('// Output: test', $blocks[0]->executableCode);
     }
 
     #[Test]
