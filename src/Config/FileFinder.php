@@ -73,17 +73,27 @@ final readonly class FileFinder
      */
     private function applyExclusions(array $files, array $exclude): array
     {
-        return array_filter($files, static function (string $file) use ($exclude): bool {
-            foreach ($exclude as $pattern) {
-                if (fnmatch($pattern, $file)) {
+        $normalizedExclude = array_map(
+            static fn (string $pattern): string => str_replace('\\', '/', $pattern),
+            $exclude,
+        );
+
+        return array_values(array_filter($files, static function (string $file) use ($normalizedExclude): bool {
+            $normalizedFile = str_replace('\\', '/', $file);
+
+            foreach ($normalizedExclude as $pattern) {
+                if (fnmatch($pattern, $normalizedFile)) {
                     return false;
                 }
-                if (fnmatch($pattern, basename($file))) {
+                if (fnmatch($pattern, basename($normalizedFile))) {
+                    return false;
+                }
+                if (str_contains('/'.$normalizedFile, '/'.$pattern.'/')) {
                     return false;
                 }
             }
 
             return true;
-        });
+        }));
     }
 }
