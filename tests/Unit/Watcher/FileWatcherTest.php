@@ -14,7 +14,7 @@ final class FileWatcherTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->tempDir = sys_get_temp_dir() . '/doctest_watch_' . uniqid();
+        $this->tempDir = sys_get_temp_dir() . '/doctest_watch_' . bin2hex(random_bytes(8));
         mkdir($this->tempDir, 0777, true);
     }
 
@@ -29,12 +29,13 @@ final class FileWatcherTest extends TestCase
     {
         $file = $this->tempDir . '/test.md';
         file_put_contents($file, 'original');
+        touch($file, time() - 10);
 
         $watcher = new FileWatcher([$this->tempDir], ['md']);
         $watcher->snapshot();
 
-        sleep(1);
         file_put_contents($file, 'modified');
+        touch($file, time());
 
         $changed = $watcher->getChangedFiles();
 
@@ -76,13 +77,16 @@ final class FileWatcherTest extends TestCase
         $txtFile = $this->tempDir . '/notes.txt';
         file_put_contents($mdFile, 'doc');
         file_put_contents($txtFile, 'notes');
+        touch($mdFile, time() - 10);
+        touch($txtFile, time() - 10);
 
         $watcher = new FileWatcher([$this->tempDir], ['md']);
         $watcher->snapshot();
 
-        sleep(1);
         file_put_contents($mdFile, 'updated');
+        touch($mdFile, time());
         file_put_contents($txtFile, 'updated');
+        touch($txtFile, time());
 
         $changed = $watcher->getChangedFiles();
 
@@ -95,12 +99,13 @@ final class FileWatcherTest extends TestCase
     {
         $file = $this->tempDir . '/test.md';
         file_put_contents($file, 'original');
+        touch($file, time() - 10);
 
         $watcher = new FileWatcher([$this->tempDir], ['md']);
         $watcher->snapshot();
 
-        sleep(1);
         file_put_contents($file, 'modified');
+        touch($file, time());
 
         $this->assertNotEmpty($watcher->getChangedFiles());
 
