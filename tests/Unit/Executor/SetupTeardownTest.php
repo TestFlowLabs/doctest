@@ -7,6 +7,7 @@ namespace TestFlowLabs\DocTest\Tests\Unit\Executor;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use TestFlowLabs\DocTest\Assertion\AssertionParser;
+use TestFlowLabs\DocTest\Assertion\OutputAssertion;
 use TestFlowLabs\DocTest\CodeBlock\Attribute;
 use TestFlowLabs\DocTest\CodeBlock\Attributes;
 use TestFlowLabs\DocTest\CodeBlock\CodeBlock;
@@ -24,7 +25,10 @@ final class SetupTeardownTest extends TestCase
         $this->parser = new AssertionParser();
     }
 
-    private function makeBlock(string $code, ?Attribute $attribute = null, ?string $group = null): CodeBlock
+    /**
+     * @param array<\TestFlowLabs\DocTest\Assertion\Assertion> $assertions
+     */
+    private function makeBlock(string $code, ?Attribute $attribute = null, ?string $group = null, array $assertions = []): CodeBlock
     {
         $parsed = $this->parser->parse($code);
 
@@ -34,7 +38,7 @@ final class SetupTeardownTest extends TestCase
             rawCode: $code,
             executableCode: $parsed->executableCode,
             attributes: new Attributes(attribute: $attribute, group: $group),
-            assertions: $parsed->assertions,
+            assertions: $assertions,
         );
     }
 
@@ -43,7 +47,10 @@ final class SetupTeardownTest extends TestCase
     {
         $blocks = [
             $this->makeBlock('$greeting = "hello";', attribute: Attribute::Setup),
-            $this->makeBlock("echo \$greeting;\n// Output: hello"),
+            $this->makeBlock(
+                'echo $greeting;',
+                assertions: [new OutputAssertion('hello', 1)],
+            ),
         ];
 
         $results = $this->executor->executeAll($blocks);
@@ -57,7 +64,10 @@ final class SetupTeardownTest extends TestCase
     public function teardown_code_is_appended_to_block_execution(): void
     {
         $blocks = [
-            $this->makeBlock("echo \"done\";\n// Output: done"),
+            $this->makeBlock(
+                'echo "done";',
+                assertions: [new OutputAssertion('done', 1)],
+            ),
             $this->makeBlock('$cleanup = true;', attribute: Attribute::Teardown),
         ];
 
@@ -74,7 +84,10 @@ final class SetupTeardownTest extends TestCase
         $blocks = [
             $this->makeBlock('$a = 1;', attribute: Attribute::Setup),
             $this->makeBlock('$b = 2;', attribute: Attribute::Setup),
-            $this->makeBlock("echo \$a + \$b;\n// Output: 3"),
+            $this->makeBlock(
+                'echo $a + $b;',
+                assertions: [new OutputAssertion('3', 1)],
+            ),
         ];
 
         $results = $this->executor->executeAll($blocks);
@@ -104,7 +117,10 @@ final class SetupTeardownTest extends TestCase
         $blocks = [
             $this->makeBlock('$x = 1;', attribute: Attribute::Setup),
             $this->makeBlock('unset($x);', attribute: Attribute::Teardown),
-            $this->makeBlock("echo \"test\";\n// Output: test"),
+            $this->makeBlock(
+                'echo "test";',
+                assertions: [new OutputAssertion('test', 1)],
+            ),
         ];
 
         $results = $this->executor->executeAll($blocks);
@@ -124,7 +140,11 @@ final class SetupTeardownTest extends TestCase
         $blocks = [
             $this->makeBlock('$base = 10;', attribute: Attribute::Setup),
             $this->makeBlock('$base++;', group: 'calc'),
-            $this->makeBlock("echo \$base;\n// Output: 11", group: 'calc'),
+            $this->makeBlock(
+                'echo $base;',
+                group: 'calc',
+                assertions: [new OutputAssertion('11', 1)],
+            ),
             $this->makeBlock('unset($base);', attribute: Attribute::Teardown),
         ];
 
@@ -141,7 +161,10 @@ final class SetupTeardownTest extends TestCase
     {
         $blocks = [
             $this->makeBlock('$config = ["key" => "value"];', attribute: Attribute::Setup),
-            $this->makeBlock("echo \$config[\"key\"];\n// Output: value"),
+            $this->makeBlock(
+                'echo $config["key"];',
+                assertions: [new OutputAssertion('value', 1)],
+            ),
         ];
 
         $results = $this->executor->executeAll($blocks);
