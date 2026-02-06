@@ -20,7 +20,6 @@ return [
     ],
     'reporters' => [
         'console' => true,
-        'junit'   => null,
         'json'    => null,
     ],
 ];
@@ -129,7 +128,6 @@ Configure output reporters. See [Reporters](/reporters/) for details.
 ```php ignore
 'reporters' => [
     'console' => true,
-    'junit'   => 'build/doctest.xml',
     'json'    => 'build/doctest.json',
 ],
 ```
