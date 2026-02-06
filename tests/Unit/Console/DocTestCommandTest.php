@@ -143,7 +143,7 @@ final class DocTestCommandTest extends TestCase
     public function execute_with_stop_on_failure_stops_early(): void
     {
         $tempFile = sys_get_temp_dir() . '/doctest_cmd_stop_' . uniqid() . '.md';
-        file_put_contents($tempFile, "```php\necho \"wrong\";\n// Output: right\n```\n\n```php\necho \"ok\";\n// Output: ok\n```\n");
+        file_put_contents($tempFile, "```php\necho \"wrong\";\n```\n<!-- doctest: right -->\n\n```php\necho \"ok\";\n```\n<!-- doctest: ok -->\n");
 
         try {
             $command = new DocTestCommand();
