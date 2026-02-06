@@ -7,6 +7,7 @@ namespace TestFlowLabs\DocTest\Tests\Integration;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Console\Output\BufferedOutput;
+use Symfony\Component\Console\Output\OutputInterface;
 use TestFlowLabs\DocTest\Config\DocTestConfig;
 use TestFlowLabs\DocTest\DocTest;
 
@@ -199,5 +200,67 @@ final class EndToEndTest extends TestCase
         $exitCode = $this->runDocTest($config);
 
         $this->assertSame(0, $exitCode);
+    }
+
+    #[Test]
+    public function verbose_shows_assertion_details_for_result_comment(): void
+    {
+        $this->output->setVerbosity(OutputInterface::VERBOSITY_VERBOSE);
+        $config = DocTestConfig::fromArray([
+            'paths' => [$this->fixturesDir . '/result-comment.md'],
+        ]);
+
+        $exitCode = $this->runDocTest($config);
+        $output = $this->getOutput();
+
+        $this->assertSame(0, $exitCode);
+        $this->assertStringContainsString('=> 42', $output);
+        $this->assertStringContainsString('$x = 42', $output);
+    }
+
+    #[Test]
+    public function verbose_shows_assertion_details_for_output(): void
+    {
+        $this->output->setVerbosity(OutputInterface::VERBOSITY_VERBOSE);
+        $config = DocTestConfig::fromArray([
+            'paths' => [$this->fixturesDir . '/basic.md'],
+        ]);
+
+        $exitCode = $this->runDocTest($config);
+        $output = $this->getOutput();
+
+        $this->assertSame(0, $exitCode);
+        $this->assertStringContainsString('output:', $output);
+    }
+
+    #[Test]
+    public function normal_verbosity_hides_assertion_details(): void
+    {
+        $this->output->setVerbosity(OutputInterface::VERBOSITY_NORMAL);
+        $config = DocTestConfig::fromArray([
+            'paths' => [$this->fixturesDir . '/result-comment.md'],
+        ]);
+
+        $exitCode = $this->runDocTest($config);
+        $output = $this->getOutput();
+
+        $this->assertSame(0, $exitCode);
+        // Verbose detail lines are indented with 7 spaces + icon
+        $this->assertStringNotContainsString('       ✔', $output);
+    }
+
+    #[Test]
+    public function verbose_shows_assertion_details_on_failure(): void
+    {
+        $this->output->setVerbosity(OutputInterface::VERBOSITY_VERBOSE);
+        $config = DocTestConfig::fromArray([
+            'paths' => [$this->fixturesDir . '/failing-output.md'],
+        ]);
+
+        $exitCode = $this->runDocTest($config);
+        $output = $this->getOutput();
+
+        $this->assertSame(1, $exitCode);
+        $this->assertStringContainsString('✖', $output);
     }
 }
