@@ -63,9 +63,14 @@ final readonly class ProcessRunner
 
             if ((microtime(true) - $startTime) >= $this->timeout) {
                 $timedOut = true;
-                /** @var int $pid */
-                $pid = $status['pid'];
-                posix_kill($pid, 9);
+
+                if (function_exists('posix_kill')) {
+                    /** @var int $pid */
+                    $pid = $status['pid'];
+                    posix_kill($pid, 9);
+                } else {
+                    proc_terminate($process, 9);
+                }
 
                 break;
             }
