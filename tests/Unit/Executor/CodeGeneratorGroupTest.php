@@ -7,6 +7,8 @@ namespace TestFlowLabs\DocTest\Tests\Unit\Executor;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use TestFlowLabs\DocTest\Assertion\AssertionParser;
+use TestFlowLabs\DocTest\Assertion\ExpectAssertion;
+use TestFlowLabs\DocTest\Assertion\OutputAssertion;
 use TestFlowLabs\DocTest\CodeBlock\Attributes;
 use TestFlowLabs\DocTest\CodeBlock\CodeBlock;
 use TestFlowLabs\DocTest\Executor\CodeGenerator;
@@ -32,7 +34,10 @@ final class CodeGeneratorGroupTest extends TestCase
         }
     }
 
-    private function makeBlock(string $code): CodeBlock
+    /**
+     * @param array<\TestFlowLabs\DocTest\Assertion\Assertion> $assertions
+     */
+    private function makeBlock(string $code, array $assertions = []): CodeBlock
     {
         $parsed = $this->parser->parse($code);
 
@@ -42,7 +47,7 @@ final class CodeGeneratorGroupTest extends TestCase
             rawCode: $code,
             executableCode: $parsed->executableCode,
             attributes: new Attributes(),
-            assertions: $parsed->assertions,
+            assertions: $assertions,
         );
     }
 
@@ -51,7 +56,10 @@ final class CodeGeneratorGroupTest extends TestCase
     {
         $blocks = [
             $this->makeBlock('$counter = 0;'),
-            $this->makeBlock("\$counter++;\n// Expect: \$counter === 1"),
+            $this->makeBlock(
+                "\$counter++;",
+                assertions: [new ExpectAssertion('$counter === 1', 2)],
+            ),
         ];
 
         $filePath = $this->generator->generateGroup($blocks);
@@ -86,8 +94,14 @@ final class CodeGeneratorGroupTest extends TestCase
     public function each_block_has_independent_assertion_instrumentation(): void
     {
         $blocks = [
-            $this->makeBlock("echo \"a\";\n// Output: a"),
-            $this->makeBlock("echo \"b\";\n// Output: b"),
+            $this->makeBlock(
+                'echo "a";',
+                assertions: [new OutputAssertion('a', 1)],
+            ),
+            $this->makeBlock(
+                'echo "b";',
+                assertions: [new OutputAssertion('b', 1)],
+            ),
         ];
 
         $filePath = $this->generator->generateGroup($blocks);
@@ -101,8 +115,14 @@ final class CodeGeneratorGroupTest extends TestCase
     public function generates_single_stderr_json(): void
     {
         $blocks = [
-            $this->makeBlock("echo \"a\";\n// Output: a"),
-            $this->makeBlock("echo \"b\";\n// Output: b"),
+            $this->makeBlock(
+                'echo "a";',
+                assertions: [new OutputAssertion('a', 1)],
+            ),
+            $this->makeBlock(
+                'echo "b";',
+                assertions: [new OutputAssertion('b', 1)],
+            ),
         ];
 
         $filePath = $this->generator->generateGroup($blocks);
@@ -115,8 +135,14 @@ final class CodeGeneratorGroupTest extends TestCase
     public function generated_group_file_passes_syntax_check(): void
     {
         $blocks = [
-            $this->makeBlock("\$x = 1;\n// Expect: \$x === 1"),
-            $this->makeBlock("echo \"hello\";\n// Output: hello"),
+            $this->makeBlock(
+                "\$x = 1;",
+                assertions: [new ExpectAssertion('$x === 1', 2)],
+            ),
+            $this->makeBlock(
+                'echo "hello";',
+                assertions: [new OutputAssertion('hello', 1)],
+            ),
         ];
 
         $filePath = $this->generator->generateGroup($blocks);
