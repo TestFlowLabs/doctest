@@ -9,9 +9,11 @@ final readonly class OutputComparator
     private Normalizer $normalizer;
     private WildcardMatcher $wildcardMatcher;
 
-    public function __construct()
-    {
-        $this->normalizer      = new Normalizer();
+    public function __construct(
+        bool $normalizeWhitespace = true,
+        bool $trimTrailing = true,
+    ) {
+        $this->normalizer      = new Normalizer($normalizeWhitespace, $trimTrailing);
         $this->wildcardMatcher = new WildcardMatcher();
     }
 
