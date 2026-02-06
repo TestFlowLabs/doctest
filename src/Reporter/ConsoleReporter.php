@@ -71,8 +71,7 @@ final class ConsoleReporter
         }
 
         $duration = sprintf('<fg=gray>%.2fs</>', $result->duration);
-        $failLocation = "{$result->codeBlock->file}:{$result->codeBlock->startLine}";
-        $line = "  <fg=gray>{$failLocation}</> <fg=red>✖</> {$preview}{$progress} {$duration}";
+        $line = "  <fg=gray>{$location}</> <fg=red>✖</> {$preview}{$progress} {$duration}";
 
         $this->output->writeln($line);
 
