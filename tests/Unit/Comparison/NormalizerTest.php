@@ -17,6 +17,48 @@ final class NormalizerTest extends TestCase
         $this->normalizer = new Normalizer();
     }
 
+    // --- Config flag tests ---
+
+    #[Test]
+    public function trim_trailing_disabled_preserves_trailing_whitespace(): void
+    {
+        $normalizer = new Normalizer(normalizeWhitespace: true, trimTrailing: false);
+
+        $this->assertSame("hello   \nworld\t\n", $normalizer->normalize("hello   \nworld\t\n"));
+    }
+
+    #[Test]
+    public function normalize_whitespace_disabled_preserves_leading_blank_lines(): void
+    {
+        $normalizer = new Normalizer(normalizeWhitespace: false, trimTrailing: true);
+
+        $this->assertSame("\n\ncontent\n", $normalizer->normalize("\n\ncontent\n"));
+    }
+
+    #[Test]
+    public function normalize_whitespace_disabled_preserves_trailing_blank_lines(): void
+    {
+        $normalizer = new Normalizer(normalizeWhitespace: false, trimTrailing: true);
+
+        $this->assertSame("content\n\n\n", $normalizer->normalize("content\n\n\n"));
+    }
+
+    #[Test]
+    public function both_disabled_only_converts_crlf(): void
+    {
+        $normalizer = new Normalizer(normalizeWhitespace: false, trimTrailing: false);
+
+        $this->assertSame("  hello   \n\n  world\t\n", $normalizer->normalize("  hello   \r\n\r\n  world\t\r\n"));
+    }
+
+    #[Test]
+    public function both_disabled_returns_empty_for_whitespace_only(): void
+    {
+        $normalizer = new Normalizer(normalizeWhitespace: false, trimTrailing: false);
+
+        $this->assertSame('', $normalizer->normalize("   \n  \n  "));
+    }
+
     #[Test]
     public function converts_crlf_to_lf(): void
     {
