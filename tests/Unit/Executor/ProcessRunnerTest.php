@@ -89,8 +89,9 @@ final class ProcessRunnerTest extends TestCase
         $file = $this->writeTmpFile('sleep(10); echo "done";');
         $result = $runner->run($file);
 
-        $this->assertNotSame(0, $result->exitCode);
-        $this->assertGreaterThanOrEqual(1.0, $result->duration);
+        $this->assertNotSame(0, $result->exitCode, 'Should fail due to timeout');
+        $this->assertGreaterThan(0.9, $result->duration, 'Should run close to timeout duration');
+        $this->assertLessThan(5.0, $result->duration, 'Should not run full sleep duration');
     }
 
     #[Test]
