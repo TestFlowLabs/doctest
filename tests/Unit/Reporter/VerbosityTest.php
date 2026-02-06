@@ -69,14 +69,14 @@ final class VerbosityTest extends TestCase
     }
 
     #[Test]
-    public function normal_does_not_show_timing(): void
+    public function normal_shows_timing(): void
     {
         $this->output->setVerbosity(OutputInterface::VERBOSITY_NORMAL);
         $reporter = new ConsoleReporter($this->output);
         $reporter->reportResult($this->makeResult(passed: true, duration: 0.12));
 
         $output = $this->getOutput();
-        $this->assertStringNotContainsString('0.12s', $output);
+        $this->assertStringContainsString('0.12s', $output);
     }
 
     #[Test]
