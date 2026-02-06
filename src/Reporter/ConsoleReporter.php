@@ -48,7 +48,7 @@ final class ConsoleReporter
         $location = ":{$result->codeBlock->startLine}";
 
         if ($result->skipped) {
-            $this->output->writeln("  <fg=gray>⊘</> {$preview} <fg=gray>{$location}</>{$progress}");
+            $this->output->writeln("  <fg=gray>{$location}</> <fg=gray>⊘</> {$preview}{$progress}");
             $this->flush();
 
             return;
@@ -56,7 +56,7 @@ final class ConsoleReporter
 
         if ($result->passed) {
             $duration = sprintf('<fg=gray>%.2fs</>', $result->duration);
-            $this->output->writeln("  <fg=green>✔</> {$preview} <fg=gray>{$location}</>{$progress} {$duration}");
+            $this->output->writeln("  <fg=gray>{$location}</> <fg=green>✔</> {$preview}{$progress} {$duration}");
             $this->flush();
 
             return;
@@ -64,7 +64,7 @@ final class ConsoleReporter
 
         $duration = sprintf('<fg=gray>%.2fs</>', $result->duration);
         $failLocation = "{$result->codeBlock->file}:{$result->codeBlock->startLine}";
-        $line = "  <fg=red>✖</> {$preview} <fg=gray>{$failLocation}</>{$progress} {$duration}";
+        $line = "  <fg=gray>{$failLocation}</> <fg=red>✖</> {$preview}{$progress} {$duration}";
 
         $this->output->writeln($line);
 
