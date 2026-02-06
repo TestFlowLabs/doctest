@@ -522,14 +522,7 @@ final readonly class Executor
         $assertionCounts = [];
         foreach ($blocks as $block) {
             $parsed = $parser->parse($block->rawCode);
-            $count = 0;
-            foreach ($parsed->segments as $segment) {
-                if ($segment->outputAssertion !== null) {
-                    $count++;
-                }
-            }
-            $count += count($parsed->expects);
-            $count += count($parsed->resultComments);
+            $count = count($block->assertions) + count($parsed->resultComments);
             $assertionCounts[] = $count;
         }
 
