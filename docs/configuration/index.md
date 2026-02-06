@@ -88,6 +88,20 @@ Filter blocks by content or file name.
 'filter' => 'array_map',
 ```
 
+### `verbosity`
+
+Set the default verbosity level (default: `0`). Equivalent to passing `-v` or `-vv` on the CLI.
+
+| Value | Equivalent | Description |
+|-------|-----------|-------------|
+| `0` | (default) | Block-level pass/fail only |
+| `1` | `-v` | Show per-assertion details |
+| `2` | `-vv` | Also show source code on failure |
+
+```php ignore
+'verbosity' => 1,
+```
+
 ### `output.normalize_whitespace`
 
 Normalize whitespace in output comparison (default: `true`).
