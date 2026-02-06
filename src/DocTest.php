@@ -75,27 +75,40 @@ final readonly class DocTest
                 $blocks = $this->applyFilter($blocks, $this->config->filter);
             }
 
-            if ($this->config->dryRun) {
-                $results = $this->dryRunBlocks($blocks);
-            } else {
-                $results = $this->executor->executeAll($blocks);
-            }
+            $stopEarly = false;
 
-            $allResults = array_merge($allResults, $results);
-
-            foreach ($results as $result) {
+            $onResult = function (ExecutionResult $result) use (&$allResults, &$hasFailure, &$stopEarly): ?bool {
+                $allResults[] = $result;
                 $this->reporter->reportResult($result);
 
                 if (!$result->passed && !$result->skipped) {
                     $hasFailure = true;
 
                     if ($this->config->stopOnFailure) {
-                        $this->reporter->reportSummary($allResults, microtime(true) - $startTime);
-                        $this->writeReporterFiles($allResults);
+                        $stopEarly = true;
 
-                        return 1;
+                        return false;
                     }
                 }
+
+                return null;
+            };
+
+            if ($this->config->dryRun) {
+                $results = $this->dryRunBlocks($blocks);
+
+                foreach ($results as $result) {
+                    $onResult($result);
+                }
+            } else {
+                $this->executor->executeAll($blocks, onResult: $onResult);
+            }
+
+            if ($stopEarly) {
+                $this->reporter->reportSummary($allResults, microtime(true) - $startTime);
+                $this->writeReporterFiles($allResults);
+
+                return 1;
             }
         }
 
