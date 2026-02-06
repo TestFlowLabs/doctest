@@ -48,7 +48,7 @@ The `{...}` notation is **stripped from the info string** so it doesn't interfer
 
 Lines containing `// [!code --]` are **removed entirely**. These represent "old" code that shouldn't execute:
 
-```php
+```php ignore
 // Before filtering:
 $old = 'before'; // [!code --]
 $new = 'after';  // [!code ++]
@@ -61,7 +61,7 @@ $new = 'after';
 
 The `// [!code ++]` marker is **stripped**, but the code is kept:
 
-```php
+```php ignore
 // Before filtering:
 $new = 'after'; // [!code ++]
 
