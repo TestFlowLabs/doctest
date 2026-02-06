@@ -80,13 +80,14 @@ final class VerbosityTest extends TestCase
     }
 
     #[Test]
-    public function normal_does_not_show_source_on_failure(): void
+    public function normal_does_not_show_full_source_on_failure(): void
     {
         $this->output->setVerbosity(OutputInterface::VERBOSITY_NORMAL);
         $reporter = new ConsoleReporter($this->output);
         $reporter->reportResult($this->makeResult(passed: false, error: 'Failed'));
 
         $output = $this->getOutput();
-        $this->assertStringNotContainsString('echo "hello"', $output);
+        $this->assertStringNotContainsString('Source:', $output);
+        $this->assertStringNotContainsString('// Output: hello', $output);
     }
 }
