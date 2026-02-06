@@ -18,11 +18,12 @@ This plan covers Phase 1 (Core MVP) and Phase 2 (Assertions & Attributes) from t
     "license": "MIT",
     "minimum-stability": "stable",
     "require": {
-        "php": "^8.3",
+        "php": "^8.4",
         "league/commonmark": "^2.0"
     },
     "require-dev": {
-        "pestphp/pest": "^3.0",
+        "phpunit/phpunit": "^11.0",
+        "rector/rector": "^2.0",
         "laravel/pint": "^1.0",
         "phpstan/phpstan": "^2.0"
     },
@@ -41,9 +42,7 @@ This plan covers Phase 1 (Core MVP) and Phase 2 (Assertions & Attributes) from t
     ],
     "config": {
         "sort-packages": true,
-        "allow-plugins": {
-            "pestphp/pest-plugin": true
-        }
+        "allow-plugins": {}
     }
 }
 ```
@@ -83,7 +82,7 @@ doctest/
 │   └── Config/
 │       └── DocTestConfig.php
 ├── tests/
-│   ├── Pest.php
+│   ├── bootstrap.php
 │   ├── Unit/
 │   │   ├── Parser/
 │   │   ├── Assertion/
@@ -124,11 +123,53 @@ parameters:
 }
 ```
 
-**tests/Pest.php:**
+**phpunit.xml.dist:**
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
+         bootstrap="vendor/autoload.php"
+         colors="true"
+         cacheDirectory=".phpunit.cache"
+         executionOrder="depends,defects"
+         requireCoverageMetadata="false"
+         beStrictAboutCoverageMetadata="false"
+         beStrictAboutOutputDuringTests="true"
+         failOnRisky="true"
+         failOnWarning="true">
+    <testsuites>
+        <testsuite name="Unit">
+            <directory>tests/Unit</directory>
+        </testsuite>
+        <testsuite name="Integration">
+            <directory>tests/Integration</directory>
+        </testsuite>
+    </testsuites>
+    <source>
+        <include>
+            <directory>src</directory>
+        </include>
+    </source>
+</phpunit>
+```
+
+**rector.php:**
 ```php
 <?php
 
-pest()->project()->github('TestFlowLabs/doctest');
+declare(strict_types=1);
+
+use Rector\Config\RectorConfig;
+
+return RectorConfig::configure()
+    ->withPaths([
+        __DIR__ . '/src',
+        __DIR__ . '/tests',
+    ])
+    ->withPhpSets(php84: true)
+    ->withTypeCoverageLevel(0)
+    ->withDeadCodeLevel(0)
+    ->withCodeQualityLevel(0);
 ```
 
 ### 0.4 — CLI Entry Point
@@ -167,9 +208,11 @@ exit($docTest->run($argv));
 - [ ] Create `bin/doctest` entry point
 - [ ] Create `phpstan.neon`
 - [ ] Create `pint.json`
-- [ ] Create `tests/Pest.php`
+- [ ] Create `phpunit.xml.dist`
+- [ ] Create `rector.php`
 - [ ] Run `composer install`
-- [ ] Verify `vendor/bin/pest` works (zero tests)
+- [ ] Verify `vendor/bin/phpunit` works (zero tests)
+- [ ] Verify `vendor/bin/rector` works
 - [ ] Verify `vendor/bin/phpstan` works (zero files)
 - [ ] Verify `vendor/bin/pint` works
 
@@ -1072,7 +1115,7 @@ final readonly class DocTestConfig
         public int $timeout = 30,
         public string $memoryLimit = '256M',
         public bool $stopOnFailure = false,
-        public bool $verbose = false,
+        public int $verbosity = 0,     // 0=normal, 1=-v, 2=-vv, 3=-vvv
     ) {}
 
     public static function load(?string $configPath = null): self { ... }
@@ -1286,15 +1329,11 @@ Add wildcard placeholder support to output comparison.
 
 ### Step 2.4 — Setup/Teardown
 
-- `setup` blocks execute before all other blocks in a file
-- `teardown` blocks execute after all blocks in a file
-- Multiple setup/teardown blocks execute in document order
-
-### Step 2.5 — Configuration File
-
-- Implement `doctest.php` config file loading
-- Support all config keys from spec
-- Environment variable overrides
+- `setup` block code is prepended to every block's generated PHP file in the same markdown file
+- `teardown` block code is appended to every block's generated PHP file
+- Multiple setup/teardown blocks are concatenated in document order
+- For grouped blocks: setup is prepended once, teardown appended once (single file)
+- `CodeGenerator` gets setup/teardown preamble/epilogue support
 
 ---
 
@@ -1309,7 +1348,8 @@ Add wildcard placeholder support to output comparison.
 | Scope sharing (groups) | Concatenate blocks into single file | Same file = shared scope naturally. No extract()/get_defined_vars() needed |
 | Diff generation | Simple line-by-line | Sufficient for MVP, can enhance later |
 | CLI arg parsing | Custom (no library) | Few options, no need for heavy dependency |
-| Test framework | Pest | Modern, expressive, PHP-native |
+| Test framework | PHPUnit | Industry standard, well-supported |
+| Refactoring | Rector | Automated refactoring, PHP 8.4 upgrades |
 | Code style | Pint (PER preset) | Laravel-adjacent, industry standard |
 | Static analysis | PHPStan level max | Maximum strictness from day one |
 | Syntax checking | `php -l` via subprocess | Native PHP lint, used for no_run and parse_error attributes |
