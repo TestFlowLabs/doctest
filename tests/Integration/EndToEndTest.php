@@ -6,27 +6,20 @@ namespace TestFlowLabs\DocTest\Tests\Integration;
 
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\Console\Output\BufferedOutput;
 use TestFlowLabs\DocTest\Config\DocTestConfig;
 use TestFlowLabs\DocTest\DocTest;
 
 final class EndToEndTest extends TestCase
 {
-    /** @var resource */
-    private $output;
+    private BufferedOutput $output;
 
     private string $fixturesDir;
 
     protected function setUp(): void
     {
-        $stream = fopen('php://memory', 'r+');
-        $this->assertIsResource($stream);
-        $this->output = $stream;
+        $this->output = new BufferedOutput();
         $this->fixturesDir = dirname(__DIR__) . '/Fixtures';
-    }
-
-    protected function tearDown(): void
-    {
-        fclose($this->output);
     }
 
     private function runDocTest(DocTestConfig $config): int
@@ -38,9 +31,7 @@ final class EndToEndTest extends TestCase
 
     private function getOutput(): string
     {
-        rewind($this->output);
-
-        return stream_get_contents($this->output) ?: '';
+        return $this->output->fetch();
     }
 
     #[Test]
