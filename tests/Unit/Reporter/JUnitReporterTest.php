@@ -183,4 +183,49 @@ final class JUnitReporterTest extends TestCase
         $testcase = $doc->getElementsByTagName('testcase')->item(0);
         $this->assertSame('0.25', $testcase->getAttribute('time'));
     }
+
+    // --- Edge cases ---
+
+    #[Test]
+    public function generates_valid_xml_for_empty_results(): void
+    {
+        $xml = $this->reporter->generate([]);
+        $doc = new \DOMDocument();
+
+        $this->assertTrue($doc->loadXML($xml));
+        $this->assertSame('0', $doc->documentElement->getAttribute('tests'));
+    }
+
+    #[Test]
+    public function xml_escapes_special_characters_in_error(): void
+    {
+        $results = [
+            $this->makeResult(passed: false, error: 'Expected "<div>" & got \'none\''),
+        ];
+
+        $xml = $this->reporter->generate($results);
+        $doc = new \DOMDocument();
+
+        $this->assertTrue($doc->loadXML($xml), 'XML with special chars should be valid');
+        $failures = $doc->getElementsByTagName('failure');
+        $this->assertStringContainsString('<div>', $failures->item(0)->textContent);
+    }
+
+    #[Test]
+    public function testsuite_has_correct_test_count(): void
+    {
+        $results = [
+            $this->makeResult(passed: true, file: 'a.md', line: 1),
+            $this->makeResult(passed: false, file: 'a.md', line: 5, error: 'fail'),
+            $this->makeResult(passed: true, file: 'a.md', line: 10),
+        ];
+
+        $xml = $this->reporter->generate($results);
+        $doc = new \DOMDocument();
+        $doc->loadXML($xml);
+
+        $suite = $doc->getElementsByTagName('testsuite')->item(0);
+        $this->assertSame('3', $suite->getAttribute('tests'));
+        $this->assertSame('1', $suite->getAttribute('failures'));
+    }
 }
