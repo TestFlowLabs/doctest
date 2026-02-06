@@ -6,7 +6,7 @@ DocTest can be configured via a `doctest.php` file in your project root. This fi
 
 If no config file exists, DocTest uses these defaults:
 
-```php
+```php ignore
 return [
     'paths'     => ['docs', 'README.md'],
     'exclude'   => [],
@@ -32,7 +32,7 @@ return [
 
 Array of files and directories to scan for markdown files.
 
-```php
+```php ignore
 'paths' => ['docs', 'README.md', 'guides/'],
 ```
 
@@ -40,7 +40,7 @@ Array of files and directories to scan for markdown files.
 
 Array of patterns to exclude from scanning.
 
-```php
+```php ignore
 'exclude' => ['docs/drafts', 'docs/archive'],
 ```
 
@@ -48,7 +48,7 @@ Array of patterns to exclude from scanning.
 
 Maximum execution time per code block in seconds.
 
-```php
+```php ignore
 'execution' => [
     'timeout' => 30,
 ],
@@ -58,7 +58,7 @@ Maximum execution time per code block in seconds.
 
 PHP memory limit for each code block process.
 
-```php
+```php ignore
 'execution' => [
     'memory_limit' => '256M',
 ],
@@ -68,7 +68,7 @@ PHP memory limit for each code block process.
 
 Stop execution at the first failing block.
 
-```php
+```php ignore
 'stop_on_failure' => true,
 ```
 
@@ -76,7 +76,7 @@ Stop execution at the first failing block.
 
 Parse and list blocks without executing.
 
-```php
+```php ignore
 'dry_run' => true,
 ```
 
@@ -84,7 +84,7 @@ Parse and list blocks without executing.
 
 Filter blocks by content or file name.
 
-```php
+```php ignore
 'filter' => 'array_map',
 ```
 
@@ -92,7 +92,7 @@ Filter blocks by content or file name.
 
 Normalize whitespace in output comparison (default: `true`).
 
-```php
+```php ignore
 'output' => [
     'normalize_whitespace' => true,
 ],
@@ -102,7 +102,7 @@ Normalize whitespace in output comparison (default: `true`).
 
 Trim trailing whitespace from output lines (default: `true`).
 
-```php
+```php ignore
 'output' => [
     'trim_trailing' => true,
 ],
@@ -112,7 +112,7 @@ Trim trailing whitespace from output lines (default: `true`).
 
 Configure output reporters. See [Reporters](/reporters/) for details.
 
-```php
+```php ignore
 'reporters' => [
     'console' => true,
     'junit'   => 'build/doctest.xml',
