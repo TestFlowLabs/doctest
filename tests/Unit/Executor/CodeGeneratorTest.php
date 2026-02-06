@@ -13,6 +13,9 @@ use TestFlowLabs\DocTest\Executor\CodeGenerator;
 use TestFlowLabs\DocTest\Assertion\AssertionParser;
 use TestFlowLabs\DocTest\Assertion\ExpectAssertion;
 use TestFlowLabs\DocTest\Assertion\OutputAssertion;
+use TestFlowLabs\DocTest\Assertion\OutputJsonAssertion;
+use TestFlowLabs\DocTest\Assertion\OutputMatchesAssertion;
+use TestFlowLabs\DocTest\Assertion\OutputContainsAssertion;
 
 final class CodeGeneratorTest extends TestCase
 {
@@ -38,7 +41,7 @@ final class CodeGeneratorTest extends TestCase
     /**
      * @param  array<\TestFlowLabs\DocTest\Assertion\Assertion>  $assertions
      */
-    private function makeBlock(string $code, ?Attribute $attribute = null, ?string $throwsClass = null, ?string $throwsMessage = null, array $assertions = []): CodeBlock
+    private function makeBlock(string $code, ?Attribute $attribute = null, ?string $throwsClass = null, ?string $throwsMessage = null, array $assertions = [], ?string $group = null): CodeBlock
     {
         $parsed = $this->assertionParser->parse($code);
 
@@ -49,6 +52,7 @@ final class CodeGeneratorTest extends TestCase
             executableCode: $parsed->executableCode,
             attributes: new Attributes(
                 attribute: $attribute,
+                group: $group,
                 throwsClass: $throwsClass,
                 throwsMessage: $throwsMessage,
             ),
@@ -253,5 +257,161 @@ final class CodeGeneratorTest extends TestCase
 
         $this->assertStringContainsString("'type' => 'result_comment'", $content);
         $this->assertStringContainsString('ob_start()', $content);
+    }
+
+    // --- Group generation ---
+
+    #[Test]
+    public function generates_group_file_with_multiple_blocks(): void
+    {
+        $blocks = [
+            $this->makeBlock('$x = 1;', group: 'grp'),
+            $this->makeBlock('echo $x;', group: 'grp', assertions: [new OutputAssertion('1', 1)]),
+        ];
+        $filePath = $this->generator->generateGroup($blocks);
+        $content  = file_get_contents($filePath);
+
+        $this->assertFileExists($filePath);
+        $this->assertStringContainsString('$__doctest_results', $content);
+        $this->assertStringContainsString('$x = 1;', $content);
+        $this->assertStringContainsString('ob_start()', $content);
+    }
+
+    #[Test]
+    public function group_file_passes_syntax_check(): void
+    {
+        $blocks = [
+            $this->makeBlock('$x = 42;', group: 'grp'),
+            $this->makeBlock('$y = $x + 1; // => 43', group: 'grp'),
+        ];
+        $filePath = $this->generator->generateGroup($blocks);
+
+        $output   = [];
+        $exitCode = 0;
+        exec(PHP_BINARY.' -l '.escapeshellarg($filePath).' 2>&1', $output, $exitCode);
+
+        $this->assertSame(0, $exitCode, 'Generated group PHP file has syntax errors: '.implode("\n", $output));
+    }
+
+    #[Test]
+    public function group_without_assertions_has_no_ob_start(): void
+    {
+        $blocks = [
+            $this->makeBlock('$x = 1;', group: 'grp'),
+            $this->makeBlock('$y = 2;', group: 'grp'),
+        ];
+        $filePath = $this->generator->generateGroup($blocks);
+        $content  = file_get_contents($filePath);
+
+        $this->assertStringNotContainsString('ob_start()', $content);
+    }
+
+    // --- Setup/teardown ---
+
+    #[Test]
+    public function generates_setup_code_in_single_block(): void
+    {
+        $block    = $this->makeBlock('echo $setup_var;', assertions: [new OutputAssertion('hello', 1)]);
+        $filePath = $this->generator->generate($block, setup: '$setup_var = "hello";');
+        $content  = file_get_contents($filePath);
+
+        $this->assertStringContainsString('$setup_var = "hello"', $content);
+    }
+
+    #[Test]
+    public function generates_teardown_code_in_single_block(): void
+    {
+        $block    = $this->makeBlock('$x = 1;');
+        $filePath = $this->generator->generate($block, teardown: '// teardown marker');
+        $content  = file_get_contents($filePath);
+
+        $this->assertStringContainsString('// teardown marker', $content);
+    }
+
+    #[Test]
+    public function generates_setup_and_teardown_in_group(): void
+    {
+        $blocks = [
+            $this->makeBlock('echo $s;', group: 'grp', assertions: [new OutputAssertion('ok', 1)]),
+        ];
+        $filePath = $this->generator->generateGroup($blocks, setup: '$s = "ok";', teardown: '// cleanup');
+        $content  = file_get_contents($filePath);
+
+        $this->assertStringContainsString('$s = "ok"', $content);
+        $this->assertStringContainsString('// cleanup', $content);
+    }
+
+    // --- Assertion type generation ---
+
+    #[Test]
+    public function generates_output_contains_assertion(): void
+    {
+        $block = $this->makeBlock(
+            'echo "Hello World";',
+            assertions: [new OutputContainsAssertion('World', 1)],
+        );
+        $filePath = $this->generator->generate($block);
+        $content  = file_get_contents($filePath);
+
+        $this->assertStringContainsString("'type' => 'output_contains'", $content);
+    }
+
+    #[Test]
+    public function generates_output_matches_assertion(): void
+    {
+        $block = $this->makeBlock(
+            'echo "abc123";',
+            assertions: [new OutputMatchesAssertion('/^\w+$/', 1)],
+        );
+        $filePath = $this->generator->generate($block);
+        $content  = file_get_contents($filePath);
+
+        $this->assertStringContainsString("'type' => 'output_matches'", $content);
+    }
+
+    #[Test]
+    public function generates_output_json_assertion(): void
+    {
+        $block = $this->makeBlock(
+            'echo json_encode(["a" => 1]);',
+            assertions: [new OutputJsonAssertion('{"a":1}', 1)],
+        );
+        $filePath = $this->generator->generate($block);
+        $content  = file_get_contents($filePath);
+
+        $this->assertStringContainsString("'type' => 'output_json'", $content);
+    }
+
+    // --- Throws wrapper ---
+
+    #[Test]
+    public function throws_wrapper_indents_multiline_code(): void
+    {
+        $block = $this->makeBlock(
+            "\$x = 1;\n\$y = 2;\nthrow new \\RuntimeException(\"err\");",
+            Attribute::Throws,
+            'RuntimeException',
+        );
+        $filePath = $this->generator->generate($block);
+        $content  = file_get_contents($filePath);
+
+        $this->assertStringContainsString('try {', $content);
+        $this->assertStringContainsString('    $x = 1;', $content);
+        $this->assertStringContainsString('    $y = 2;', $content);
+    }
+
+    #[Test]
+    public function throws_wrapper_writes_json_on_no_exception(): void
+    {
+        $block = $this->makeBlock(
+            '$x = 1;',
+            Attribute::Throws,
+            'RuntimeException',
+        );
+        $filePath = $this->generator->generate($block);
+        $content  = file_get_contents($filePath);
+
+        $this->assertStringContainsString("'thrown' => false", $content);
+        $this->assertStringContainsString("'thrown' => true", $content);
     }
 }
