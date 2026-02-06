@@ -2,5 +2,5 @@
 
 ```php
 echo "actual";
-// Output: expected
 ```
+<!-- doctest: expected -->
