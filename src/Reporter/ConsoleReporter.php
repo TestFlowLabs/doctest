@@ -53,22 +53,14 @@ final class ConsoleReporter
         }
 
         if ($result->passed) {
-            $line = "  <fg=green>✔</> {$preview} <fg=gray>{$location}</>{$progress}";
-
-            if ($this->output->isVerbose()) {
-                $line .= sprintf(' [%.2fs]', $result->duration);
-            }
-
-            $this->output->writeln($line);
+            $duration = sprintf('<fg=gray>%.2fs</>', $result->duration);
+            $this->output->writeln("  <fg=green>✔</> {$preview} <fg=gray>{$location}</>{$progress} {$duration}");
 
             return;
         }
 
-        $line = "  <fg=red>✖</> {$result->codeBlock->file}:{$result->codeBlock->startLine}{$progress}";
-
-        if ($this->output->isVerbose()) {
-            $line .= sprintf(' [%.2fs]', $result->duration);
-        }
+        $duration = sprintf('<fg=gray>%.2fs</>', $result->duration);
+        $line = "  <fg=red>✖</> {$result->codeBlock->file}:{$result->codeBlock->startLine}{$progress} {$duration}";
 
         $this->output->writeln($line);
 
