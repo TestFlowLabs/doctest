@@ -32,3 +32,6 @@ jobs:
 
       - name: PHPUnit (tests)
         run: vendor/bin/phpunit
+
+      - name: DocTest (documentation examples)
+        run: php bin/doctest
