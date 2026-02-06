@@ -153,4 +153,45 @@ final class JsonReporterTest extends TestCase
 
         unlink($filePath);
     }
+
+    // --- Edge cases ---
+
+    #[Test]
+    public function generates_valid_json_for_empty_results(): void
+    {
+        $json = $this->reporter->generate([]);
+        $data = json_decode($json, true);
+
+        $this->assertNotNull($data);
+        $this->assertSame([], $data['files']);
+        $this->assertSame(0, $data['summary']['total']);
+    }
+
+    #[Test]
+    public function groups_multiple_files_correctly(): void
+    {
+        $results = [
+            $this->makeResult(passed: true, file: 'a.md', line: 1),
+            $this->makeResult(passed: true, file: 'b.md', line: 1),
+            $this->makeResult(passed: false, file: 'a.md', line: 5, error: 'fail'),
+        ];
+
+        $json = $this->reporter->generate($results);
+        $data = json_decode($json, true);
+
+        $this->assertCount(2, $data['files']);
+    }
+
+    #[Test]
+    public function block_includes_duration(): void
+    {
+        $results = [$this->makeResult(passed: true, duration: 1.23)];
+
+        $json  = $this->reporter->generate($results);
+        $data  = json_decode($json, true);
+        $block = $data['files'][0]['blocks'][0];
+
+        $this->assertArrayHasKey('duration', $block);
+        $this->assertSame(1.23, $block['duration']);
+    }
 }
