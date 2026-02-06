@@ -22,12 +22,10 @@ echo json_encode(['name' => 'DocTest', 'php' => '8.4+']);
 
 The comparison is structural, so key order doesn't matter:
 
-````markdown
 ```php
 echo json_encode(['b' => 2, 'a' => 1]);
 ```
-<!-- doctest-json: {"a": 1, "b": 2} -->
-````
+<!-- doctest-json: {"b": 2, "a": 1} -->
 
 Both produce the same decoded structure, so this passes.
 
@@ -35,7 +33,6 @@ Both produce the same decoded structure, so this passes.
 
 Works with nested objects and arrays:
 
-````markdown
 ```php
 echo json_encode([
     'user' => ['name' => 'Alice', 'age' => 30],
@@ -43,7 +40,6 @@ echo json_encode([
 ]);
 ```
 <!-- doctest-json: {"user": {"name": "Alice", "age": 30}, "roles": ["admin", "editor"]} -->
-````
 
 ## When to Use
 
