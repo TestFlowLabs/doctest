@@ -6,9 +6,10 @@ A PHP documentation testing tool that validates code examples in your markdown f
 
 Code examples in documentation rot. APIs change, methods get renamed, return types evolve — but the docs stay frozen. DocTest extracts PHP code blocks from your markdown files, executes them in isolated processes, and verifies their output. If an example breaks, you'll know immediately.
 
-- Code examples are tested on every CI run
-- Output assertions catch regressions automatically
-- Process isolation means examples can't interfere with each other or your test suite
+- **Tested documentation** — code examples are verified on every CI run
+- **Invisible assertions** — HTML comments keep assertions hidden from rendered docs
+- **Process isolation** — each example runs in its own process, no side effects
+- **Zero setup** — run `vendor/bin/doctest` and it just works
 
 ## Installation
 
@@ -35,169 +36,26 @@ vendor/bin/doctest
 
 DocTest scans `docs/` and `README.md` by default. That's it.
 
-## Assertions
+## What Can It Do?
 
-Assertions are written as HTML comments after the code block, keeping your rendered documentation clean.
-
-### Exact Output
+DocTest supports six assertion types, wildcards for dynamic output, code block attributes (`ignore`, `no_run`, `throws`, `parse_error`), grouped examples with shared state, and a `bootstrap` config for loading your project's autoloader. A few examples:
 
 ```php
 echo 2 + 3;
 ```
 <!-- doctest: 5 -->
 
-### Contains
+```php
+$prices = [10.5, 20.0, 30.75];
+$total = array_sum($prices); // => 61.25
+```
 
 ```php
-echo 'The quick brown fox jumps over the lazy dog';
+echo json_encode(['tool' => 'DocTest']);
 ```
-<!-- doctest-contains: brown fox -->
+<!-- doctest-json: {"tool":"DocTest"} -->
 
-### Regex
-
-```php
-echo date('Y');
-```
-<!-- doctest-matches: /^\d{4}$/ -->
-
-### JSON
-
-```php
-echo json_encode(['name' => 'DocTest', 'php' => '8.4+']);
-```
-<!-- doctest-json: {"name": "DocTest", "php": "8.4+"} -->
-
-### Expression
-
-```php
-$result = array_sum([1, 2, 3, 4, 5]);
-```
-<!-- doctest-expect: $result === 15 -->
-
-### Result Comment
-
-For inline assertions on return values, use `// =>` at the end of a line. The value is compared using `var_export`:
-
-```php
-$x = 42; // => 42
-$flag = true; // => true
-$nothing = null; // => NULL
-```
-
-This is useful when documenting APIs where return values matter more than printed output. Regular comments (without `=>`) are left untouched.
-
-## Wildcards
-
-When output contains dynamic values, use wildcards:
-
-```php
-echo 'Request took 42ms at ' . date('Y-m-d');
-```
-<!-- doctest: Request took {{int}}ms at {{date}} -->
-
-Available wildcards: `{{any}}`, `{{int}}`, `{{float}}`, `{{uuid}}`, `{{date}}`, `{{time}}`, `{{datetime}}`, `{{...}}`
-
-## Attributes
-
-Control how code blocks are handled via the fence info string:
-
-````markdown
-```php ignore
-// This block won't be executed
-$config = require 'missing-file.php';
-```
-
-```php throws(InvalidArgumentException)
-throw new InvalidArgumentException('Expected an integer');
-```
-
-```php no_run
-// Syntax is checked but code is not executed
-$db->query('SELECT * FROM users');
-```
-````
-
-## Groups with Setup/Teardown
-
-Share state across related examples:
-
-````markdown
-```php setup group="database"
-$pdo = new PDO('sqlite::memory:');
-$pdo->exec('CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT)');
-```
-
-```php group="database"
-$pdo->exec("INSERT INTO users (name) VALUES ('Alice')");
-$count = $pdo->query('SELECT COUNT(*) FROM users')->fetchColumn();
-echo $count;
-```
-<!-- doctest: 1 -->
-
-```php teardown group="database"
-$pdo->exec('DROP TABLE users');
-```
-````
-
-## CLI
-
-```bash
-# Test specific files
-vendor/bin/doctest docs/getting-started.md docs/api.md
-
-# Filter by content
-vendor/bin/doctest --filter="array_sum"
-
-# Dry run (parse only, don't execute)
-vendor/bin/doctest --dry-run
-
-# Stop on first failure
-vendor/bin/doctest --stop-on-failure
-
-# Increase verbosity
-vendor/bin/doctest -v    # show block details
-vendor/bin/doctest -vv   # show generated code
-vendor/bin/doctest -vvv  # show full debug output
-```
-
-## Configuration
-
-Create a `doctest.php` in your project root:
-
-```php no_run
-<?php
-
-return [
-    'paths'     => ['docs', 'README.md'],
-    'exclude'   => ['docs/drafts'],
-    'execution' => [
-        'timeout'      => 30,
-        'memory_limit' => '256M',
-    ],
-    'reporters' => [
-        'console' => true,
-        'junit'   => 'build/doctest.xml',
-        'json'    => 'build/doctest.json',
-    ],
-];
-```
-
-## CI Integration
-
-Add to your GitHub Actions workflow:
-
-```yaml
-- name: DocTest
-  run: vendor/bin/doctest
-```
-
-## Laravel
-
-DocTest integrates with Laravel automatically. After installing, an Artisan command is available:
-
-```bash
-php artisan doctest
-```
+For the full feature set — assertions, attributes, wildcards, groups, configuration, CLI options, CI integration, and framework bootstrap — see the **[Documentation](docs/)**.
 
 ## Requirements
 
