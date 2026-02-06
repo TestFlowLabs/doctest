@@ -6,10 +6,13 @@ namespace TestFlowLabs\DocTest\Reporter;
 
 use Symfony\Component\Console\Output\ConsoleOutput;
 use Symfony\Component\Console\Output\OutputInterface;
+use TestFlowLabs\DocTest\CodeBlock\CodeBlock;
 use TestFlowLabs\DocTest\Executor\ExecutionResult;
 
 final class ConsoleReporter
 {
+    private const int MAX_PREVIEW_LENGTH = 60;
+
     private readonly ErrorFormatter $errorFormatter;
 
     private int $totalBlocks = 0;
@@ -40,14 +43,17 @@ final class ConsoleReporter
             ? " [{$this->currentBlock}/{$this->totalBlocks}]"
             : '';
 
+        $preview = $this->codePreview($result->codeBlock);
+        $location = ":{$result->codeBlock->startLine}";
+
         if ($result->skipped) {
-            $this->output->writeln("  <fg=gray>⊘</> Line {$result->codeBlock->startLine}{$progress}");
+            $this->output->writeln("  <fg=gray>⊘</> {$preview} <fg=gray>{$location}</>{$progress}");
 
             return;
         }
 
         if ($result->passed) {
-            $line = "  <fg=green>✔</> Line {$result->codeBlock->startLine}{$progress}";
+            $line = "  <fg=green>✔</> {$preview} <fg=gray>{$location}</>{$progress}";
 
             if ($this->output->isVerbose()) {
                 $line .= sprintf(' [%.2fs]', $result->duration);
@@ -118,5 +124,16 @@ final class ConsoleReporter
 
         $summary .= sprintf('Duration: %.2fs', $duration);
         $this->output->writeln($summary);
+    }
+
+    private function codePreview(CodeBlock $codeBlock): string
+    {
+        $firstLine = trim(explode("\n", $codeBlock->rawCode)[0]);
+
+        if (mb_strlen($firstLine) > self::MAX_PREVIEW_LENGTH) {
+            return mb_substr($firstLine, 0, self::MAX_PREVIEW_LENGTH - 3) . '...';
+        }
+
+        return $firstLine;
     }
 }
