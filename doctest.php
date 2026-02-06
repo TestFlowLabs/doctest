@@ -2,5 +2,5 @@
 
 return [
     'paths'   => ['docs/'],
-    'exclude' => ['node_modules'],
+    'exclude' => ['docs/node_modules'],
 ];
