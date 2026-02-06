@@ -220,4 +220,63 @@ final class CodeBlockExtractorTest extends TestCase
         $this->assertCount(1, $blocks);
         $this->assertCount(0, $blocks[0]->assertions);
     }
+
+    // --- Edge cases ---
+
+    #[Test]
+    public function collects_multiple_consecutive_html_comment_assertions(): void
+    {
+        $markdown = "```php\necho \"hello world\";\n```\n<!-- doctest: hello world -->\n<!-- doctest-contains: hello -->\n";
+        $document = $this->markdownParser->parse($markdown);
+
+        $blocks = $this->extractor->extract($document, 'test.md');
+
+        $this->assertCount(1, $blocks);
+        $this->assertCount(2, $blocks[0]->assertions);
+    }
+
+    #[Test]
+    public function extracts_php_block_with_shiki_highlight_info_string(): void
+    {
+        $markdown = "```php{1,3-5}\necho \"hi\";\n```\n";
+        $document = $this->markdownParser->parse($markdown);
+
+        $blocks = $this->extractor->extract($document, 'test.md');
+
+        $this->assertCount(1, $blocks);
+    }
+
+    #[Test]
+    public function returns_empty_for_empty_markdown(): void
+    {
+        $document = $this->markdownParser->parse('');
+
+        $blocks = $this->extractor->extract($document, 'test.md');
+
+        $this->assertCount(0, $blocks);
+    }
+
+    #[Test]
+    public function strips_php_tag_without_trailing_newline(): void
+    {
+        $markdown = "```php\n<?php echo \"hello\";\n```\n";
+        $document = $this->markdownParser->parse($markdown);
+
+        $blocks = $this->extractor->extract($document, 'test.md');
+
+        $this->assertCount(1, $blocks);
+        $this->assertStringNotContainsString('<?php', $blocks[0]->executableCode);
+        $this->assertStringContainsString('echo "hello"', $blocks[0]->executableCode);
+    }
+
+    #[Test]
+    public function preserves_raw_code_with_php_tag(): void
+    {
+        $markdown = "```php\n<?php\necho \"hello\";\n```\n";
+        $document = $this->markdownParser->parse($markdown);
+
+        $blocks = $this->extractor->extract($document, 'test.md');
+
+        $this->assertStringContainsString('<?php', $blocks[0]->rawCode);
+    }
 }
