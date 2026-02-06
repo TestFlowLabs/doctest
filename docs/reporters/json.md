@@ -4,7 +4,7 @@ The JSON reporter generates structured output for custom tooling, dashboards, or
 
 ## Configuration
 
-```php
+```php ignore
 return [
     'reporters' => [
         'json' => 'build/doctest.json',
