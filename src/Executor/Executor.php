@@ -20,8 +20,9 @@ final readonly class Executor
         string $memoryLimit = '128M',
         bool $normalizeWhitespace = true,
         bool $trimTrailing = true,
+        ?string $bootstrapCode = null,
     ) {
-        $this->codeGenerator = new CodeGenerator();
+        $this->codeGenerator = new CodeGenerator($bootstrapCode);
         $this->processRunner = new ProcessRunner($timeout, $memoryLimit);
         $this->comparator    = new OutputComparator($normalizeWhitespace, $trimTrailing);
         $this->diffGenerator = new DiffGenerator();
