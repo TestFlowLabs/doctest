@@ -14,7 +14,7 @@ final readonly class CodeGenerator
         $dir = sys_get_temp_dir() . '/doctest';
 
         if (! is_dir($dir)) {
-            mkdir($dir, 0777, true);
+            mkdir($dir, 0700, true);
         }
 
         $filePath = $dir . '/doctest_' . bin2hex(random_bytes(16)) . '.php';
@@ -40,7 +40,7 @@ final readonly class CodeGenerator
         $dir = sys_get_temp_dir() . '/doctest';
 
         if (! is_dir($dir)) {
-            mkdir($dir, 0777, true);
+            mkdir($dir, 0700, true);
         }
 
         $filePath = $dir . '/doctest_group_' . bin2hex(random_bytes(16)) . '.php';
