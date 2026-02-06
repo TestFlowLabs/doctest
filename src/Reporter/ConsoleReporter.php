@@ -65,6 +65,7 @@ final class ConsoleReporter
         if ($result->passed) {
             $duration = sprintf('<fg=gray>%.2fs</>', $result->duration);
             $this->output->writeln("  <fg=gray>{$location}</> <fg=green>✔</> {$preview}{$progress} {$duration}");
+            $this->writeAssertionDetails($result);
             $this->flush();
 
             return;
@@ -74,6 +75,8 @@ final class ConsoleReporter
         $line = "  <fg=gray>{$location}</> <fg=red>✖</> {$preview}{$progress} {$duration}";
 
         $this->output->writeln($line);
+
+        $this->writeAssertionDetails($result);
 
         if ($result->error !== null) {
             $this->output->writeln("    {$result->error}");
@@ -138,6 +141,28 @@ final class ConsoleReporter
             if (is_resource($stream)) {
                 fflush($stream);
             }
+        }
+    }
+
+    private function writeAssertionDetails(ExecutionResult $result): void
+    {
+        if (! $this->output->isVerbose() || $result->assertionDetails === []) {
+            return;
+        }
+
+        foreach ($result->assertionDetails as $detail) {
+            $icon = $detail->passed ? '<fg=green>✔</>' : '<fg=red>✖</>';
+            $info = match ($detail->type) {
+                'result_comment' => $detail->expression !== null
+                    ? "{$detail->expression} => {$detail->actual}"
+                    : "=> {$detail->actual}",
+                'expect' => $detail->expression ?? $detail->expected,
+                default => $detail->expected === $detail->actual
+                    ? "{$detail->type}: {$detail->actual}"
+                    : "{$detail->type}: expected {$detail->expected}, got {$detail->actual}",
+            };
+
+            $this->output->writeln("       {$icon} <fg=gray>{$info}</>");
         }
     }
 
