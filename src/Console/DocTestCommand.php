@@ -104,6 +104,7 @@ final class DocTestCommand extends Command
             dryRun: $input->getOption('dry-run') === true || $baseConfig->dryRun,
             filter: is_string($filter) ? $filter : $baseConfig->filter,
             verbosity: $baseConfig->verbosity,
+            bootstrap: $baseConfig->bootstrap,
             reporterConsole: $baseConfig->reporterConsole,
             reporterJunit: $baseConfig->reporterJunit,
             reporterJson: $baseConfig->reporterJson,
