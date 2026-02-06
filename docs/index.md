@@ -60,41 +60,47 @@ vendor/bin/doctest
 
 <div class="feature-badge"><span class="icon">&#x2714;</span> Assertions</div>
 
-## Seven Ways to Assert
+## Six Ways to Assert
 
 From exact output matching to JSON comparison, DocTest gives you the right tool for every situation.
 
-Use inline comments for quick checks, or HTML comments to keep assertions hidden from readers.
+HTML comments keep assertions invisible to readers. Use `// =>` for inline result checks.
 
 [See all assertions &rarr;](/assertions/)
 
 </div>
 <div class="feature-code">
 
+````markdown
 ```php
-// Exact output
 echo 'Hello';
-// Output: Hello
+```
+<!-- doctest: Hello -->
 
-// Partial match
+```php
 echo 'The quick brown fox';
-// OutputContains: brown fox
+```
+<!-- doctest-contains: brown fox -->
 
-// Regex
+```php
 echo date('Y');
-// OutputMatches: /^\d{4}$/
+```
+<!-- doctest-matches: /^\d{4}$/ -->
 
-// JSON comparison
+```php
 echo json_encode(['status' => 'ok']);
-// OutputJson: {"status": "ok"}
+```
+<!-- doctest-json: {"status": "ok"} -->
 
-// Expression
+```php
 $sum = array_sum([1, 2, 3]);
-// Expect: $sum === 6
+```
+<!-- doctest-expect: $sum === 6 -->
 
-// Inline result
+```php
 $x = 42; // => 42
 ```
+````
 
 </div>
 </div>
