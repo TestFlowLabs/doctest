@@ -38,7 +38,7 @@ final class ParallelRunnerTest extends TestCase
         $batches = $runner->distribute(['a.md', 'b.md']);
 
         // Only 2 non-empty batches
-        $nonEmpty = array_filter($batches, fn (array $b) => $b !== []);
+        $nonEmpty = array_filter($batches, fn(array $b) => $b !== []);
         $this->assertCount(2, $nonEmpty);
     }
 
@@ -48,7 +48,7 @@ final class ParallelRunnerTest extends TestCase
         $runner = new ParallelRunner(workers: 3);
         $batches = $runner->distribute([]);
 
-        $nonEmpty = array_filter($batches, fn (array $b) => $b !== []);
+        $nonEmpty = array_filter($batches, fn(array $b) => $b !== []);
         $this->assertEmpty($nonEmpty);
     }
 
