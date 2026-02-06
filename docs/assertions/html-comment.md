@@ -54,6 +54,13 @@ echo 'Generated ID: ' . uniqid();
 <!-- doctest: Generated ID: {{any}} -->
 ````
 
+## Example
+
+```php
+echo 'DocTest makes documentation testing easy';
+```
+<!-- doctest-contains: documentation testing -->
+
 ## Why HTML Comments?
 
 1. **Clean rendering** — Readers see only the code, not the test
