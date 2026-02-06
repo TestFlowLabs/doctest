@@ -196,8 +196,10 @@ final readonly class Executor
             }
         }
 
+        $decoded = json_decode($processResult->stderr, true);
+
         /** @var array<array{type: string, expected?: string, actual?: string, expression?: string, passed?: bool, line?: int}> $results */
-        $results = json_decode($processResult->stderr, true) ?? [];
+        $results = is_array($decoded) ? $decoded : [];
 
         return $this->evaluateResults($block, $results, $processResult);
     }
@@ -366,8 +368,10 @@ final readonly class Executor
             }
         }
 
+        $decoded = json_decode($processResult->stderr, true);
+
         /** @var array<array{type: string, expected?: string, actual?: string, expression?: string, passed?: bool, line?: int}> $allResults */
-        $allResults = json_decode($processResult->stderr, true) ?? [];
+        $allResults = is_array($decoded) ? $decoded : [];
 
         return $this->mapResultsToBlocks($blocks, $allResults, $processResult);
     }
