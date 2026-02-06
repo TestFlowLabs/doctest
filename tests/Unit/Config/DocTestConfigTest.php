@@ -69,20 +69,17 @@ test('reporters config defaults', function (): void {
     $config = DocTestConfig::fromArray([]);
 
     expect($config->reporterConsole)->toBeTrue();
-    expect($config->reporterJunit)->toBeNull();
     expect($config->reporterJson)->toBeNull();
 });
 test('reporters config with file paths', function (): void {
     $config = DocTestConfig::fromArray([
         'reporters' => [
             'console' => true,
-            'junit'   => 'build/doctest.xml',
             'json'    => 'build/doctest.json',
         ],
     ]);
 
     expect($config->reporterConsole)->toBeTrue();
-    expect($config->reporterJunit)->toBe('build/doctest.xml');
     expect($config->reporterJson)->toBe('build/doctest.json');
 });
 test('exclude patterns loaded', function (): void {
