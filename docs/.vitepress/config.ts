@@ -37,6 +37,7 @@ export default defineConfig({
           { text: 'Getting Started', link: '/guide/getting-started' },
           { text: 'Installation', link: '/guide/installation' },
           { text: 'How It Works', link: '/guide/how-it-works' },
+          { text: 'Writing Testable Docs', link: '/guide/writing-testable-docs' },
         ],
       },
       {
