@@ -24,7 +24,64 @@ final class DocTestCommand extends Command
             ->addOption('exclude', null, InputOption::VALUE_REQUIRED, 'Exclude files matching pattern')
             ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Parse and show blocks without executing')
             ->addOption('stop-on-failure', null, InputOption::VALUE_NONE, 'Stop on first failure')
-            ->addOption('config', 'c', InputOption::VALUE_REQUIRED, 'Path to doctest.php config file');
+            ->addOption('config', 'c', InputOption::VALUE_REQUIRED, 'Path to doctest.php config file')
+            ->setHelp(<<<'HELP'
+                Extracts PHP code blocks from markdown files and executes them,
+                verifying output and assertions match expected values.
+
+                <comment>Verbosity levels:</comment>
+                  (default)  Block-level pass/fail only
+                  <info>-v</info>         Show per-assertion details under each block
+                  <info>-vv</info>        Also show source code on failure
+
+                <comment>Assertion types:</comment>
+                  <info>// Output: Hello</info>        Exact output match
+                  <info>// OutputContains: He</info>   Partial output match
+                  <info>// OutputMatches: /H/</info>   Regex output match
+                  <info>// Expect: $x === 42</info>    Expression must be truthy
+                  <info>$x = 42; // => 42</info>       Return value match
+                  \<!-- doctest: Hello --\>  HTML comment output match
+
+                <comment>Attributes (in code fence info string):</comment>
+                  <info>```php {ignore}</info>          Skip this block
+                  <info>```php {no_run}</info>          Syntax check only
+                  <info>```php {throws RuntimeException}</info>  Expect exception
+                  <info>```php {parse_error}</info>     Expect parse error
+                  <info>```php {group:name}</info>      Group blocks sharing state
+                  <info>```php {setup:name}</info>      Setup code for a group
+                  <info>```php {teardown:name}</info>   Teardown code for a group
+
+                <comment>Examples:</comment>
+                  <info>doctest</info>
+                    Run tests from default paths (docs/ and README.md)
+
+                  <info>doctest README.md docs/api.md</info>
+                    Test specific files
+
+                  <info>doctest docs/</info>
+                    Test all markdown files in a directory
+
+                  <info>doctest -v</info>
+                    Show per-assertion details
+
+                  <info>doctest -vv</info>
+                    Show per-assertion details and source code on failure
+
+                  <info>doctest --filter "array_map"</info>
+                    Only run blocks containing "array_map"
+
+                  <info>doctest --dry-run</info>
+                    Parse and list blocks without executing
+
+                  <info>doctest --stop-on-failure</info>
+                    Stop at the first failing block
+
+                  <info>doctest --exclude vendor</info>
+                    Skip files matching "vendor"
+
+                  <info>doctest -c custom-doctest.php</info>
+                    Use a custom config file
+                HELP);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
