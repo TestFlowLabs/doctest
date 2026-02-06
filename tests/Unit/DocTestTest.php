@@ -6,27 +6,20 @@ namespace TestFlowLabs\DocTest\Tests\Unit;
 
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\Console\Output\BufferedOutput;
 use TestFlowLabs\DocTest\Config\DocTestConfig;
 use TestFlowLabs\DocTest\DocTest;
 
 final class DocTestTest extends TestCase
 {
-    /** @var resource */
-    private $output;
+    private BufferedOutput $output;
 
     private string $fixturesDir;
 
     protected function setUp(): void
     {
-        $stream = fopen('php://memory', 'r+');
-        $this->assertIsResource($stream);
-        $this->output = $stream;
+        $this->output = new BufferedOutput();
         $this->fixturesDir = dirname(__DIR__) . '/Fixtures';
-    }
-
-    protected function tearDown(): void
-    {
-        fclose($this->output);
     }
 
     private function makeDocTest(DocTestConfig $config): DocTest
@@ -89,8 +82,7 @@ final class DocTestTest extends TestCase
         $docTest = $this->makeDocTest($config);
         $exitCode = $docTest->run();
 
-        rewind($this->output);
-        $output = stream_get_contents($this->output) ?: '';
+        $output = $this->output->fetch();
 
         $this->assertSame(0, $exitCode);
         $this->assertStringContainsString('basic.md', $output);
