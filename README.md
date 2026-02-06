@@ -74,6 +74,18 @@ $result = array_sum([1, 2, 3, 4, 5]);
 ```
 <!-- doctest-expect: $result === 15 -->
 
+### Result Comment
+
+For inline assertions on return values, use `// =>` at the end of a line. The value is compared using `var_export`:
+
+```php
+$x = 42; // => 42
+$flag = true; // => true
+$nothing = null; // => NULL
+```
+
+This is useful when documenting APIs where return values matter more than printed output. Regular comments (without `=>`) are left untouched.
+
 ## Wildcards
 
 When output contains dynamic values, use wildcards:
