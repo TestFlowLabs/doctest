@@ -33,6 +33,28 @@ final readonly class Executor
      *
      * @return array<ExecutionResult>
      */
+    public function executeAll(array $blocks): array
+    {
+        [$setup, $teardown, $normalBlocks, $groupedBlocks] = $this->collectSetupTeardownAndGroups($blocks);
+
+        $results = [];
+
+        foreach ($normalBlocks as $block) {
+            $results[] = $this->executeNormal($block, $setup, $teardown);
+        }
+
+        foreach ($groupedBlocks as $groupBlocks) {
+            $results = array_merge($results, $this->executeGroupBlocks($groupBlocks, $setup, $teardown));
+        }
+
+        return $results;
+    }
+
+    /**
+     * @param array<CodeBlock> $blocks
+     *
+     * @return array<ExecutionResult>
+     */
     public function executeGroup(array $blocks): array
     {
         return $this->executeGroupBlocks($blocks);
@@ -148,9 +170,9 @@ final readonly class Executor
         );
     }
 
-    private function executeNormal(CodeBlock $block): ExecutionResult
+    private function executeNormal(CodeBlock $block, ?string $setup = null, ?string $teardown = null): ExecutionResult
     {
-        $filePath = $this->codeGenerator->generate($block);
+        $filePath = $this->codeGenerator->generate($block, setup: $setup, teardown: $teardown);
         $processResult = $this->processRunner->run($filePath);
         $this->cleanup($filePath);
 
@@ -286,9 +308,9 @@ final readonly class Executor
      *
      * @return array<ExecutionResult>
      */
-    private function executeGroupBlocks(array $blocks): array
+    private function executeGroupBlocks(array $blocks, ?string $setup = null, ?string $teardown = null): array
     {
-        $filePath = $this->codeGenerator->generateGroup($blocks);
+        $filePath = $this->codeGenerator->generateGroup($blocks, setup: $setup, teardown: $teardown);
         $processResult = $this->processRunner->run($filePath);
         $this->cleanup($filePath);
 
@@ -365,6 +387,37 @@ final readonly class Executor
         }
 
         return $results;
+    }
+
+    /**
+     * @param array<CodeBlock> $blocks
+     *
+     * @return array{?string, ?string, array<CodeBlock>, array<string, array<CodeBlock>>}
+     */
+    private function collectSetupTeardownAndGroups(array $blocks): array
+    {
+        $setupCode = [];
+        $teardownCode = [];
+        $normalBlocks = [];
+        /** @var array<string, array<CodeBlock>> $groupedBlocks */
+        $groupedBlocks = [];
+
+        foreach ($blocks as $block) {
+            if ($block->attributes->isSetup()) {
+                $setupCode[] = $block->rawCode;
+            } elseif ($block->attributes->isTeardown()) {
+                $teardownCode[] = $block->rawCode;
+            } elseif ($block->attributes->hasGroup() && $block->attributes->group !== null) {
+                $groupedBlocks[$block->attributes->group][] = $block;
+            } else {
+                $normalBlocks[] = $block;
+            }
+        }
+
+        $setup = $setupCode !== [] ? implode("\n", $setupCode) : null;
+        $teardown = $teardownCode !== [] ? implode("\n", $teardownCode) : null;
+
+        return [$setup, $teardown, $normalBlocks, $groupedBlocks];
     }
 
     private function cleanup(string $filePath): void
