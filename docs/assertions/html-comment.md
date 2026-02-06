@@ -1,6 +1,6 @@
 # HTML Comment Assertions
 
-HTML comments are the recommended way to add assertions. They're invisible in rendered documentation, keeping your examples clean.
+HTML comments are the primary way to add assertions in DocTest. They're invisible in rendered documentation, keeping your examples clean.
 
 ## Syntax
 
@@ -45,7 +45,7 @@ line 3 -->
 
 ## Wildcards
 
-HTML comment assertions support [wildcards](/wildcards/) just like inline assertions:
+HTML comment assertions support [wildcards](/wildcards/):
 
 ````markdown
 ```php
