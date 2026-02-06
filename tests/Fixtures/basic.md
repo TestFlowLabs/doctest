@@ -4,16 +4,16 @@ Simple PHP blocks with Output assertions.
 
 ```php
 echo "Hello, World!";
-// Output: Hello, World!
 ```
+<!-- doctest: Hello, World! -->
 
 Some text between blocks.
 
 ```php
 $x = 42;
 echo $x;
-// Output: 42
 ```
+<!-- doctest: 42 -->
 
 Block with no assertions (smoke test):
 
@@ -27,8 +27,9 @@ Multi-line output:
 echo "line1\n";
 echo "line2\n";
 echo "line3";
-// Output:
-// line1
-// line2
-// line3
 ```
+<!-- doctest:
+line1
+line2
+line3
+-->
