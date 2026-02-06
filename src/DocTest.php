@@ -56,15 +56,20 @@ final readonly class DocTest
         $hasFailure = false;
         $totalBlocks = 0;
 
-        // Count total blocks for progress reporting
+        // Count total blocks and find max line number for progress reporting
         $allBlocks = [];
+        $maxLineNumber = 0;
         foreach ($files as $file) {
             $blocks = $this->extractBlocks($file);
             $allBlocks[$file] = $blocks;
             $totalBlocks += count($blocks);
+            foreach ($blocks as $block) {
+                $maxLineNumber = max($maxLineNumber, $block->startLine);
+            }
         }
 
         $this->reporter->setTotalBlocks($totalBlocks);
+        $this->reporter->setMaxLineNumber($maxLineNumber);
 
         foreach ($files as $file) {
             $this->reporter->reportFile($file);
