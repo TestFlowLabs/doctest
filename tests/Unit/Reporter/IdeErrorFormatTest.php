@@ -6,6 +6,7 @@ namespace TestFlowLabs\DocTest\Tests\Unit\Reporter;
 
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\Console\Output\BufferedOutput;
 use TestFlowLabs\DocTest\Assertion\AssertionParser;
 use TestFlowLabs\DocTest\CodeBlock\Attributes;
 use TestFlowLabs\DocTest\CodeBlock\CodeBlock;
@@ -16,9 +17,12 @@ final class IdeErrorFormatTest extends TestCase
 {
     private AssertionParser $parser;
 
+    private BufferedOutput $output;
+
     protected function setUp(): void
     {
         $this->parser = new AssertionParser();
+        $this->output = new BufferedOutput();
     }
 
     private function makeResult(string $file, int $line, ?string $error = null): ExecutionResult
@@ -42,15 +46,12 @@ final class IdeErrorFormatTest extends TestCase
     #[Test]
     public function failure_output_includes_file_colon_line_pattern(): void
     {
-        $output = fopen('php://memory', 'rw');
-        $reporter = new ConsoleReporter($output, colors: false);
+        $reporter = new ConsoleReporter($this->output);
 
         $result = $this->makeResult('docs/api.md', 42);
         $reporter->reportResult($result);
 
-        rewind($output);
-        $content = stream_get_contents($output);
-        fclose($output);
+        $content = $this->output->fetch();
 
         $this->assertMatchesRegularExpression('/docs\/api\.md:42/', $content);
     }
@@ -58,15 +59,12 @@ final class IdeErrorFormatTest extends TestCase
     #[Test]
     public function failure_includes_error_message_after_location(): void
     {
-        $output = fopen('php://memory', 'rw');
-        $reporter = new ConsoleReporter($output, colors: false);
+        $reporter = new ConsoleReporter($this->output);
 
         $result = $this->makeResult('test.md', 10, 'Expected "hello" but got "world"');
         $reporter->reportResult($result);
 
-        rewind($output);
-        $content = stream_get_contents($output);
-        fclose($output);
+        $content = $this->output->fetch();
 
         $this->assertStringContainsString('test.md:10', $content);
         $this->assertStringContainsString('Expected "hello" but got "world"', $content);
@@ -75,8 +73,7 @@ final class IdeErrorFormatTest extends TestCase
     #[Test]
     public function passing_result_shows_file_and_line(): void
     {
-        $output = fopen('php://memory', 'rw');
-        $reporter = new ConsoleReporter($output, colors: false);
+        $reporter = new ConsoleReporter($this->output);
         $parsed = $this->parser->parse('echo "ok";');
 
         $result = new ExecutionResult(
@@ -93,9 +90,7 @@ final class IdeErrorFormatTest extends TestCase
 
         $reporter->reportResult($result);
 
-        rewind($output);
-        $content = stream_get_contents($output);
-        fclose($output);
+        $content = $this->output->fetch();
 
         $this->assertStringContainsString('Line 5', $content);
     }
