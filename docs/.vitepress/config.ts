@@ -80,7 +80,6 @@ export default defineConfig({
           { text: 'Options', link: '/configuration/' },
           { text: 'Reporters', link: '/reporters/' },
           { text: 'Console Reporter', link: '/reporters/console' },
-          { text: 'JUnit XML Reporter', link: '/reporters/junit' },
           { text: 'JSON Reporter', link: '/reporters/json' },
           { text: 'Framework Bootstrap', link: '/framework-bootstrap/' },
         ],
