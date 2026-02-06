@@ -27,7 +27,7 @@ When a Laravel project is detected:
 
 DocTest generates the following bootstrap code for each code block:
 
-```php
+```php ignore
 require_once '/path/to/vendor/autoload.php';
 $app = require_once '/path/to/bootstrap/app.php';
 $kernel = $app->make(\Illuminate\Contracts\Console\Kernel::class);
