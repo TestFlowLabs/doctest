@@ -76,7 +76,8 @@ final readonly class CodeBlockExtractor
             return false;
         }
 
-        $language = preg_split('/[\s{]/', $infoString)[0] ?? '';
+        $parts = preg_split('/[\s{]/', $infoString);
+        $language = is_array($parts) ? $parts[0] : '';
 
         return mb_strtolower($language) === 'php';
     }
