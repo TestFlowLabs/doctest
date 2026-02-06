@@ -3,6 +3,6 @@
 declare(strict_types=1);
 
 return [
-    'paths'   => ['docs/'],
+    'paths'   => ['README.md', 'docs/'],
     'exclude' => ['docs/node_modules'],
 ];
