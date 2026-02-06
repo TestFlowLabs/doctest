@@ -40,6 +40,7 @@
         "test:coverage": "pest --coverage --colors=always --min=80",
         "test:profile": "pest --profile --colors=always --order-by=random",
         "test:mutation": "pest --mutate --parallel --everything",
+        "test:doc": "php bin/doctest --ansi",
         "test": [
             "@test:rector",
             "@test:pint",
