@@ -27,16 +27,8 @@ export default defineConfig({
       { text: 'Guide', link: '/guide/getting-started' },
       { text: 'Assertions', link: '/assertions/' },
       { text: 'CLI', link: '/cli/' },
-      {
-        text: 'More',
-        items: [
-          { text: 'Configuration', link: '/configuration/' },
-          { text: 'Reporters', link: '/reporters/' },
-          { text: 'Framework Bootstrap', link: '/framework-bootstrap/' },
-          { text: 'CI/CD', link: '/ci-cd/' },
-          { text: 'Integrations', link: '/integrations/' },
-        ],
-      },
+      { text: 'Configuration', link: '/configuration/' },
+      { text: 'Integrations', link: '/integrations/' },
     ],
     sidebar: [
       {
@@ -58,6 +50,7 @@ export default defineConfig({
           { text: 'Expect', link: '/assertions/expect' },
           { text: 'Result Comment (=>)', link: '/assertions/result-comment' },
           { text: 'HTML Comment', link: '/assertions/html-comment' },
+          { text: 'Wildcards', link: '/wildcards/' },
         ],
       },
       {
@@ -73,10 +66,6 @@ export default defineConfig({
         ],
       },
       {
-        text: 'Wildcards',
-        link: '/wildcards/',
-      },
-      {
         text: 'CLI',
         items: [
           { text: 'Usage', link: '/cli/' },
@@ -86,40 +75,25 @@ export default defineConfig({
       },
       {
         text: 'Configuration',
-        link: '/configuration/',
-      },
-      {
-        text: 'Reporters',
         items: [
-          { text: 'Overview', link: '/reporters/' },
-          { text: 'Console', link: '/reporters/console' },
-          { text: 'JUnit XML', link: '/reporters/junit' },
-          { text: 'JSON', link: '/reporters/json' },
+          { text: 'Options', link: '/configuration/' },
+          { text: 'Reporters', link: '/reporters/' },
+          { text: 'Console Reporter', link: '/reporters/console' },
+          { text: 'JUnit XML Reporter', link: '/reporters/junit' },
+          { text: 'JSON Reporter', link: '/reporters/json' },
+          { text: 'Framework Bootstrap', link: '/framework-bootstrap/' },
         ],
       },
       {
-        text: 'Shiki Compatibility',
-        collapsed: true,
-        link: '/shiki/',
-      },
-      {
-        text: 'Framework Bootstrap',
-        collapsed: true,
-        link: '/framework-bootstrap/',
-      },
-      {
-        text: 'CI/CD Integration',
-        collapsed: true,
-        link: '/ci-cd/',
-      },
-      {
-        text: 'AI Agent Integration',
-        collapsed: true,
-        link: '/integrations/',
+        text: 'Integrations',
+        items: [
+          { text: 'CI/CD', link: '/ci-cd/' },
+          { text: 'AI Agents', link: '/integrations/' },
+          { text: 'Shiki / VitePress', link: '/shiki/' },
+        ],
       },
       {
         text: 'Advanced',
-        collapsed: true,
         items: [
           { text: 'Execution Model', link: '/advanced/execution-model' },
           { text: 'Output Comparison', link: '/advanced/output-comparison' },
