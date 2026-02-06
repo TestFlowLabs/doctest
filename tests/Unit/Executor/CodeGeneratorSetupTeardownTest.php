@@ -7,6 +7,8 @@ namespace TestFlowLabs\DocTest\Tests\Unit\Executor;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use TestFlowLabs\DocTest\Assertion\AssertionParser;
+use TestFlowLabs\DocTest\Assertion\ExpectAssertion;
+use TestFlowLabs\DocTest\Assertion\OutputAssertion;
 use TestFlowLabs\DocTest\CodeBlock\Attributes;
 use TestFlowLabs\DocTest\CodeBlock\CodeBlock;
 use TestFlowLabs\DocTest\Executor\CodeGenerator;
@@ -32,7 +34,10 @@ final class CodeGeneratorSetupTeardownTest extends TestCase
         }
     }
 
-    private function makeBlock(string $code): CodeBlock
+    /**
+     * @param array<\TestFlowLabs\DocTest\Assertion\Assertion> $assertions
+     */
+    private function makeBlock(string $code, array $assertions = []): CodeBlock
     {
         $parsed = $this->parser->parse($code);
 
@@ -42,7 +47,7 @@ final class CodeGeneratorSetupTeardownTest extends TestCase
             rawCode: $code,
             executableCode: $parsed->executableCode,
             attributes: new Attributes(),
-            assertions: $parsed->assertions,
+            assertions: $assertions,
         );
     }
 
@@ -123,7 +128,10 @@ final class CodeGeneratorSetupTeardownTest extends TestCase
     #[Test]
     public function setup_variables_accessible_in_block_scope(): void
     {
-        $block = $this->makeBlock("echo \$greeting;\n// Output: hello world");
+        $block = $this->makeBlock(
+            'echo $greeting;',
+            assertions: [new OutputAssertion('hello world', 1)],
+        );
         $setup = '$greeting = "hello world";';
 
         $filePath = $this->generator->generate($block, setup: $setup);
@@ -140,7 +148,10 @@ final class CodeGeneratorSetupTeardownTest extends TestCase
     {
         $blocks = [
             $this->makeBlock('$counter++;'),
-            $this->makeBlock("\$counter++;\n// Expect: \$counter === 2"),
+            $this->makeBlock(
+                "\$counter++;",
+                assertions: [new ExpectAssertion('$counter === 2', 2)],
+            ),
         ];
         $setup = '$counter = 0;';
         $teardown = 'unset($counter);';
