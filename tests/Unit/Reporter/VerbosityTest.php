@@ -6,6 +6,8 @@ namespace TestFlowLabs\DocTest\Tests\Unit\Reporter;
 
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\Console\Output\BufferedOutput;
+use Symfony\Component\Console\Output\OutputInterface;
 use TestFlowLabs\DocTest\CodeBlock\Attributes;
 use TestFlowLabs\DocTest\CodeBlock\CodeBlock;
 use TestFlowLabs\DocTest\Executor\ExecutionResult;
@@ -13,26 +15,16 @@ use TestFlowLabs\DocTest\Reporter\ConsoleReporter;
 
 final class VerbosityTest extends TestCase
 {
-    /** @var resource */
-    private $stream;
+    private BufferedOutput $output;
 
     protected function setUp(): void
     {
-        $stream = fopen('php://memory', 'r+');
-        $this->assertIsResource($stream);
-        $this->stream = $stream;
-    }
-
-    protected function tearDown(): void
-    {
-        fclose($this->stream);
+        $this->output = new BufferedOutput();
     }
 
     private function getOutput(): string
     {
-        rewind($this->stream);
-
-        return stream_get_contents($this->stream) ?: '';
+        return $this->output->fetch();
     }
 
     private function makeResult(bool $passed, float $duration = 0.12, ?string $error = null): ExecutionResult
@@ -55,9 +47,10 @@ final class VerbosityTest extends TestCase
     }
 
     #[Test]
-    public function verbosity_1_shows_execution_time(): void
+    public function verbose_shows_execution_time(): void
     {
-        $reporter = new ConsoleReporter($this->stream, colors: false, verbosity: 1);
+        $this->output->setVerbosity(OutputInterface::VERBOSITY_VERBOSE);
+        $reporter = new ConsoleReporter($this->output);
         $reporter->reportResult($this->makeResult(passed: true, duration: 0.12));
 
         $output = $this->getOutput();
@@ -65,9 +58,10 @@ final class VerbosityTest extends TestCase
     }
 
     #[Test]
-    public function verbosity_2_shows_source_code_on_failure(): void
+    public function very_verbose_shows_source_code_on_failure(): void
     {
-        $reporter = new ConsoleReporter($this->stream, colors: false, verbosity: 2);
+        $this->output->setVerbosity(OutputInterface::VERBOSITY_VERY_VERBOSE);
+        $reporter = new ConsoleReporter($this->output);
         $reporter->reportResult($this->makeResult(passed: false, error: 'Failed'));
 
         $output = $this->getOutput();
@@ -75,9 +69,10 @@ final class VerbosityTest extends TestCase
     }
 
     #[Test]
-    public function verbosity_0_does_not_show_timing(): void
+    public function normal_does_not_show_timing(): void
     {
-        $reporter = new ConsoleReporter($this->stream, colors: false, verbosity: 0);
+        $this->output->setVerbosity(OutputInterface::VERBOSITY_NORMAL);
+        $reporter = new ConsoleReporter($this->output);
         $reporter->reportResult($this->makeResult(passed: true, duration: 0.12));
 
         $output = $this->getOutput();
@@ -85,9 +80,10 @@ final class VerbosityTest extends TestCase
     }
 
     #[Test]
-    public function verbosity_0_does_not_show_source_on_failure(): void
+    public function normal_does_not_show_source_on_failure(): void
     {
-        $reporter = new ConsoleReporter($this->stream, colors: false, verbosity: 0);
+        $this->output->setVerbosity(OutputInterface::VERBOSITY_NORMAL);
+        $reporter = new ConsoleReporter($this->output);
         $reporter->reportResult($this->makeResult(passed: false, error: 'Failed'));
 
         $output = $this->getOutput();
