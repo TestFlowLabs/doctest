@@ -40,6 +40,30 @@ final readonly class Executor
         $results = [];
 
         foreach ($normalBlocks as $block) {
+            if ($block->attributes->isIgnore()) {
+                $results[] = new ExecutionResult(passed: true, codeBlock: $block, skipped: true);
+
+                continue;
+            }
+
+            if ($block->attributes->isNoRun()) {
+                $results[] = $this->syntaxCheck($block);
+
+                continue;
+            }
+
+            if ($block->attributes->isParseError()) {
+                $results[] = $this->executeParseError($block);
+
+                continue;
+            }
+
+            if ($block->attributes->isThrows()) {
+                $results[] = $this->executeThrows($block);
+
+                continue;
+            }
+
             $results[] = $this->executeNormal($block, $setup, $teardown);
         }
 
