@@ -1,29 +1,19 @@
 # Assertions Overview
 
-Assertions tell DocTest what to expect from a code block's execution. You can use inline PHP comments inside the code block, or HTML comments after it.
+Assertions tell DocTest what to expect from a code block's execution. Use HTML comments after the code block for invisible assertions, or `// =>` inside the code for inline result checks.
 
 ## Assertion Types
 
-| Type | Syntax | Location | Description |
-|------|--------|----------|-------------|
-| [Output](/assertions/output) | `// Output:` | Inline | Exact output match |
-| [OutputContains](/assertions/output-contains) | `// OutputContains:` | Inline | Partial output match |
-| [OutputMatches](/assertions/output-matches) | `// OutputMatches:` | Inline | Regex pattern match |
-| [OutputJson](/assertions/output-json) | `// OutputJson:` | Inline | JSON structure comparison |
-| [Expect](/assertions/expect) | `// Expect:` | Inline | Expression must be truthy |
-| [Result Comment](/assertions/result-comment) | `// =>` | Inline | Return value comparison |
-| [HTML Comment](/assertions/html-comment) | `<!-- doctest: -->` | After block | All types via HTML comments |
+| Type | Syntax | Description |
+|------|--------|-------------|
+| [Output](/assertions/output) | `<!-- doctest: -->` | Exact output match |
+| [OutputContains](/assertions/output-contains) | `<!-- doctest-contains: -->` | Partial output match |
+| [OutputMatches](/assertions/output-matches) | `<!-- doctest-matches: -->` | Regex pattern match |
+| [OutputJson](/assertions/output-json) | `<!-- doctest-json: -->` | JSON structure comparison |
+| [Expect](/assertions/expect) | `<!-- doctest-expect: -->` | Expression must be truthy |
+| [Result Comment](/assertions/result-comment) | `// =>` | Return value comparison |
 
-## Inline vs. HTML Comments
-
-### Inline Comments
-
-Written inside the code block as PHP comments. Visible in rendered documentation:
-
-```php
-echo 'Hello';
-// Output: Hello
-```
+## HTML Comments vs. Result Comments
 
 ### HTML Comments
 
@@ -36,19 +26,27 @@ echo 'Hello';
 <!-- doctest: Hello -->
 ````
 
-Both approaches are equivalent. HTML comments are recommended when you want clean rendered output.
+### Result Comments
+
+Written inside the code block using `// =>`. A natural PHP documentation pattern for showing return values:
+
+```php
+$x = 42; // => 42
+```
 
 ## Multiple Assertions
 
 A single code block can have multiple assertions:
 
+````markdown
 ```php
 $x = 42; // => 42
 $y = true; // => true
 echo $x;
-// Output: 42
-// Expect: $y === true
 ```
+<!-- doctest: 42 -->
+<!-- doctest-expect: $y === true -->
+````
 
 ## No Assertion
 
@@ -58,7 +56,9 @@ Code blocks without assertions still execute. If they produce no error, they pas
 
 All output-based assertions support [wildcards](/wildcards/) for dynamic values:
 
+````markdown
 ```php
 echo 'Created at ' . date('Y-m-d');
-// Output: Created at {{date}}
 ```
+<!-- doctest: Created at {{date}} -->
+````
