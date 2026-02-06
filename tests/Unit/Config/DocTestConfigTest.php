@@ -193,4 +193,32 @@ final class DocTestConfigTest extends TestCase
         $this->assertSame(30, $config->timeout);
         $this->assertSame('256M', $config->memoryLimit);
     }
+
+    #[Test]
+    public function bootstrap_defaults_to_null(): void
+    {
+        $config = DocTestConfig::fromArray([]);
+
+        $this->assertNull($config->bootstrap);
+    }
+
+    #[Test]
+    public function bootstrap_loaded_from_array(): void
+    {
+        $config = DocTestConfig::fromArray([
+            'bootstrap' => 'tests/bootstrap.php',
+        ]);
+
+        $this->assertSame('tests/bootstrap.php', $config->bootstrap);
+    }
+
+    #[Test]
+    public function bootstrap_non_string_falls_back_to_null(): void
+    {
+        $config = DocTestConfig::fromArray([
+            'bootstrap' => 42,
+        ]);
+
+        $this->assertNull($config->bootstrap);
+    }
 }
