@@ -4,7 +4,7 @@ The JUnit reporter generates XML output compatible with CI tools like GitHub Act
 
 ## Configuration
 
-```php
+```php ignore
 return [
     'reporters' => [
         'junit' => 'build/doctest.xml',
