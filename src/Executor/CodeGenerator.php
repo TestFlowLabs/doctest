@@ -102,14 +102,18 @@ final readonly class CodeGenerator
         if ($block->attributes->isThrows()) {
             $lines[] = $this->generateThrowsWrapper($block, $parsed->executableCode);
         } else {
-            $lines[] = $this->generateSegmentCapture($parsed, $setup, $teardown);
+            $lines[] = $this->generateSegmentCapture($parsed, $block, $setup, $teardown);
         }
 
         return implode("\n", $lines);
     }
 
-    private function generateSegmentCapture(\TestFlowLabs\DocTest\Assertion\AssertionParserResult $parsed, ?string $setup = null, ?string $teardown = null): string
+    private function generateSegmentCapture(\TestFlowLabs\DocTest\Assertion\AssertionParserResult $parsed, CodeBlock $block, ?string $setup = null, ?string $teardown = null): string
     {
+        // Determine if assertions come from HTML comments (external) vs in-code comments
+        $hasInCodeAssertions = $parsed->assertions !== [] || $parsed->expects !== [];
+        $hasExternalAssertions = ! $hasInCodeAssertions && $block->assertions !== [];
+
         $lines = [];
         $lines[] = '$__doctest_results = [];';
         $lines[] = '$__doctest_segment = 0;';
@@ -120,34 +124,64 @@ final readonly class CodeGenerator
             $lines[] = '';
         }
 
-        foreach ($parsed->segments as $segment) {
-            if ($segment->outputAssertion !== null) {
-                $lines[] = 'ob_start();';
-                $lines[] = $segment->code;
-                $lines[] = '$__doctest_output = ob_get_clean();';
-                $expected = $this->getExpectedValue($segment->outputAssertion);
-                $lines[] = '$__doctest_results[] = [';
-                $lines[] = "    'type' => " . var_export($segment->outputAssertion->type(), true) . ',';
-                $lines[] = "    'expected' => " . var_export($expected, true) . ',';
-                $lines[] = "    'actual' => \$__doctest_output,";
-                $lines[] = "    'line' => " . $segment->outputAssertion->line() . ',';
-                $lines[] = '];';
-                $lines[] = '$__doctest_segment++;';
-                $lines[] = '';
-            } else {
-                $lines[] = $segment->code;
+        if ($hasExternalAssertions) {
+            // HTML comment assertions: wrap entire code in ob_start/ob_get_clean
+            $lines[] = 'ob_start();';
+            $lines[] = $parsed->executableCode;
+            $lines[] = '$__doctest_output = ob_get_clean();';
+
+            foreach ($block->assertions as $assertion) {
+                $expected = $this->getExpectedValue($assertion);
+
+                if ($assertion instanceof \TestFlowLabs\DocTest\Assertion\ExpectAssertion) {
+                    $lines[] = '$__doctest_results[] = [';
+                    $lines[] = "    'type' => 'expect',";
+                    $lines[] = "    'expression' => " . var_export($assertion->expression, true) . ',';
+                    $lines[] = "    'passed' => (bool)(" . $assertion->expression . '),';
+                    $lines[] = "    'line' => " . $assertion->line() . ',';
+                    $lines[] = '];';
+                } else {
+                    $lines[] = '$__doctest_results[] = [';
+                    $lines[] = "    'type' => " . var_export($assertion->type(), true) . ',';
+                    $lines[] = "    'expected' => " . var_export($expected, true) . ',';
+                    $lines[] = "    'actual' => \$__doctest_output,";
+                    $lines[] = "    'line' => " . $assertion->line() . ',';
+                    $lines[] = '];';
+                }
+
                 $lines[] = '';
             }
-        }
+        } else {
+            // In-code assertions: use segment-based capture
+            foreach ($parsed->segments as $segment) {
+                if ($segment->outputAssertion !== null) {
+                    $lines[] = 'ob_start();';
+                    $lines[] = $segment->code;
+                    $lines[] = '$__doctest_output = ob_get_clean();';
+                    $expected = $this->getExpectedValue($segment->outputAssertion);
+                    $lines[] = '$__doctest_results[] = [';
+                    $lines[] = "    'type' => " . var_export($segment->outputAssertion->type(), true) . ',';
+                    $lines[] = "    'expected' => " . var_export($expected, true) . ',';
+                    $lines[] = "    'actual' => \$__doctest_output,";
+                    $lines[] = "    'line' => " . $segment->outputAssertion->line() . ',';
+                    $lines[] = '];';
+                    $lines[] = '$__doctest_segment++;';
+                    $lines[] = '';
+                } else {
+                    $lines[] = $segment->code;
+                    $lines[] = '';
+                }
+            }
 
-        foreach ($parsed->expects as $expect) {
-            $lines[] = '$__doctest_results[] = [';
-            $lines[] = "    'type' => 'expect',";
-            $lines[] = "    'expression' => " . var_export($expect->expression, true) . ',';
-            $lines[] = "    'passed' => (bool)(" . $expect->expression . '),';
-            $lines[] = "    'line' => " . $expect->line() . ',';
-            $lines[] = '];';
-            $lines[] = '';
+            foreach ($parsed->expects as $expect) {
+                $lines[] = '$__doctest_results[] = [';
+                $lines[] = "    'type' => 'expect',";
+                $lines[] = "    'expression' => " . var_export($expect->expression, true) . ',';
+                $lines[] = "    'passed' => (bool)(" . $expect->expression . '),';
+                $lines[] = "    'line' => " . $expect->line() . ',';
+                $lines[] = '];';
+                $lines[] = '';
+            }
         }
 
         if ($teardown !== null) {
