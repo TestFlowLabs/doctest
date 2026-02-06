@@ -28,13 +28,6 @@ beforeEach(function (): void {
         );
     };
 });
-afterEach(function (): void {
-    $dir = sys_get_temp_dir().'/doctest';
-
-    if (is_dir($dir)) {
-        array_map(unlink(...), glob($dir.'/*.php') ?: []);
-    }
-});
 test('prepends setup code before block code', function (): void {
     $block = ($this->makeBlock)('echo $greeting;');
     $setup = '$greeting = "hello";';

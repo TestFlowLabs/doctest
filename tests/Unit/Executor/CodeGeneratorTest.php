@@ -37,14 +37,6 @@ beforeEach(function (): void {
         );
     };
 });
-afterEach(function (): void {
-    // Clean up generated files
-    $dir = sys_get_temp_dir().'/doctest';
-
-    if (is_dir($dir)) {
-        array_map(unlink(...), glob($dir.'/*.php') ?: []);
-    }
-});
 test('generates valid php file for simple echo', function (): void {
     $block    = ($this->makeBlock)('echo "Hello World";');
     $filePath = $this->generator->generate($block);
