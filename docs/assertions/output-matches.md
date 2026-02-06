@@ -45,21 +45,17 @@ echo 'Hello World';
 
 ### Validate email format
 
-````markdown
 ```php
 echo 'user@example.com';
 ```
 <!-- doctest-matches: /^[\w.+-]+@[\w-]+\.[\w.]+$/ -->
-````
 
 ### Match a version string
 
-````markdown
 ```php
 echo '2.1.0';
 ```
 <!-- doctest-matches: /^\d+\.\d+\.\d+$/ -->
-````
 
 ::: tip
 For common dynamic patterns like dates, UUIDs, and integers, consider using [wildcards](/wildcards/) with the `Output` assertion instead. They're more readable.
