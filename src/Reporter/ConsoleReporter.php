@@ -19,6 +19,8 @@ final class ConsoleReporter
 
     private int $currentBlock = 0;
 
+    private int $lineNumberWidth = 1;
+
     public function __construct(
         private readonly OutputInterface $output = new ConsoleOutput(),
     ) {
@@ -28,6 +30,11 @@ final class ConsoleReporter
     public function setTotalBlocks(int $total): void
     {
         $this->totalBlocks = $total;
+    }
+
+    public function setMaxLineNumber(int $maxLine): void
+    {
+        $this->lineNumberWidth = max(1, strlen((string) $maxLine));
     }
 
     public function reportFile(string $filePath): void
@@ -45,7 +52,8 @@ final class ConsoleReporter
             : '';
 
         $preview = $this->codePreview($result->codeBlock);
-        $location = ":{$result->codeBlock->startLine}";
+        $paddedLine = str_pad((string) $result->codeBlock->startLine, $this->lineNumberWidth, ' ', STR_PAD_LEFT);
+        $location = ":{$paddedLine}";
 
         if ($result->skipped) {
             $this->output->writeln("  <fg=gray>{$location}</> <fg=gray>⊘</> {$preview}{$progress}");
