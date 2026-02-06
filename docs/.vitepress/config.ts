@@ -34,6 +34,7 @@ export default defineConfig({
           { text: 'Reporters', link: '/reporters/' },
           { text: 'Framework Bootstrap', link: '/framework-bootstrap/' },
           { text: 'CI/CD', link: '/ci-cd/' },
+          { text: 'Integrations', link: '/integrations/claude-code' },
         ],
       },
     ],
@@ -110,6 +111,13 @@ export default defineConfig({
         text: 'CI/CD Integration',
         collapsed: true,
         link: '/ci-cd/',
+      },
+      {
+        text: 'Integrations',
+        collapsed: true,
+        items: [
+          { text: 'Claude Code', link: '/integrations/claude-code' },
+        ],
       },
       {
         text: 'Advanced',
