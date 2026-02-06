@@ -28,6 +28,16 @@ final readonly class Executor
         $this->diffGenerator = new DiffGenerator();
     }
 
+    /**
+     * @param array<CodeBlock> $blocks
+     *
+     * @return array<ExecutionResult>
+     */
+    public function executeGroup(array $blocks): array
+    {
+        return $this->executeGroupBlocks($blocks);
+    }
+
     public function execute(CodeBlock $block): ExecutionResult
     {
         if ($block->attributes->isIgnore()) {
@@ -269,6 +279,92 @@ final readonly class Executor
             actualOutput: $actualOutput,
             duration: $processResult->duration,
         );
+    }
+
+    /**
+     * @param array<CodeBlock> $blocks
+     *
+     * @return array<ExecutionResult>
+     */
+    private function executeGroupBlocks(array $blocks): array
+    {
+        $filePath = $this->codeGenerator->generateGroup($blocks);
+        $processResult = $this->processRunner->run($filePath);
+        $this->cleanup($filePath);
+
+        if ($processResult->exitCode !== 0) {
+            $decoded = json_decode($processResult->stderr, true);
+
+            if (! is_array($decoded)) {
+                $errorMessage = $processResult->stderr !== ''
+                    ? 'Process failed (exit code ' . $processResult->exitCode . '): ' . $processResult->stderr
+                    : 'Process failed with exit code ' . $processResult->exitCode;
+
+                return array_map(
+                    fn(CodeBlock $block) => new ExecutionResult(
+                        passed: false,
+                        codeBlock: $block,
+                        error: $errorMessage,
+                        duration: $processResult->duration,
+                    ),
+                    $blocks,
+                );
+            }
+        }
+
+        /** @var array<array{type: string, expected?: string, actual?: string, expression?: string, passed?: bool, line?: int}> $allResults */
+        $allResults = json_decode($processResult->stderr, true) ?? [];
+
+        return $this->mapResultsToBlocks($blocks, $allResults, $processResult);
+    }
+
+    /**
+     * @param array<CodeBlock> $blocks
+     * @param array<array{type: string, expected?: string, actual?: string, expression?: string, passed?: bool, line?: int}> $allResults
+     *
+     * @return array<ExecutionResult>
+     */
+    private function mapResultsToBlocks(array $blocks, array $allResults, ProcessResult $processResult): array
+    {
+        $parser = new \TestFlowLabs\DocTest\Assertion\AssertionParser();
+
+        // Count expected assertions per block to partition results
+        $assertionCounts = [];
+        foreach ($blocks as $block) {
+            $parsed = $parser->parse($block->rawCode);
+            $count = 0;
+            foreach ($parsed->segments as $segment) {
+                if ($segment->outputAssertion !== null) {
+                    $count++;
+                }
+            }
+            $count += count($parsed->expects);
+            $assertionCounts[] = $count;
+        }
+
+        $results = [];
+        $resultIndex = 0;
+
+        foreach ($blocks as $blockIndex => $block) {
+            $blockAssertionCount = $assertionCounts[$blockIndex];
+
+            if ($blockAssertionCount === 0) {
+                $results[] = new ExecutionResult(
+                    passed: true,
+                    codeBlock: $block,
+                    duration: $processResult->duration,
+                );
+
+                continue;
+            }
+
+            $blockResults = array_slice($allResults, $resultIndex, $blockAssertionCount);
+            $resultIndex += $blockAssertionCount;
+
+            $results[] = $this->evaluateResults($block, $blockResults, $processResult);
+        }
+
+        return $results;
     }
 
     private function cleanup(string $filePath): void
