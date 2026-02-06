@@ -4,15 +4,6 @@ The `OutputContains` assertion checks that the output **contains** a given subst
 
 ## Syntax
 
-### Inline Comment
-
-```php
-echo 'The quick brown fox jumps over the lazy dog';
-// OutputContains: brown fox
-```
-
-### HTML Comment
-
 ````markdown
 ```php
 echo 'The quick brown fox jumps over the lazy dog';
@@ -36,14 +27,18 @@ echo 'The quick brown fox jumps over the lazy dog';
 
 ### Checking for a key in JSON output
 
+````markdown
 ```php
 echo json_encode(['name' => 'DocTest', 'version' => '1.0']);
-// OutputContains: DocTest
 ```
+<!-- doctest-contains: DocTest -->
+````
 
 ### Matching part of a formatted string
 
+````markdown
 ```php
 printf('Hello %s, you have %d messages', 'Alice', 5);
-// OutputContains: you have 5 messages
 ```
+<!-- doctest-contains: you have 5 messages -->
+````
