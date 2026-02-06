@@ -136,7 +136,7 @@ final class DocTestCommandTest extends TestCase
 
         $tester->execute(['files' => [$this->fixturesDir . '/basic.md']]);
 
-        $this->assertStringContainsString('PASS', $tester->getDisplay());
+        $this->assertStringContainsString('✔', $tester->getDisplay());
     }
 
     #[Test]
@@ -152,7 +152,7 @@ final class DocTestCommandTest extends TestCase
             $tester->execute(['files' => [$tempFile], '--stop-on-failure' => true]);
 
             $this->assertSame(1, $tester->getStatusCode());
-            $this->assertSame(1, substr_count($tester->getDisplay(), 'FAIL'));
+            $this->assertSame(1, substr_count($tester->getDisplay(), '✖'));
         } finally {
             if (file_exists($tempFile)) {
                 unlink($tempFile);
