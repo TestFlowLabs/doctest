@@ -414,4 +414,54 @@ final class CodeGeneratorTest extends TestCase
         $this->assertStringContainsString("'thrown' => false", $content);
         $this->assertStringContainsString("'thrown' => true", $content);
     }
+
+    // --- Bootstrap ---
+
+    #[Test]
+    public function bootstrap_code_injected_in_normal_block(): void
+    {
+        $generator = new CodeGenerator("require_once '/tmp/bootstrap.php';");
+        $block     = $this->makeBlock('echo "test";');
+        $filePath  = $generator->generate($block);
+        $content   = file_get_contents($filePath);
+
+        $this->assertStringContainsString("require_once '/tmp/bootstrap.php';", $content);
+        $this->assertStringStartsWith("<?php\n", $content);
+    }
+
+    #[Test]
+    public function bootstrap_code_injected_in_group(): void
+    {
+        $generator = new CodeGenerator("require_once '/tmp/bootstrap.php';");
+        $blocks    = [
+            $this->makeBlock('$x = 1;', group: 'grp'),
+            $this->makeBlock('echo $x;', group: 'grp'),
+        ];
+        $filePath = $generator->generateGroup($blocks);
+        $content  = file_get_contents($filePath);
+
+        $this->assertStringContainsString("require_once '/tmp/bootstrap.php';", $content);
+    }
+
+    #[Test]
+    public function bootstrap_code_injected_in_parse_error_block(): void
+    {
+        $generator = new CodeGenerator("require_once '/tmp/bootstrap.php';");
+        $block     = $this->makeBlock('invalid syntax here %%%', Attribute::ParseError);
+        $filePath  = $generator->generate($block);
+        $content   = file_get_contents($filePath);
+
+        $this->assertStringContainsString("require_once '/tmp/bootstrap.php';", $content);
+    }
+
+    #[Test]
+    public function no_bootstrap_when_null(): void
+    {
+        $generator = new CodeGenerator(null);
+        $block     = $this->makeBlock('echo "test";');
+        $filePath  = $generator->generate($block);
+        $content   = file_get_contents($filePath);
+
+        $this->assertStringNotContainsString('require_once', $content);
+    }
 }
