@@ -43,9 +43,9 @@ final class DocTestTest extends TestCase
     #[Test]
     public function run_returns_1_when_any_block_fails(): void
     {
-        // Create a temp file with a failing assertion
+        // Create a temp file with a failing assertion (HTML comment syntax)
         $tempFile = sys_get_temp_dir() . '/doctest_failing_' . uniqid() . '.md';
-        file_put_contents($tempFile, "```php\necho \"wrong\";\n// Output: right\n```\n");
+        file_put_contents($tempFile, "```php\necho \"wrong\";\n```\n<!-- doctest: right -->\n");
 
         $config = DocTestConfig::fromArray([
             'paths' => [$tempFile],
@@ -91,9 +91,9 @@ final class DocTestTest extends TestCase
     #[Test]
     public function respects_stop_on_failure(): void
     {
-        // Create a file with a failing block followed by a passing block
+        // Create a file with a failing block followed by a passing block (HTML comment syntax)
         $tempFile = sys_get_temp_dir() . '/doctest_stop_' . uniqid() . '.md';
-        file_put_contents($tempFile, "```php\necho \"wrong\";\n// Output: right\n```\n\n```php\necho \"ok\";\n// Output: ok\n```\n");
+        file_put_contents($tempFile, "```php\necho \"wrong\";\n```\n<!-- doctest: right -->\n\n```php\necho \"ok\";\n```\n<!-- doctest: ok -->\n");
 
         $config = DocTestConfig::fromArray([
             'paths' => [$tempFile],
