@@ -87,7 +87,7 @@ This means:
 
 Output comparison behavior can be configured:
 
-```php
+```php ignore
 return [
     'output' => [
         'normalize_whitespace' => true,  // Normalize whitespace (default: true)
