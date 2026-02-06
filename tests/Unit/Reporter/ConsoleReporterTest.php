@@ -8,6 +8,7 @@ use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Console\Output\BufferedOutput;
 use Symfony\Component\Console\Output\OutputInterface;
+use TestFlowLabs\DocTest\Assertion\AssertionResultDetail;
 use TestFlowLabs\DocTest\CodeBlock\Attributes;
 use TestFlowLabs\DocTest\CodeBlock\CodeBlock;
 use TestFlowLabs\DocTest\Executor\ExecutionResult;
@@ -205,5 +206,157 @@ final class ConsoleReporterTest extends TestCase
         $output = $this->getOutput();
         $this->assertStringContainsString('...', $output);
         $this->assertLessThan(strlen($longLine), strlen($output));
+    }
+
+    #[Test]
+    public function verbose_shows_assertion_details_for_output(): void
+    {
+        $this->output->setVerbosity(OutputInterface::VERBOSITY_VERBOSE);
+        $reporter = new ConsoleReporter($this->output);
+
+        $block = new CodeBlock(
+            file: 'test.md',
+            startLine: 1,
+            rawCode: 'echo "Hello";',
+            executableCode: 'echo "Hello";',
+            attributes: new Attributes(),
+            assertions: [],
+        );
+
+        $result = new ExecutionResult(
+            passed: true,
+            codeBlock: $block,
+            assertionDetails: [
+                new AssertionResultDetail(type: 'output', passed: true, expected: 'Hello', actual: 'Hello', line: 2),
+            ],
+        );
+
+        $reporter->reportResult($result);
+        $output = $this->getOutput();
+
+        $this->assertStringContainsString('✔', $output);
+        $this->assertStringContainsString('output', $output);
+        $this->assertStringContainsString('Hello', $output);
+    }
+
+    #[Test]
+    public function verbose_shows_assertion_details_for_result_comment(): void
+    {
+        $this->output->setVerbosity(OutputInterface::VERBOSITY_VERBOSE);
+        $reporter = new ConsoleReporter($this->output);
+
+        $block = new CodeBlock(
+            file: 'test.md',
+            startLine: 1,
+            rawCode: '$x = 42; // => 42',
+            executableCode: '$x = 42;',
+            attributes: new Attributes(),
+            assertions: [],
+        );
+
+        $result = new ExecutionResult(
+            passed: true,
+            codeBlock: $block,
+            assertionDetails: [
+                new AssertionResultDetail(type: 'result_comment', passed: true, expected: '42', actual: '42', line: 1, expression: '$x = 42'),
+            ],
+        );
+
+        $reporter->reportResult($result);
+        $output = $this->getOutput();
+
+        $this->assertStringContainsString('$x = 42', $output);
+        $this->assertStringContainsString('=> 42', $output);
+    }
+
+    #[Test]
+    public function verbose_shows_assertion_details_for_expect(): void
+    {
+        $this->output->setVerbosity(OutputInterface::VERBOSITY_VERBOSE);
+        $reporter = new ConsoleReporter($this->output);
+
+        $block = new CodeBlock(
+            file: 'test.md',
+            startLine: 1,
+            rawCode: "\$x = 42;\n// Expect: \$x === 42",
+            executableCode: '$x = 42;',
+            attributes: new Attributes(),
+            assertions: [],
+        );
+
+        $result = new ExecutionResult(
+            passed: true,
+            codeBlock: $block,
+            assertionDetails: [
+                new AssertionResultDetail(type: 'expect', passed: true, expected: '$x === 42', actual: 'true', line: 2, expression: '$x === 42'),
+            ],
+        );
+
+        $reporter->reportResult($result);
+        $output = $this->getOutput();
+
+        $this->assertStringContainsString('$x === 42', $output);
+    }
+
+    #[Test]
+    public function normal_verbosity_does_not_show_assertion_details(): void
+    {
+        $this->output->setVerbosity(OutputInterface::VERBOSITY_NORMAL);
+        $reporter = new ConsoleReporter($this->output);
+
+        $block = new CodeBlock(
+            file: 'test.md',
+            startLine: 1,
+            rawCode: '$x = 42; // => 42',
+            executableCode: '$x = 42;',
+            attributes: new Attributes(),
+            assertions: [],
+        );
+
+        $result = new ExecutionResult(
+            passed: true,
+            codeBlock: $block,
+            assertionDetails: [
+                new AssertionResultDetail(type: 'result_comment', passed: true, expected: '42', actual: '42', line: 1, expression: '$x = 42'),
+            ],
+        );
+
+        $reporter->reportResult($result);
+        $output = $this->getOutput();
+
+        // Detail lines are indented with extra spaces — check for the verbose format
+        $this->assertStringNotContainsString('       ✔', $output);
+    }
+
+    #[Test]
+    public function verbose_shows_failed_assertion_detail(): void
+    {
+        $this->output->setVerbosity(OutputInterface::VERBOSITY_VERBOSE);
+        $reporter = new ConsoleReporter($this->output);
+
+        $block = new CodeBlock(
+            file: 'test.md',
+            startLine: 1,
+            rawCode: '$x = 42; // => 99',
+            executableCode: '$x = 42;',
+            attributes: new Attributes(),
+            assertions: [],
+        );
+
+        $result = new ExecutionResult(
+            passed: false,
+            codeBlock: $block,
+            error: 'result_comment assertion failed: expected 99 but got 42',
+            assertionDetails: [
+                new AssertionResultDetail(type: 'result_comment', passed: false, expected: '99', actual: '42', line: 1, expression: '$x = 42'),
+            ],
+        );
+
+        $reporter->reportResult($result);
+        $output = $this->getOutput();
+
+        $this->assertStringContainsString('✖', $output);
+        $this->assertStringContainsString('99', $output);
+        $this->assertStringContainsString('42', $output);
     }
 }
