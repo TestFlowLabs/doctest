@@ -92,6 +92,6 @@ final class IdeErrorFormatTest extends TestCase
 
         $content = $this->output->fetch();
 
-        $this->assertStringContainsString('Line 5', $content);
+        $this->assertStringContainsString(':5', $content);
     }
 }
