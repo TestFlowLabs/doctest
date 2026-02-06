@@ -128,19 +128,24 @@ final class EndToEndTest extends TestCase
         $tempFile = sys_get_temp_dir() . '/doctest_stop_e2e_' . uniqid() . '.md';
         file_put_contents($tempFile, "```php\necho \"wrong\";\n// Output: right\n```\n\n```php\necho \"ok\";\n// Output: ok\n```\n");
 
-        $config = DocTestConfig::fromArray([
-            'paths' => [$tempFile],
-            'stop_on_failure' => true,
-        ]);
+        try {
+            $config = DocTestConfig::fromArray([
+                'paths' => [$tempFile],
+                'stop_on_failure' => true,
+            ]);
 
-        $exitCode = $this->runDocTest($config);
-        $output = $this->getOutput();
+            $exitCode = $this->runDocTest($config);
+            $output = $this->getOutput();
 
-        unlink($tempFile);
-        $this->assertSame(1, $exitCode);
-        // Should only have one FAIL, not a second PASS (stopped early)
-        $this->assertSame(1, substr_count($output, 'FAIL'));
-        $this->assertStringNotContainsString('PASS', $output);
+            $this->assertSame(1, $exitCode);
+            // Should only have one FAIL, not a second PASS (stopped early)
+            $this->assertSame(1, substr_count($output, 'FAIL'));
+            $this->assertStringNotContainsString('PASS', $output);
+        } finally {
+            if (file_exists($tempFile)) {
+                unlink($tempFile);
+            }
+        }
     }
 
     #[Test]
