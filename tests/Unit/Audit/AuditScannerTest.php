@@ -33,7 +33,7 @@ final class AuditScannerTest extends TestCase
             rawCode: $code,
             executableCode: $parsed->executableCode,
             attributes: new Attributes(),
-            assertions: $parsed->assertions,
+            assertions: [],
         );
     }
 
