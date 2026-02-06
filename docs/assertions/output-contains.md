@@ -27,18 +27,14 @@ echo 'The quick brown fox jumps over the lazy dog';
 
 ### Checking for a key in JSON output
 
-````markdown
 ```php
 echo json_encode(['name' => 'DocTest', 'version' => '1.0']);
 ```
 <!-- doctest-contains: DocTest -->
-````
 
 ### Matching part of a formatted string
 
-````markdown
 ```php
 printf('Hello %s, you have %d messages', 'Alice', 5);
 ```
 <!-- doctest-contains: you have 5 messages -->
-````
