@@ -45,7 +45,7 @@ final class JsonReporterTest extends TestCase
                 rawCode: 'echo "test";',
                 executableCode: $parsed->executableCode,
                 attributes: new Attributes(),
-                assertions: $parsed->assertions,
+                assertions: [],
             ),
             actualOutput: $actualOutput,
             expectedOutput: $expectedOutput,
