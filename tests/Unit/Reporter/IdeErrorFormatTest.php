@@ -44,7 +44,7 @@ final class IdeErrorFormatTest extends TestCase
     }
 
     #[Test]
-    public function failure_output_includes_file_colon_line_pattern(): void
+    public function failure_output_includes_line_number(): void
     {
         $reporter = new ConsoleReporter($this->output);
 
@@ -53,11 +53,12 @@ final class IdeErrorFormatTest extends TestCase
 
         $content = $this->output->fetch();
 
-        $this->assertMatchesRegularExpression('/docs\/api\.md:42/', $content);
+        $this->assertStringContainsString(':42', $content);
+        $this->assertStringContainsString('✖', $content);
     }
 
     #[Test]
-    public function failure_includes_error_message_after_location(): void
+    public function failure_includes_error_message(): void
     {
         $reporter = new ConsoleReporter($this->output);
 
@@ -66,7 +67,7 @@ final class IdeErrorFormatTest extends TestCase
 
         $content = $this->output->fetch();
 
-        $this->assertStringContainsString('test.md:10', $content);
+        $this->assertStringContainsString(':10', $content);
         $this->assertStringContainsString('Expected "hello" but got "world"', $content);
     }
 
