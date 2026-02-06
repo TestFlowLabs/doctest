@@ -120,4 +120,82 @@ final class ErrorFormatterTest extends TestCase
         $this->assertStringContainsString('line1', $output);
         $this->assertStringContainsString('line5', $output);
     }
+
+    // --- Edge cases ---
+
+    #[Test]
+    public function formats_result_with_no_error_and_no_assertion_failure(): void
+    {
+        $result = $this->makeResult('$x = 1;');
+        $output = $this->formatter->format($result);
+
+        $this->assertStringContainsString('docs/example.md:10', $output);
+        $this->assertStringContainsString('$x = 1;', $output);
+        $this->assertStringNotContainsString('Error:', $output);
+        $this->assertStringNotContainsString('Expected:', $output);
+    }
+
+    #[Test]
+    public function line_numbers_increment_for_multiline_code(): void
+    {
+        $code   = "line1;\nline2;\nline3;";
+        $result = $this->makeResult($code, 'err');
+        $output = $this->formatter->format($result);
+
+        $this->assertStringContainsString('10 | line1;', $output);
+        $this->assertStringContainsString('11 | line2;', $output);
+        $this->assertStringContainsString('12 | line3;', $output);
+    }
+
+    #[Test]
+    public function only_expected_without_actual_does_not_show_comparison(): void
+    {
+        $result = $this->makeResult('echo "test";', null, null, 'expected value');
+        $output = $this->formatter->format($result);
+
+        $this->assertStringNotContainsString('Expected:', $output);
+        $this->assertStringNotContainsString('Actual:', $output);
+    }
+
+    #[Test]
+    public function error_and_assertion_failure_both_shown(): void
+    {
+        $result = $this->makeResult(
+            'echo "wrong";',
+            'Assertion failed',
+            'wrong',
+            'right',
+        );
+        $output = $this->formatter->format($result);
+
+        $this->assertStringContainsString('Error: Assertion failed', $output);
+        $this->assertStringContainsString('Expected: right', $output);
+        $this->assertStringContainsString('Actual:   wrong', $output);
+    }
+
+    #[Test]
+    public function single_line_code_context(): void
+    {
+        $result = $this->makeResult('$x = 42;', 'err');
+        $output = $this->formatter->format($result);
+
+        $this->assertStringContainsString('10 | $x = 42;', $output);
+    }
+
+    #[Test]
+    public function diff_lines_are_indented(): void
+    {
+        $result = $this->makeResult(
+            'echo "x";',
+            null,
+            'x',
+            'y',
+            "- y\n+ x",
+        );
+        $output = $this->formatter->format($result);
+
+        $this->assertStringContainsString('  Diff:', $output);
+        $this->assertStringContainsString('    - y', $output);
+        $this->assertStringContainsString('    + x', $output);
+    }
 }
