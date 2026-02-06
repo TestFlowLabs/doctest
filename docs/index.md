@@ -22,7 +22,7 @@ hero:
 <div class="feature-section">
 <div class="feature-text">
 
-<div class="feature-badge"><span class="icon">&#x1F4DD;</span> Basics</div>
+<div class="feature-badge">Basics</div>
 
 ## Write It. Test It. Trust It.
 
@@ -58,7 +58,7 @@ vendor/bin/doctest
 <div class="feature-section">
 <div class="feature-text">
 
-<div class="feature-badge"><span class="icon">&#x2714;</span> Assertions</div>
+<div class="feature-badge">Assertions</div>
 
 ## Six Ways to Assert
 
@@ -108,7 +108,7 @@ $x = 42; // => 42
 <div class="feature-section">
 <div class="feature-text">
 
-<div class="feature-badge"><span class="icon">&#x2699;</span> Control</div>
+<div class="feature-badge">Control</div>
 
 ## Control with Attributes
 
@@ -141,7 +141,7 @@ $db->query('SELECT * FROM users');
 <div class="feature-section">
 <div class="feature-text">
 
-<div class="feature-badge"><span class="icon">&#x1F3AF;</span> Flexible</div>
+<div class="feature-badge">Flexible</div>
 
 ## Wildcards for Dynamic Output
 
@@ -174,7 +174,7 @@ echo json_encode([
 <div class="feature-section">
 <div class="feature-text">
 
-<div class="feature-badge"><span class="icon">&#x1F517;</span> State</div>
+<div class="feature-badge">State</div>
 
 ## Shared State with Groups
 
@@ -213,7 +213,7 @@ $pdo->exec('DROP TABLE users');
 <div class="feature-section">
 <div class="feature-text">
 
-<div class="feature-badge"><span class="icon">&#x1F680;</span> CI/CD</div>
+<div class="feature-badge">CI/CD</div>
 
 ## CI-Ready from Day One
 
