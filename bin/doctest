@@ -16,32 +16,11 @@ foreach ($autoloadPaths as $autoloadPath) {
     }
 }
 
-use TestFlowLabs\DocTest\Config\CliArgs;
-use TestFlowLabs\DocTest\Config\DocTestConfig;
-use TestFlowLabs\DocTest\DocTest;
+use Symfony\Component\Console\Application;
+use TestFlowLabs\DocTest\Console\DocTestCommand;
 
-/** @var array<string> $argv */
-$args = CliArgs::parse($argv);
-$config = DocTestConfig::load($args->configPath);
-
-// Override config with CLI arguments
-$config = DocTestConfig::fromArray([
-    'paths' => $args->files !== [] ? $args->files : $config->paths,
-    'exclude' => $args->exclude !== null ? [$args->exclude] : $config->exclude,
-    'execution' => [
-        'timeout' => $config->timeout,
-        'memory_limit' => $config->memoryLimit,
-        'stop_on_failure' => $args->stopOnFailure || $config->stopOnFailure,
-    ],
-    'dry_run' => $args->dryRun,
-    'filter' => $args->filter,
-    'verbosity' => $args->verbosity > 0 ? $args->verbosity : $config->verbosity,
-    'reporters' => [
-        'console' => $config->reporterConsole,
-        'junit' => $config->reporterJunit,
-        'json' => $config->reporterJson,
-    ],
-]);
-
-$docTest = new DocTest($config);
-exit($docTest->run());
+$application = new Application('doctest', '0.1.0');
+$command = new DocTestCommand();
+$application->addCommand($command);
+$application->setDefaultCommand('doctest', true);
+$application->run();
