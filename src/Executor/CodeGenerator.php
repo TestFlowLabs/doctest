@@ -17,7 +17,7 @@ final readonly class CodeGenerator
             mkdir($dir, 0777, true);
         }
 
-        $filePath = $dir . '/doctest_' . uniqid() . '.php';
+        $filePath = $dir . '/doctest_' . bin2hex(random_bytes(16)) . '.php';
 
         if ($block->attributes->isParseError()) {
             $content = "<?php\n" . $block->rawCode . "\n";
@@ -43,7 +43,7 @@ final readonly class CodeGenerator
             mkdir($dir, 0777, true);
         }
 
-        $filePath = $dir . '/doctest_group_' . uniqid() . '.php';
+        $filePath = $dir . '/doctest_group_' . bin2hex(random_bytes(16)) . '.php';
         $parser = new AssertionParser();
 
         $lines = ["<?php\n"];
