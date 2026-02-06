@@ -14,7 +14,7 @@ DocTest supports multiple output reporters that can run simultaneously. Configur
 
 Enable reporters in your `doctest.php`:
 
-```php
+```php ignore
 return [
     'reporters' => [
         'console' => true,
@@ -31,7 +31,7 @@ return [
 
 All three reporters can run simultaneously. Results are written after all blocks have executed.
 
-```php
+```php ignore
 return [
     'reporters' => [
         'console' => true,                // Terminal output
