@@ -141,8 +141,10 @@ final readonly class Executor
             $actualClass = $data['class'];
             $expectedClass = $block->attributes->throwsClass;
 
-            // Check if class name matches (with or without leading backslash)
-            if (! str_ends_with($actualClass, $expectedClass)) {
+            $normalizedActual = ltrim($actualClass, '\\');
+            $normalizedExpected = ltrim($expectedClass, '\\');
+
+            if ($normalizedActual !== $normalizedExpected) {
                 return new ExecutionResult(
                     passed: false,
                     codeBlock: $block,
