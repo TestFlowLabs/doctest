@@ -55,7 +55,7 @@ echo json_encode(['tool' => 'DocTest']);
 ```
 <!-- doctest-json: {"tool":"DocTest"} -->
 
-For the full feature set — assertions, attributes, wildcards, groups, configuration, CLI options, CI integration, and framework bootstrap — see the **[Documentation](docs/)**.
+For the full feature set — assertions, attributes, wildcards, groups, configuration, CLI options, CI integration, and framework bootstrap — see the **[Documentation](https://doctest.testflowlabs.dev/)**.
 
 ## Requirements
 
