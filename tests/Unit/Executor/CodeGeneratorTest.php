@@ -30,7 +30,7 @@ final class CodeGeneratorTest extends TestCase
         $dir = sys_get_temp_dir() . '/doctest';
 
         if (is_dir($dir)) {
-            array_map('unlink', glob($dir . '/*.php') ?: []);
+            array_map(unlink(...), glob($dir . '/*.php') ?: []);
         }
     }
 
