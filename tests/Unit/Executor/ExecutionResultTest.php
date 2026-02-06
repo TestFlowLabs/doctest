@@ -6,6 +6,7 @@ namespace TestFlowLabs\DocTest\Tests\Unit\Executor;
 
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use TestFlowLabs\DocTest\Assertion\AssertionResultDetail;
 use TestFlowLabs\DocTest\CodeBlock\Attributes;
 use TestFlowLabs\DocTest\CodeBlock\CodeBlock;
 use TestFlowLabs\DocTest\Executor\ExecutionResult;
@@ -93,5 +94,36 @@ final class ExecutionResultTest extends TestCase
 
         $this->assertTrue($result->passed);
         $this->assertTrue($result->skipped);
+    }
+
+    #[Test]
+    public function assertion_details_defaults_to_empty_array(): void
+    {
+        $result = new ExecutionResult(
+            passed: true,
+            codeBlock: $this->makeBlock(),
+        );
+
+        $this->assertSame([], $result->assertionDetails);
+    }
+
+    #[Test]
+    public function stores_assertion_details(): void
+    {
+        $details = [
+            new AssertionResultDetail(type: 'output', passed: true, expected: 'Hi', actual: 'Hi', line: 1),
+            new AssertionResultDetail(type: 'result_comment', passed: true, expected: '42', actual: '42', line: 2, expression: '$x = 42'),
+        ];
+
+        $result = new ExecutionResult(
+            passed: true,
+            codeBlock: $this->makeBlock(),
+            assertionDetails: $details,
+        );
+
+        $this->assertCount(2, $result->assertionDetails);
+        $this->assertSame('output', $result->assertionDetails[0]->type);
+        $this->assertSame('result_comment', $result->assertionDetails[1]->type);
+        $this->assertSame('$x = 42', $result->assertionDetails[1]->expression);
     }
 }
