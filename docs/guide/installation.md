@@ -28,15 +28,9 @@ vendor/bin/doctest
 
 If no markdown files contain PHP code blocks, DocTest will exit cleanly with no output.
 
-## Laravel
+## Framework Bootstrap
 
-If you're using Laravel, DocTest auto-detects your application and registers an Artisan command:
-
-```bash
-php artisan doctest
-```
-
-See [Laravel Integration](/laravel/) for details.
+If your documentation examples need a framework (Laravel, Symfony, etc.), configure a bootstrap file. See [Framework Bootstrap](/framework-bootstrap/) for details.
 
 ## Configuration
 
