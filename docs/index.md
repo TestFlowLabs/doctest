@@ -35,13 +35,12 @@ Your rendered documentation stays clean — assertions live in HTML comments, in
 </div>
 <div class="feature-code">
 
+````markdown
 ```php
 echo 'Hello, World!';
 ```
-
-```html
 <!-- doctest: Hello, World! -->
-```
+````
 
 ```bash
 vendor/bin/doctest
@@ -147,13 +146,11 @@ When output contains timestamps, IDs, or other dynamic values, wildcards let you
 </div>
 <div class="feature-code">
 
+````markdown
 ```php
 echo 'Request took 42ms at ' . date('Y-m-d');
 ```
-
-```html
 <!-- doctest: Request took {{int}}ms at {{date}} -->
-```
 
 ```php
 echo json_encode([
@@ -162,10 +159,8 @@ echo json_encode([
     'cost' => 19.99,
 ]);
 ```
-
-```html
 <!-- doctest: {"id":"{{uuid}}","time":"{{time}}","cost":{{float}}} -->
-```
+````
 
 </div>
 </div>
