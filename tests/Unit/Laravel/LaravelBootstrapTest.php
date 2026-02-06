@@ -10,85 +10,99 @@ use TestFlowLabs\DocTest\Laravel\LaravelBootstrap;
 
 final class LaravelBootstrapTest extends TestCase
 {
+    private string $tempDir;
+
+    protected function setUp(): void
+    {
+        $this->tempDir = sys_get_temp_dir() . '/doctest_laravel_' . bin2hex(random_bytes(8));
+    }
+
+    protected function tearDown(): void
+    {
+        $this->removeDir($this->tempDir);
+    }
+
     #[Test]
     public function detects_laravel_when_bootstrap_app_exists(): void
     {
-        $tempDir = sys_get_temp_dir() . '/doctest_laravel_' . uniqid();
-        mkdir($tempDir . '/bootstrap', 0777, true);
-        file_put_contents($tempDir . '/bootstrap/app.php', '<?php return new stdClass();');
+        $this->createLaravelStructure();
 
-        $bootstrap = new LaravelBootstrap($tempDir);
+        $bootstrap = new LaravelBootstrap($this->tempDir);
 
         $this->assertTrue($bootstrap->isLaravelProject());
-
-        unlink($tempDir . '/bootstrap/app.php');
-        rmdir($tempDir . '/bootstrap');
-        rmdir($tempDir);
     }
 
     #[Test]
     public function detects_no_laravel_without_bootstrap(): void
     {
-        $tempDir = sys_get_temp_dir() . '/doctest_nolaravel_' . uniqid();
-        mkdir($tempDir, 0777, true);
+        mkdir($this->tempDir, 0777, true);
 
-        $bootstrap = new LaravelBootstrap($tempDir);
+        $bootstrap = new LaravelBootstrap($this->tempDir);
 
         $this->assertFalse($bootstrap->isLaravelProject());
-
-        rmdir($tempDir);
     }
 
     #[Test]
     public function generates_bootstrap_code_for_laravel(): void
     {
-        $tempDir = sys_get_temp_dir() . '/doctest_laravel_' . uniqid();
-        mkdir($tempDir . '/bootstrap', 0777, true);
-        file_put_contents($tempDir . '/bootstrap/app.php', '<?php return new stdClass();');
+        $this->createLaravelStructure();
 
-        $bootstrap = new LaravelBootstrap($tempDir);
+        $bootstrap = new LaravelBootstrap($this->tempDir);
         $code = $bootstrap->getBootstrapCode();
 
         $this->assertNotNull($code);
         $this->assertStringContainsString('bootstrap/app.php', $code);
-
-        unlink($tempDir . '/bootstrap/app.php');
-        rmdir($tempDir . '/bootstrap');
-        rmdir($tempDir);
     }
 
     #[Test]
     public function returns_null_bootstrap_code_for_non_laravel(): void
     {
-        $tempDir = sys_get_temp_dir() . '/doctest_nolaravel_' . uniqid();
-        mkdir($tempDir, 0777, true);
+        mkdir($this->tempDir, 0777, true);
 
-        $bootstrap = new LaravelBootstrap($tempDir);
+        $bootstrap = new LaravelBootstrap($this->tempDir);
         $code = $bootstrap->getBootstrapCode();
 
         $this->assertNull($code);
-
-        rmdir($tempDir);
     }
 
     #[Test]
     public function bootstrap_code_includes_autoloader(): void
     {
-        $tempDir = sys_get_temp_dir() . '/doctest_laravel_' . uniqid();
-        mkdir($tempDir . '/bootstrap', 0777, true);
-        mkdir($tempDir . '/vendor', 0777, true);
-        file_put_contents($tempDir . '/bootstrap/app.php', '<?php return new stdClass();');
-        file_put_contents($tempDir . '/vendor/autoload.php', '<?php // autoload');
+        $this->createLaravelStructure();
+        mkdir($this->tempDir . '/vendor', 0777, true);
+        file_put_contents($this->tempDir . '/vendor/autoload.php', '<?php // autoload');
 
-        $bootstrap = new LaravelBootstrap($tempDir);
+        $bootstrap = new LaravelBootstrap($this->tempDir);
         $code = $bootstrap->getBootstrapCode();
 
         $this->assertStringContainsString('vendor/autoload.php', $code);
+    }
 
-        unlink($tempDir . '/vendor/autoload.php');
-        unlink($tempDir . '/bootstrap/app.php');
-        rmdir($tempDir . '/vendor');
-        rmdir($tempDir . '/bootstrap');
-        rmdir($tempDir);
+    private function createLaravelStructure(): void
+    {
+        mkdir($this->tempDir . '/bootstrap', 0777, true);
+        file_put_contents($this->tempDir . '/bootstrap/app.php', '<?php return new stdClass();');
+    }
+
+    private function removeDir(string $dir): void
+    {
+        if (! is_dir($dir)) {
+            return;
+        }
+
+        $files = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($dir, \FilesystemIterator::SKIP_DOTS),
+            \RecursiveIteratorIterator::CHILD_FIRST,
+        );
+
+        foreach ($files as $file) {
+            if ($file->isDir()) {
+                rmdir($file->getPathname());
+            } else {
+                unlink($file->getPathname());
+            }
+        }
+
+        rmdir($dir);
     }
 }
