@@ -10,7 +10,7 @@ DocTest scans markdown files for fenced PHP code blocks (`` ```php ``). For each
 
 - Extracts the raw PHP code
 - Parses attributes from the fence info string (e.g., `ignore`, `throws`, `group="name"`)
-- Finds associated assertions (inline comments or HTML comments after the block)
+- Finds associated assertions (HTML comments after the block, or `// =>` result comments inside the code)
 - Strips Shiki-specific markers (`[!code ++]`, `[!code --]`, line highlights)
 
 ### 2. Generate
