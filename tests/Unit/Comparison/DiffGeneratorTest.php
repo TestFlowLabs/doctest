@@ -69,4 +69,52 @@ final class DiffGeneratorTest extends TestCase
         $this->assertStringNotContainsString('- a', $result);
         $this->assertStringNotContainsString('- c', $result);
     }
+
+    // --- Edge cases ---
+
+    #[Test]
+    public function both_empty_strings_produce_empty_diff(): void
+    {
+        $result = $this->diff->generate('', '');
+
+        $this->assertSame('', $result);
+    }
+
+    #[Test]
+    public function empty_expected_vs_nonempty_actual(): void
+    {
+        $result = $this->diff->generate('', "hello\n");
+
+        $this->assertStringContainsString('+ hello', $result);
+    }
+
+    #[Test]
+    public function nonempty_expected_vs_empty_actual(): void
+    {
+        $result = $this->diff->generate("hello\n", '');
+
+        $this->assertStringContainsString('- hello', $result);
+    }
+
+    #[Test]
+    public function strings_without_trailing_newlines(): void
+    {
+        $result = $this->diff->generate('hello', 'world');
+
+        $this->assertStringContainsString('- hello', $result);
+        $this->assertStringContainsString('+ world', $result);
+    }
+
+    #[Test]
+    public function all_lines_different(): void
+    {
+        $result = $this->diff->generate("a\nb\nc\n", "x\ny\nz\n");
+
+        $this->assertStringContainsString('- a', $result);
+        $this->assertStringContainsString('- b', $result);
+        $this->assertStringContainsString('- c', $result);
+        $this->assertStringContainsString('+ x', $result);
+        $this->assertStringContainsString('+ y', $result);
+        $this->assertStringContainsString('+ z', $result);
+    }
 }
