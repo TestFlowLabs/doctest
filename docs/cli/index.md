@@ -55,7 +55,3 @@ Blocks: 5  Passed: 3  Failed: 1  Skipped: 1  Duration: 0.12s
 | ✖ | Failed |
 | ⊘ | Skipped (ignored) |
 
-## Next Steps
-
-- [Options Reference](/cli/options) — All CLI options in detail
-- [Exit Codes](/cli/exit-codes) — Exit codes and verbosity levels
