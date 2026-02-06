@@ -194,4 +194,67 @@ final class FileFinderTest extends TestCase
             rmdir($baseDir);
         }
     }
+
+    // --- Edge cases ---
+
+    #[Test]
+    public function empty_paths_returns_empty(): void
+    {
+        $files = $this->finder->find([], []);
+
+        $this->assertSame([], $files);
+    }
+
+    #[Test]
+    public function directory_with_no_md_files_returns_empty(): void
+    {
+        $baseDir = sys_get_temp_dir().'/doctest_finder_nomd_'.uniqid();
+        mkdir($baseDir, 0o777, true);
+        file_put_contents($baseDir.'/readme.txt', 'not markdown');
+
+        $files = $this->finder->find([$baseDir], []);
+
+        $this->assertSame([], $files);
+
+        unlink($baseDir.'/readme.txt');
+        rmdir($baseDir);
+    }
+
+    #[Test]
+    public function excludes_by_filename_pattern(): void
+    {
+        $baseDir = sys_get_temp_dir().'/doctest_finder_fnmatch_'.uniqid();
+        mkdir($baseDir, 0o777, true);
+        file_put_contents($baseDir.'/keep.md', '# Keep');
+        file_put_contents($baseDir.'/draft-intro.md', '# Draft');
+
+        $files = $this->finder->find([$baseDir], ['draft-*.md']);
+
+        $this->assertCount(1, $files);
+        $this->assertStringContainsString('keep.md', $files[0]);
+
+        unlink($baseDir.'/keep.md');
+        unlink($baseDir.'/draft-intro.md');
+        rmdir($baseDir);
+    }
+
+    #[Test]
+    public function multiple_exclude_patterns(): void
+    {
+        $baseDir = sys_get_temp_dir().'/doctest_finder_multi_'.uniqid();
+        mkdir($baseDir, 0o777, true);
+        file_put_contents($baseDir.'/keep.md', '# Keep');
+        file_put_contents($baseDir.'/draft.md', '# Draft');
+        file_put_contents($baseDir.'/temp.md', '# Temp');
+
+        $files = $this->finder->find([$baseDir], ['draft.md', 'temp.md']);
+
+        $this->assertCount(1, $files);
+        $this->assertStringContainsString('keep.md', $files[0]);
+
+        unlink($baseDir.'/keep.md');
+        unlink($baseDir.'/draft.md');
+        unlink($baseDir.'/temp.md');
+        rmdir($baseDir);
+    }
 }
