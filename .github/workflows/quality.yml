@@ -21,17 +21,17 @@ jobs:
       - name: Install dependencies
         run: composer install --no-interaction --prefer-dist
 
-      - name: Pint (code style)
-        run: vendor/bin/pint --test
-
       - name: Rector (refactoring)
-        run: vendor/bin/rector --dry-run
+        run: composer test:rector
+
+      - name: Pint (code style)
+        run: composer test:pint
 
       - name: PHPStan (static analysis)
-        run: vendor/bin/phpstan analyse --no-progress
+        run: composer test:phpstan
 
-      - name: PHPUnit (tests)
-        run: vendor/bin/phpunit
+      - name: Pest (tests)
+        run: composer test:unit
 
       - name: DocTest (documentation examples)
         run: php bin/doctest
