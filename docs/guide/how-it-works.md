@@ -67,8 +67,3 @@ Blocks with matching `group` attributes execute in a single process:
 
 This enables examples that build on each other, like database operations.
 
-## Next Steps
-
-- [Assertions](/assertions/) — How output verification works in detail
-- [Attributes](/attributes/) — Control execution with fence attributes
-- [Execution Model](/advanced/execution-model) — Deep dive into process handling
