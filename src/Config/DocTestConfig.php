@@ -74,7 +74,6 @@ final readonly class DocTestConfig
             return new self();
         }
 
-        /* @var array<string, mixed> $data */
-        return self::fromArray($data);
+        return self::fromArray($data); // @phpstan-ignore argument.type (require returns mixed, is_array narrows to array<mixed,mixed> not array<string,mixed>)
     }
 }
