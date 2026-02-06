@@ -75,4 +75,76 @@ final class ShikiFilterTest extends TestCase
 
         $this->assertStringContainsString('// This is a regular comment', $result->code);
     }
+
+    // --- Edge cases ---
+
+    #[Test]
+    public function handles_empty_code(): void
+    {
+        $result = $this->filter->filter('', 'php');
+
+        $this->assertSame('', $result->code);
+        $this->assertSame('php', $result->infoString);
+    }
+
+    #[Test]
+    public function handles_empty_info_string(): void
+    {
+        $result = $this->filter->filter('$x = 1;', '');
+
+        $this->assertSame('$x = 1;', $result->code);
+        $this->assertSame('', $result->infoString);
+    }
+
+    #[Test]
+    public function all_lines_removed_produces_empty_code(): void
+    {
+        $code   = "\$a = 1; // [!code --]\n\$b = 2; // [!code --]";
+        $result = $this->filter->filter($code, 'php');
+
+        $this->assertSame('', $result->code);
+    }
+
+    #[Test]
+    public function strips_multiple_highlight_groups_from_info_string(): void
+    {
+        $result = $this->filter->filter('$x = 1;', 'php{1,3}{5-7}');
+
+        $this->assertSame('php', $result->infoString);
+    }
+
+    #[Test]
+    public function info_string_without_highlight_notation_unchanged(): void
+    {
+        $result = $this->filter->filter('$x = 1;', 'php title="example.php"');
+
+        $this->assertSame('php title="example.php"', $result->infoString);
+    }
+
+    #[Test]
+    public function code_add_marker_at_line_start_is_stripped(): void
+    {
+        $code   = "// [!code ++]\n\$x = 1;";
+        $result = $this->filter->filter($code, 'php');
+
+        $this->assertStringNotContainsString('[!code ++]', $result->code);
+        $this->assertStringContainsString('$x = 1;', $result->code);
+    }
+
+    #[Test]
+    public function preserves_line_order_after_filtering(): void
+    {
+        $code   = "\$a = 1;\n\$b = 2; // [!code --]\n\$c = 3; // [!code ++]\n\$d = 4;";
+        $result = $this->filter->filter($code, 'php');
+
+        $this->assertSame("\$a = 1;\n\$c = 3;\n\$d = 4;", $result->code);
+    }
+
+    #[Test]
+    public function highlight_notation_with_range_stripped(): void
+    {
+        $result = $this->filter->filter('echo "hi";', 'php{2-5}');
+
+        $this->assertSame('php', $result->infoString);
+    }
 }
