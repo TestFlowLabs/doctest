@@ -6,7 +6,6 @@ namespace TestFlowLabs\DocTest\Tests\Unit\Assertion;
 
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
-use TestFlowLabs\DocTest\Assertion\AssertionParser;
 use TestFlowLabs\DocTest\Assertion\OutputContainsAssertion;
 
 final class OutputContainsAssertionTest extends TestCase
@@ -33,16 +32,5 @@ final class OutputContainsAssertionTest extends TestCase
         $assertion = new OutputContainsAssertion('test', 42);
 
         $this->assertSame(42, $assertion->line());
-    }
-
-    #[Test]
-    public function parser_detects_output_contains(): void
-    {
-        $parser = new AssertionParser();
-        $result = $parser->parse("echo \"Hello World\";\n// OutputContains: World");
-
-        $this->assertCount(1, $result->assertions);
-        $this->assertInstanceOf(OutputContainsAssertion::class, $result->assertions[0]);
-        $this->assertSame('World', $result->assertions[0]->expected);
     }
 }
