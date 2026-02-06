@@ -42,6 +42,18 @@ echo 'Processed 42 items at ' . date('Y-m-d');
 <!-- doctest: Processed {{int}} items at {{date}} -->
 ````
 
+## Examples
+
+```php
+echo 'Hello, World!';
+```
+<!-- doctest: Hello, World! -->
+
+```php
+echo "The answer is " . (6 * 7);
+```
+<!-- doctest: The answer is 42 -->
+
 ## Tips
 
 <div v-pre>
