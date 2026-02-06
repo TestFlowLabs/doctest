@@ -17,7 +17,7 @@ Before execution, DocTest transforms each code block into a self-contained PHP s
 
 ### Normal Blocks
 
-```php
+```php ignore
 <?php
 $__doctest_results = [];
 $__doctest_segment = 0;
@@ -44,7 +44,7 @@ Key aspects:
 
 ### Throws Blocks
 
-```php
+```php ignore
 <?php
 try {
     throw new RuntimeException('Error');
