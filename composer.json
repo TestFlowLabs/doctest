@@ -12,8 +12,8 @@
     },
     "require-dev": {
         "laravel/pint": "^1.0",
+        "pestphp/pest": "^3.8",
         "phpstan/phpstan": "^2.0",
-        "phpunit/phpunit": "^11.0",
         "rector/rector": "^2.0"
     },
     "autoload": {
@@ -31,6 +31,8 @@
     ],
     "config": {
         "sort-packages": true,
-        "allow-plugins": {}
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
     }
 }
