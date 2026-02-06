@@ -65,8 +65,12 @@ final readonly class CodeBlockExtractor
             // Check for HTML comment assertions after the code block
             $htmlAssertions = [];
             $nextNode = $node->next();
-            if ($nextNode instanceof HtmlBlock) {
-                $htmlAssertions = $this->htmlCommentParser->parse($nextNode->getLiteral());
+            while ($nextNode instanceof HtmlBlock) {
+                $htmlAssertions = array_merge(
+                    $htmlAssertions,
+                    $this->htmlCommentParser->parse($nextNode->getLiteral()),
+                );
+                $nextNode = $nextNode->next();
             }
 
             $allAssertions = array_merge($assertionResult->assertions, $htmlAssertions);
