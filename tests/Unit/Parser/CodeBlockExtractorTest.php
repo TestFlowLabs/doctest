@@ -101,16 +101,7 @@ final class CodeBlockExtractorTest extends TestCase
         $document = $this->markdownParser->parse($markdown);
 
         $blocks = $this->extractor->extract($document, 'attributes.md');
-
-        // Find the ignore block
-        $ignoreBlock = null;
-        foreach ($blocks as $block) {
-            if ($block->attributes->isIgnore()) {
-                $ignoreBlock = $block;
-
-                break;
-            }
-        }
+        $ignoreBlock = array_find($blocks, fn($block) => $block->attributes->isIgnore());
 
         $this->assertNotNull($ignoreBlock);
         $this->assertSame(Attribute::Ignore, $ignoreBlock->attributes->attribute);
