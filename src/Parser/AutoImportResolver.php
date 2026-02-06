@@ -54,7 +54,7 @@ final readonly class AutoImportResolver
         $resolved = [];
 
         foreach ($imports as $import) {
-            if (str_ends_with($import, '\\*')) {
+            if (str_ends_with($import, '\\*') && strlen($import) > 2) {
                 $prefix = substr($import, 0, -1);
                 foreach (array_keys($classMap) as $className) {
                     if (str_starts_with($className, $prefix)) {
