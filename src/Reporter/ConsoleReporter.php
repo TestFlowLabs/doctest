@@ -19,6 +19,7 @@ final class ConsoleReporter
     public function __construct(
         $output = null,
         private readonly bool $colors = true,
+        private readonly int $verbosity = 0,
     ) {
         $this->output = $output ?? STDOUT;
         $this->errorFormatter = new ErrorFormatter();
@@ -38,15 +39,34 @@ final class ConsoleReporter
         }
 
         if ($result->passed) {
-            $this->write('  ' . $this->green('[PASS]') . " Line {$result->codeBlock->startLine}\n");
+            $line = '  ' . $this->green('[PASS]') . " Line {$result->codeBlock->startLine}";
+
+            if ($this->verbosity >= 1) {
+                $line .= sprintf(' [%.2fs]', $result->duration);
+            }
+
+            $this->write($line . "\n");
 
             return;
         }
 
-        $this->write('  ' . $this->red('[FAIL]') . " Line {$result->codeBlock->startLine}\n");
+        $line = '  ' . $this->red('[FAIL]') . " Line {$result->codeBlock->startLine}";
+
+        if ($this->verbosity >= 1) {
+            $line .= sprintf(' [%.2fs]', $result->duration);
+        }
+
+        $this->write($line . "\n");
 
         if ($result->error !== null) {
             $this->write('    ' . $result->error . "\n");
+        }
+
+        if ($this->verbosity >= 2) {
+            $this->write("    Source:\n");
+            foreach (explode("\n", $result->codeBlock->rawCode) as $codeLine) {
+                $this->write('      ' . $codeLine . "\n");
+            }
         }
 
         if ($result->diff !== null) {
