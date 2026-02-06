@@ -74,4 +74,68 @@ final class OutputComparatorTest extends TestCase
         $this->assertSame("expected\n", $result->normalizedExpected);
         $this->assertSame("actual\n", $result->normalizedActual);
     }
+
+    #[Test]
+    public function wildcard_any_matches(): void
+    {
+        $result = $this->comparator->compare('Hello from {{any}}', 'Hello from localhost');
+
+        $this->assertTrue($result->passed);
+    }
+
+    #[Test]
+    public function wildcard_int_matches(): void
+    {
+        $result = $this->comparator->compare('Count: {{int}}', 'Count: 42');
+
+        $this->assertTrue($result->passed);
+    }
+
+    #[Test]
+    public function wildcard_float_matches(): void
+    {
+        $result = $this->comparator->compare('Value: {{float}}', 'Value: 3.14');
+
+        $this->assertTrue($result->passed);
+    }
+
+    #[Test]
+    public function wildcard_date_matches(): void
+    {
+        $result = $this->comparator->compare('Date: {{date}}', 'Date: 2026-02-06');
+
+        $this->assertTrue($result->passed);
+    }
+
+    #[Test]
+    public function wildcard_time_matches(): void
+    {
+        $result = $this->comparator->compare('Time: {{time}}', 'Time: 14:30:00');
+
+        $this->assertTrue($result->passed);
+    }
+
+    #[Test]
+    public function wildcard_uuid_matches(): void
+    {
+        $result = $this->comparator->compare('ID: {{uuid}}', 'ID: 550e8400-e29b-41d4-a716-446655440000');
+
+        $this->assertTrue($result->passed);
+    }
+
+    #[Test]
+    public function wildcard_multiline_matches(): void
+    {
+        $result = $this->comparator->compare("Header\n{{...}}\nFooter", "Header\nsome dynamic\ncontent here\nFooter");
+
+        $this->assertTrue($result->passed);
+    }
+
+    #[Test]
+    public function wildcard_without_match_fails(): void
+    {
+        $result = $this->comparator->compare('Count: {{int}}', 'Count: abc');
+
+        $this->assertFalse($result->passed);
+    }
 }
