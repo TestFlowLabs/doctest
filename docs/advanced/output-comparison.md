@@ -76,11 +76,12 @@ The `OutputJson` assertion uses a different comparison path:
 
 1. Both expected and actual strings are decoded with `json_decode()`
 2. If either fails to decode, the assertion fails with a descriptive error
-3. The decoded PHP values are compared with `===`
+3. Both values are recursively key-sorted (associative arrays only)
+4. The sorted PHP values are compared with `===`
 
 This means:
-- Key order in objects doesn't matter
-- Array order **does** matter
+- Key order in objects doesn't matter (keys are sorted before comparison)
+- Array order **does** matter (indexed arrays are not sorted)
 - Type matters (`1` vs `"1"`)
 
 ## Configuration
