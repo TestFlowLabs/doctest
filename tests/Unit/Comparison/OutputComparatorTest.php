@@ -199,4 +199,127 @@ final class OutputComparatorTest extends TestCase
         $this->assertFalse($result->passed);
         $this->assertStringContainsString('Actual JSON output is invalid', $result->normalizedActual);
     }
+
+    // --- Edge cases: compare() ---
+
+    #[Test]
+    public function empty_expected_vs_nonempty_actual_fails(): void
+    {
+        $result = $this->comparator->compare('', "Hello\n");
+
+        $this->assertFalse($result->passed);
+    }
+
+    #[Test]
+    public function nonempty_expected_vs_empty_actual_fails(): void
+    {
+        $result = $this->comparator->compare("Hello\n", '');
+
+        $this->assertFalse($result->passed);
+    }
+
+    #[Test]
+    public function passed_result_includes_normalized_values(): void
+    {
+        $result = $this->comparator->compare("Hello  \r\n", "Hello\n");
+
+        $this->assertTrue($result->passed);
+        $this->assertSame("Hello\n", $result->normalizedExpected);
+        $this->assertSame("Hello\n", $result->normalizedActual);
+    }
+
+    #[Test]
+    public function wildcard_datetime_matches(): void
+    {
+        $result = $this->comparator->compare('Created: {{datetime}}', 'Created: 2024-01-15T10:30:00+00:00');
+
+        $this->assertTrue($result->passed);
+    }
+
+    #[Test]
+    public function multiple_wildcards_in_same_comparison(): void
+    {
+        $result = $this->comparator->compare(
+            'User {{int}} scored {{float}} on {{date}}',
+            'User 42 scored 9.5 on 2024-01-15',
+        );
+
+        $this->assertTrue($result->passed);
+    }
+
+    #[Test]
+    public function multiple_wildcards_fail_when_one_mismatches(): void
+    {
+        $result = $this->comparator->compare(
+            'User {{int}} scored {{float}}',
+            'User abc scored 9.5',
+        );
+
+        $this->assertFalse($result->passed);
+    }
+
+    #[Test]
+    public function multiline_wildcard_matches_single_line_between_markers(): void
+    {
+        $result = $this->comparator->compare("Start\n{{...}}\nEnd", "Start\nmiddle\nEnd");
+
+        $this->assertTrue($result->passed);
+    }
+
+    // --- Edge cases: compareJson() ---
+
+    #[Test]
+    public function compare_json_both_invalid(): void
+    {
+        $result = $this->comparator->compareJson('not json', 'also not json');
+
+        $this->assertFalse($result->passed);
+        $this->assertStringContainsString('Expected JSON is invalid', $result->normalizedExpected);
+    }
+
+    #[Test]
+    public function compare_json_empty_objects_match(): void
+    {
+        $result = $this->comparator->compareJson('{}', '{}');
+
+        $this->assertTrue($result->passed);
+    }
+
+    #[Test]
+    public function compare_json_empty_arrays_match(): void
+    {
+        $result = $this->comparator->compareJson('[]', '[]');
+
+        $this->assertTrue($result->passed);
+    }
+
+    #[Test]
+    public function compare_json_with_null_and_boolean_values(): void
+    {
+        $result = $this->comparator->compareJson(
+            '{"active": true, "deleted": false, "note": null}',
+            '{"note":null,"active":true,"deleted":false}',
+        );
+
+        $this->assertTrue($result->passed);
+    }
+
+    #[Test]
+    public function compare_json_deeply_nested_key_order(): void
+    {
+        $expected = '{"a": {"b": {"c": 1, "d": 2}, "e": 3}, "f": 4}';
+        $actual   = '{"f":4,"a":{"e":3,"b":{"d":2,"c":1}}}';
+
+        $result = $this->comparator->compareJson($expected, $actual);
+
+        $this->assertTrue($result->passed);
+    }
+
+    #[Test]
+    public function compare_json_different_types_fails(): void
+    {
+        $result = $this->comparator->compareJson('{"a": "1"}', '{"a": 1}');
+
+        $this->assertFalse($result->passed);
+    }
 }
