@@ -155,4 +155,43 @@ final class CodeBlockExtractorTest extends TestCase
 
         $this->assertSame('docs/example.md', $blocks[0]->file);
     }
+
+    #[Test]
+    public function parses_html_comment_output_assertion(): void
+    {
+        $markdown = "```php\necho 'hello';\n```\n<!-- doctest: hello -->\n";
+        $document = $this->markdownParser->parse($markdown);
+
+        $blocks = $this->extractor->extract($document, 'test.md');
+
+        $this->assertCount(1, $blocks);
+        $this->assertCount(1, $blocks[0]->assertions);
+        $this->assertInstanceOf(OutputAssertion::class, $blocks[0]->assertions[0]);
+        $this->assertSame('hello', $blocks[0]->assertions[0]->expected);
+    }
+
+    #[Test]
+    public function html_comment_assertion_keeps_code_clean(): void
+    {
+        $markdown = "```php\necho 'hello';\n```\n<!-- doctest: hello -->\n";
+        $document = $this->markdownParser->parse($markdown);
+
+        $blocks = $this->extractor->extract($document, 'test.md');
+
+        $this->assertStringNotContainsString('doctest', $blocks[0]->executableCode);
+        $this->assertStringNotContainsString('Output', $blocks[0]->executableCode);
+        $this->assertSame("echo 'hello';\n", $blocks[0]->executableCode);
+    }
+
+    #[Test]
+    public function ignores_html_comments_not_following_php_blocks(): void
+    {
+        $markdown = "<!-- doctest: orphan -->\n\n```php\necho 1;\n```\n";
+        $document = $this->markdownParser->parse($markdown);
+
+        $blocks = $this->extractor->extract($document, 'test.md');
+
+        $this->assertCount(1, $blocks);
+        $this->assertCount(0, $blocks[0]->assertions);
+    }
 }
