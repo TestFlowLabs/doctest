@@ -84,7 +84,9 @@ final class JsonReporter
      */
     public function generateToFile(array $results, string $filePath): void
     {
-        file_put_contents($filePath, $this->generate($results));
+        if (file_put_contents($filePath, $this->generate($results)) === false) {
+            throw new \RuntimeException("Failed to write JSON report to {$filePath}");
+        }
     }
 
     /**
