@@ -4,15 +4,6 @@ The `Output` assertion verifies the **exact output** of a code block.
 
 ## Syntax
 
-### Inline Comment
-
-```php
-echo 'Hello, World!';
-// Output: Hello, World!
-```
-
-### HTML Comment
-
 ````markdown
 ```php
 echo 'Hello, World!';
@@ -29,7 +20,7 @@ echo 'Hello, World!';
 
 ## Multi-line Output
 
-Both inline and HTML comment forms support multi-line expected output:
+The HTML comment form supports multi-line expected output:
 
 ````markdown
 ```php
@@ -44,10 +35,12 @@ line 3 -->
 
 Use [wildcards](/wildcards/) for dynamic portions of the output:
 
+````markdown
 ```php
 echo 'Processed 42 items at ' . date('Y-m-d');
-// Output: Processed {{int}} items at {{date}}
 ```
+<!-- doctest: Processed {{int}} items at {{date}} -->
+````
 
 ## Tips
 
@@ -55,6 +48,6 @@ echo 'Processed 42 items at ' . date('Y-m-d');
 
 - Output comparison is **exact** (after normalization). Use [OutputContains](/assertions/output-contains) for partial matches.
 - Use `{{...}}` wildcard to match arbitrary content in the middle of output.
-- If your output contains special characters, the HTML comment form avoids conflicts with PHP syntax.
+- The HTML comment form avoids conflicts with PHP syntax.
 
 </div>
