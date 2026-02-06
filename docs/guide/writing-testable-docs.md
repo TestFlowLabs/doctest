@@ -1,8 +1,12 @@
 # Writing Testable Documentation
 
+::: tip A New Concept
+"Testable Documentation" isn't an established term in the industry. Individual tools exist — Python's `doctest` (1999), Rust's doc tests, Go's `Example` functions, Elixir's doctests — but no one has formalized the underlying principles into a unified guide. This is our attempt to do that. We've studied what works across ecosystems and distilled it into a set of language-agnostic principles with PHP-specific examples. Consider this a living document — we'd love your feedback on [GitHub](https://github.com/testflowlabs/doctest/issues).
+:::
+
 Code examples in documentation rot. APIs change, methods get renamed, return types evolve — but the docs stay frozen. Testable documentation solves this by making every example verifiable.
 
-This guide covers the principles and patterns for writing PHP documentation examples that stay correct over time.
+This guide covers the principles and patterns for writing documentation examples that stay correct over time.
 
 ## Why Documentation Breaks
 
