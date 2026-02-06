@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace TestFlowLabs\DocTest\Tests\Unit\Laravel;
 
-use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\Test;
 use TestFlowLabs\DocTest\Laravel\LaravelBootstrap;
 
 final class LaravelBootstrapTest extends TestCase
@@ -14,7 +14,7 @@ final class LaravelBootstrapTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->tempDir = sys_get_temp_dir() . '/doctest_laravel_' . bin2hex(random_bytes(8));
+        $this->tempDir = sys_get_temp_dir().'/doctest_laravel_'.bin2hex(random_bytes(8));
     }
 
     protected function tearDown(): void
@@ -48,7 +48,7 @@ final class LaravelBootstrapTest extends TestCase
         $this->createLaravelStructure();
 
         $bootstrap = new LaravelBootstrap($this->tempDir);
-        $code = $bootstrap->getBootstrapCode();
+        $code      = $bootstrap->getBootstrapCode();
 
         $this->assertNotNull($code);
         $this->assertStringContainsString('bootstrap/app.php', $code);
@@ -60,7 +60,7 @@ final class LaravelBootstrapTest extends TestCase
         mkdir($this->tempDir, 0777, true);
 
         $bootstrap = new LaravelBootstrap($this->tempDir);
-        $code = $bootstrap->getBootstrapCode();
+        $code      = $bootstrap->getBootstrapCode();
 
         $this->assertNull($code);
     }
@@ -69,24 +69,24 @@ final class LaravelBootstrapTest extends TestCase
     public function bootstrap_code_includes_autoloader(): void
     {
         $this->createLaravelStructure();
-        mkdir($this->tempDir . '/vendor', 0777, true);
-        file_put_contents($this->tempDir . '/vendor/autoload.php', '<?php // autoload');
+        mkdir($this->tempDir.'/vendor', 0777, true);
+        file_put_contents($this->tempDir.'/vendor/autoload.php', '<?php // autoload');
 
         $bootstrap = new LaravelBootstrap($this->tempDir);
-        $code = $bootstrap->getBootstrapCode();
+        $code      = $bootstrap->getBootstrapCode();
 
         $this->assertStringContainsString('vendor/autoload.php', $code);
     }
 
     private function createLaravelStructure(): void
     {
-        mkdir($this->tempDir . '/bootstrap', 0777, true);
-        file_put_contents($this->tempDir . '/bootstrap/app.php', '<?php return new stdClass();');
+        mkdir($this->tempDir.'/bootstrap', 0777, true);
+        file_put_contents($this->tempDir.'/bootstrap/app.php', '<?php return new stdClass();');
     }
 
     private function removeDir(string $dir): void
     {
-        if (! is_dir($dir)) {
+        if (!is_dir($dir)) {
             return;
         }
 

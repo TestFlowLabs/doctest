@@ -4,30 +4,29 @@ declare(strict_types=1);
 
 namespace TestFlowLabs\DocTest\Tests\Unit\Executor;
 
-use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\Test;
+use TestFlowLabs\DocTest\Executor\Executor;
+use TestFlowLabs\DocTest\CodeBlock\Attribute;
+use TestFlowLabs\DocTest\CodeBlock\CodeBlock;
+use TestFlowLabs\DocTest\CodeBlock\Attributes;
 use TestFlowLabs\DocTest\Assertion\AssertionParser;
 use TestFlowLabs\DocTest\Assertion\ExpectAssertion;
 use TestFlowLabs\DocTest\Assertion\OutputAssertion;
-use TestFlowLabs\DocTest\CodeBlock\Attribute;
-use TestFlowLabs\DocTest\CodeBlock\Attributes;
-use TestFlowLabs\DocTest\CodeBlock\CodeBlock;
-use TestFlowLabs\DocTest\Executor\Executor;
 
 final class ExecutorTest extends TestCase
 {
     private Executor $executor;
-
     private AssertionParser $assertionParser;
 
     protected function setUp(): void
     {
-        $this->executor = new Executor();
+        $this->executor        = new Executor();
         $this->assertionParser = new AssertionParser();
     }
 
     /**
-     * @param array<\TestFlowLabs\DocTest\Assertion\Assertion> $assertions
+     * @param  array<\TestFlowLabs\DocTest\Assertion\Assertion>  $assertions
      */
     private function makeBlock(string $code, ?Attribute $attribute = null, ?string $throwsClass = null, ?string $throwsMessage = null, array $assertions = []): CodeBlock
     {
@@ -63,7 +62,7 @@ final class ExecutorTest extends TestCase
     #[Test]
     public function executes_code_with_no_assertions_as_smoke_test(): void
     {
-        $block = $this->makeBlock('$x = 42;');
+        $block  = $this->makeBlock('$x = 42;');
         $result = $this->executor->execute($block);
 
         $this->assertTrue($result->passed);
@@ -72,7 +71,7 @@ final class ExecutorTest extends TestCase
     #[Test]
     public function returns_skipped_result_for_ignore_attribute(): void
     {
-        $block = $this->makeBlock('echo "ignored";', Attribute::Ignore);
+        $block  = $this->makeBlock('echo "ignored";', Attribute::Ignore);
         $result = $this->executor->execute($block);
 
         $this->assertTrue($result->skipped);
@@ -82,7 +81,7 @@ final class ExecutorTest extends TestCase
     #[Test]
     public function syntax_checks_no_run_blocks(): void
     {
-        $block = $this->makeBlock('$x = 1 + 2;', Attribute::NoRun);
+        $block  = $this->makeBlock('$x = 1 + 2;', Attribute::NoRun);
         $result = $this->executor->execute($block);
 
         $this->assertTrue($result->passed);
@@ -91,7 +90,7 @@ final class ExecutorTest extends TestCase
     #[Test]
     public function detects_parse_errors_for_parse_error_blocks(): void
     {
-        $block = $this->makeBlock('$x = {invalid syntax;', Attribute::ParseError);
+        $block  = $this->makeBlock('$x = {invalid syntax;', Attribute::ParseError);
         $result = $this->executor->execute($block);
 
         $this->assertTrue($result->passed);
@@ -127,7 +126,7 @@ final class ExecutorTest extends TestCase
     public function evaluates_expect_expressions(): void
     {
         $block = $this->makeBlock(
-            "\$x = 42;",
+            '$x = 42;',
             assertions: [new ExpectAssertion('$x === 42', 2)],
         );
         $result = $this->executor->execute($block);
@@ -139,7 +138,7 @@ final class ExecutorTest extends TestCase
     public function expect_with_falsy_result_fails(): void
     {
         $block = $this->makeBlock(
-            "\$x = 42;",
+            '$x = 42;',
             assertions: [new ExpectAssertion('$x === 99', 2)],
         );
         $result = $this->executor->execute($block);
@@ -163,8 +162,8 @@ final class ExecutorTest extends TestCase
     public function handles_process_timeout_gracefully(): void
     {
         $executor = new Executor(timeout: 1);
-        $block = $this->makeBlock('sleep(10); echo "done";');
-        $result = $executor->execute($block);
+        $block    = $this->makeBlock('sleep(10); echo "done";');
+        $result   = $executor->execute($block);
 
         $this->assertFalse($result->passed);
         $this->assertNotNull($result->error);
@@ -187,7 +186,7 @@ final class ExecutorTest extends TestCase
     #[Test]
     public function evaluates_result_comment_with_matching_value(): void
     {
-        $block = $this->makeBlock('$x = 42; // => 42');
+        $block  = $this->makeBlock('$x = 42; // => 42');
         $result = $this->executor->execute($block);
 
         $this->assertTrue($result->passed);
@@ -196,7 +195,7 @@ final class ExecutorTest extends TestCase
     #[Test]
     public function evaluates_result_comment_with_boolean(): void
     {
-        $block = $this->makeBlock('$x = true; // => true');
+        $block  = $this->makeBlock('$x = true; // => true');
         $result = $this->executor->execute($block);
 
         $this->assertTrue($result->passed);
@@ -205,7 +204,7 @@ final class ExecutorTest extends TestCase
     #[Test]
     public function evaluates_result_comment_with_null(): void
     {
-        $block = $this->makeBlock('$x = null; // => NULL');
+        $block  = $this->makeBlock('$x = null; // => NULL');
         $result = $this->executor->execute($block);
 
         $this->assertTrue($result->passed);
@@ -214,7 +213,7 @@ final class ExecutorTest extends TestCase
     #[Test]
     public function result_comment_fails_on_mismatch(): void
     {
-        $block = $this->makeBlock('$x = 42; // => 99');
+        $block  = $this->makeBlock('$x = 42; // => 99');
         $result = $this->executor->execute($block);
 
         $this->assertFalse($result->passed);
@@ -225,7 +224,7 @@ final class ExecutorTest extends TestCase
     #[Test]
     public function evaluates_multiple_result_comments(): void
     {
-        $block = $this->makeBlock("\$x = 1; // => 1\n\$y = 2; // => 2\n\$z = \$x + \$y; // => 3");
+        $block  = $this->makeBlock("\$x = 1; // => 1\n\$y = 2; // => 2\n\$z = \$x + \$y; // => 3");
         $result = $this->executor->execute($block);
 
         $this->assertTrue($result->passed);
@@ -263,7 +262,7 @@ final class ExecutorTest extends TestCase
     #[Test]
     public function populates_assertion_details_for_result_comment(): void
     {
-        $block = $this->makeBlock('$x = 42; // => 42');
+        $block  = $this->makeBlock('$x = 42; // => 42');
         $result = $this->executor->execute($block);
 
         $this->assertTrue($result->passed);
@@ -278,7 +277,7 @@ final class ExecutorTest extends TestCase
     public function populates_assertion_details_for_expect(): void
     {
         $block = $this->makeBlock(
-            "\$x = 42;",
+            '$x = 42;',
             assertions: [new ExpectAssertion('$x === 42', 2)],
         );
         $result = $this->executor->execute($block);
@@ -292,7 +291,7 @@ final class ExecutorTest extends TestCase
     #[Test]
     public function populates_assertion_details_on_failure(): void
     {
-        $block = $this->makeBlock("\$x = 1; // => 1\n\$y = 2; // => 99");
+        $block  = $this->makeBlock("\$x = 1; // => 1\n\$y = 2; // => 99");
         $result = $this->executor->execute($block);
 
         $this->assertFalse($result->passed);

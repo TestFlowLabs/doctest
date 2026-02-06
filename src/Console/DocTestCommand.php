@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace TestFlowLabs\DocTest\Console;
 
+use TestFlowLabs\DocTest\DocTest;
 use Symfony\Component\Console\Command\Command;
+use TestFlowLabs\DocTest\Config\DocTestConfig;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
-use TestFlowLabs\DocTest\Config\DocTestConfig;
-use TestFlowLabs\DocTest\DocTest;
 
 final class DocTestCommand extends Command
 {
@@ -92,7 +92,7 @@ final class DocTestCommand extends Command
         $configPath = $input->getOption('config');
         $baseConfig = DocTestConfig::load(is_string($configPath) ? $configPath : null);
 
-        $filter = $input->getOption('filter');
+        $filter  = $input->getOption('filter');
         $exclude = $input->getOption('exclude');
 
         $config = new DocTestConfig(

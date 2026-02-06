@@ -4,29 +4,26 @@ declare(strict_types=1);
 
 namespace TestFlowLabs\DocTest\Parser;
 
-use League\CommonMark\Extension\CommonMark\Node\Block\FencedCode;
-use League\CommonMark\Extension\CommonMark\Node\Block\HtmlBlock;
-use League\CommonMark\Node\Block\Document;
 use League\CommonMark\Node\NodeIterator;
+use League\CommonMark\Node\Block\Document;
+use TestFlowLabs\DocTest\CodeBlock\CodeBlock;
 use TestFlowLabs\DocTest\Assertion\AssertionParser;
 use TestFlowLabs\DocTest\Assertion\HtmlCommentAssertionParser;
-use TestFlowLabs\DocTest\CodeBlock\CodeBlock;
+use League\CommonMark\Extension\CommonMark\Node\Block\HtmlBlock;
+use League\CommonMark\Extension\CommonMark\Node\Block\FencedCode;
 
 final readonly class CodeBlockExtractor
 {
     private ShikiFilter $shikiFilter;
-
     private AttributeParser $attributeParser;
-
     private AssertionParser $assertionParser;
-
     private HtmlCommentAssertionParser $htmlCommentParser;
 
     public function __construct()
     {
-        $this->shikiFilter = new ShikiFilter();
-        $this->attributeParser = new AttributeParser();
-        $this->assertionParser = new AssertionParser();
+        $this->shikiFilter       = new ShikiFilter();
+        $this->attributeParser   = new AttributeParser();
+        $this->assertionParser   = new AssertionParser();
         $this->htmlCommentParser = new HtmlCommentAssertionParser();
     }
 
@@ -38,13 +35,13 @@ final readonly class CodeBlockExtractor
         $blocks = [];
 
         foreach ($document->iterator(NodeIterator::FLAG_BLOCKS_ONLY) as $node) {
-            if (! $node instanceof FencedCode) {
+            if (!$node instanceof FencedCode) {
                 continue;
             }
 
             $infoString = $node->getInfo() ?? '';
 
-            if (! $this->isPhpBlock($infoString)) {
+            if (!$this->isPhpBlock($infoString)) {
                 continue;
             }
 
@@ -64,7 +61,7 @@ final readonly class CodeBlockExtractor
 
             // Check for HTML comment assertions after the code block
             $htmlAssertions = [];
-            $nextNode = $node->next();
+            $nextNode       = $node->next();
             while ($nextNode instanceof HtmlBlock) {
                 $htmlAssertions = array_merge(
                     $htmlAssertions,
@@ -94,7 +91,7 @@ final readonly class CodeBlockExtractor
             return false;
         }
 
-        $parts = preg_split('/[\s{]/', $infoString);
+        $parts    = preg_split('/[\s{]/', $infoString);
         $language = is_array($parts) ? $parts[0] : '';
 
         return mb_strtolower($language) === 'php';

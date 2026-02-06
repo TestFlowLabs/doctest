@@ -4,19 +4,18 @@ declare(strict_types=1);
 
 namespace TestFlowLabs\DocTest\Tests\Unit\Reporter;
 
-use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
-use Symfony\Component\Console\Output\BufferedOutput;
-use TestFlowLabs\DocTest\Assertion\AssertionParser;
-use TestFlowLabs\DocTest\CodeBlock\Attributes;
+use PHPUnit\Framework\Attributes\Test;
 use TestFlowLabs\DocTest\CodeBlock\CodeBlock;
+use TestFlowLabs\DocTest\CodeBlock\Attributes;
 use TestFlowLabs\DocTest\Executor\ExecutionResult;
 use TestFlowLabs\DocTest\Reporter\ConsoleReporter;
+use TestFlowLabs\DocTest\Assertion\AssertionParser;
+use Symfony\Component\Console\Output\BufferedOutput;
 
 final class IdeErrorFormatTest extends TestCase
 {
     private AssertionParser $parser;
-
     private BufferedOutput $output;
 
     protected function setUp(): void
@@ -75,7 +74,7 @@ final class IdeErrorFormatTest extends TestCase
     public function passing_result_shows_file_and_line(): void
     {
         $reporter = new ConsoleReporter($this->output);
-        $parsed = $this->parser->parse('echo "ok";');
+        $parsed   = $this->parser->parse('echo "ok";');
 
         $result = new ExecutionResult(
             passed: true,

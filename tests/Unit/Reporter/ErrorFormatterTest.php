@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace TestFlowLabs\DocTest\Tests\Unit\Reporter;
 
-use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
-use TestFlowLabs\DocTest\CodeBlock\Attributes;
+use PHPUnit\Framework\Attributes\Test;
 use TestFlowLabs\DocTest\CodeBlock\CodeBlock;
-use TestFlowLabs\DocTest\Executor\ExecutionResult;
+use TestFlowLabs\DocTest\CodeBlock\Attributes;
 use TestFlowLabs\DocTest\Reporter\ErrorFormatter;
+use TestFlowLabs\DocTest\Executor\ExecutionResult;
 
 final class ErrorFormatterTest extends TestCase
 {
@@ -113,7 +113,7 @@ final class ErrorFormatterTest extends TestCase
     #[Test]
     public function shows_context_window_around_error(): void
     {
-        $code = "line1;\nline2;\nline3;\nline4;\nline5;";
+        $code   = "line1;\nline2;\nline3;\nline4;\nline5;";
         $result = $this->makeResult($code, 'Error on line3');
         $output = $this->formatter->format($result);
 

@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace TestFlowLabs\DocTest\CodeBlock;
 
-use ArrayIterator;
 use Countable;
-use IteratorAggregate;
 use Traversable;
+use ArrayIterator;
+use IteratorAggregate;
 
 /**
  * @implements IteratorAggregate<int, CodeBlock>
@@ -15,7 +15,7 @@ use Traversable;
 final readonly class CodeBlockCollection implements Countable, IteratorAggregate
 {
     /**
-     * @param array<CodeBlock> $blocks
+     * @param  array<CodeBlock>  $blocks
      */
     public function __construct(
         private array $blocks,
@@ -38,7 +38,7 @@ final readonly class CodeBlockCollection implements Countable, IteratorAggregate
     {
         return new self(array_values(array_filter(
             $this->blocks,
-            static fn(CodeBlock $block): bool => $block->attributes->group === $group,
+            static fn (CodeBlock $block): bool => $block->attributes->group === $group,
         )));
     }
 
@@ -46,7 +46,7 @@ final readonly class CodeBlockCollection implements Countable, IteratorAggregate
     {
         return new self(array_values(array_filter(
             $this->blocks,
-            static fn(CodeBlock $block): bool => $block->attributes->isSetup(),
+            static fn (CodeBlock $block): bool => $block->attributes->isSetup(),
         )));
     }
 
@@ -54,7 +54,7 @@ final readonly class CodeBlockCollection implements Countable, IteratorAggregate
     {
         return new self(array_values(array_filter(
             $this->blocks,
-            static fn(CodeBlock $block): bool => $block->attributes->isTeardown(),
+            static fn (CodeBlock $block): bool => $block->attributes->isTeardown(),
         )));
     }
 
@@ -62,8 +62,8 @@ final readonly class CodeBlockCollection implements Countable, IteratorAggregate
     {
         return new self(array_values(array_filter(
             $this->blocks,
-            static fn(CodeBlock $block): bool => ! $block->attributes->isSetup()
-                && ! $block->attributes->isTeardown(),
+            static fn (CodeBlock $block): bool => !$block->attributes->isSetup()
+                && !$block->attributes->isTeardown(),
         )));
     }
 }

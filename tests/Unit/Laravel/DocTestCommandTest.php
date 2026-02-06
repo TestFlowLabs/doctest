@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace TestFlowLabs\DocTest\Tests\Unit\Laravel;
 
-use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
-use Symfony\Component\Console\Tester\CommandTester;
+use PHPUnit\Framework\Attributes\Test;
 use TestFlowLabs\DocTest\Laravel\DocTestCommand;
+use Symfony\Component\Console\Tester\CommandTester;
 
 final class DocTestCommandTest extends TestCase
 {
@@ -30,7 +30,7 @@ final class DocTestCommandTest extends TestCase
     #[Test]
     public function command_accepts_file_arguments(): void
     {
-        $command = new DocTestCommand();
+        $command    = new DocTestCommand();
         $definition = $command->getDefinition();
 
         $this->assertTrue($definition->hasArgument('files'));
@@ -39,7 +39,7 @@ final class DocTestCommandTest extends TestCase
     #[Test]
     public function command_has_filter_option(): void
     {
-        $command = new DocTestCommand();
+        $command    = new DocTestCommand();
         $definition = $command->getDefinition();
 
         $this->assertTrue($definition->hasOption('filter'));
@@ -48,7 +48,7 @@ final class DocTestCommandTest extends TestCase
     #[Test]
     public function command_has_dry_run_option(): void
     {
-        $command = new DocTestCommand();
+        $command    = new DocTestCommand();
         $definition = $command->getDefinition();
 
         $this->assertTrue($definition->hasOption('dry-run'));
@@ -58,9 +58,9 @@ final class DocTestCommandTest extends TestCase
     public function execute_returns_zero_for_passing_fixture(): void
     {
         $command = new DocTestCommand();
-        $tester = new CommandTester($command);
+        $tester  = new CommandTester($command);
 
-        $fixtureFile = __DIR__ . '/../../Fixtures/basic.md';
+        $fixtureFile = __DIR__.'/../../Fixtures/basic.md';
 
         $tester->execute(['files' => [$fixtureFile]]);
 
@@ -71,7 +71,7 @@ final class DocTestCommandTest extends TestCase
     public function execute_returns_three_when_no_files_found(): void
     {
         $command = new DocTestCommand();
-        $tester = new CommandTester($command);
+        $tester  = new CommandTester($command);
 
         $tester->execute(['files' => ['/nonexistent/path.md']]);
 
@@ -82,9 +82,9 @@ final class DocTestCommandTest extends TestCase
     public function execute_with_dry_run_returns_zero(): void
     {
         $command = new DocTestCommand();
-        $tester = new CommandTester($command);
+        $tester  = new CommandTester($command);
 
-        $fixtureFile = __DIR__ . '/../../Fixtures/basic.md';
+        $fixtureFile = __DIR__.'/../../Fixtures/basic.md';
 
         $tester->execute(['files' => [$fixtureFile], '--dry-run' => true]);
 

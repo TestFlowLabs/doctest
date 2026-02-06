@@ -25,14 +25,14 @@ final readonly class DiffGenerator
         $diff = $this->differ->diff($expected, $actual);
 
         // Filter to only show +/- lines (not context)
-        $lines = explode("\n", $diff);
+        $lines    = explode("\n", $diff);
         $filtered = [];
 
         foreach ($lines as $line) {
             if (str_starts_with($line, '-')) {
-                $filtered[] = '- ' . substr($line, 1);
+                $filtered[] = '- '.substr($line, 1);
             } elseif (str_starts_with($line, '+')) {
-                $filtered[] = '+ ' . substr($line, 1);
+                $filtered[] = '+ '.substr($line, 1);
             }
         }
 

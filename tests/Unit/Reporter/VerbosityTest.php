@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace TestFlowLabs\DocTest\Tests\Unit\Reporter;
 
-use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
-use Symfony\Component\Console\Output\BufferedOutput;
-use Symfony\Component\Console\Output\OutputInterface;
-use TestFlowLabs\DocTest\CodeBlock\Attributes;
+use PHPUnit\Framework\Attributes\Test;
 use TestFlowLabs\DocTest\CodeBlock\CodeBlock;
+use TestFlowLabs\DocTest\CodeBlock\Attributes;
 use TestFlowLabs\DocTest\Executor\ExecutionResult;
 use TestFlowLabs\DocTest\Reporter\ConsoleReporter;
+use Symfony\Component\Console\Output\BufferedOutput;
+use Symfony\Component\Console\Output\OutputInterface;
 
 final class VerbosityTest extends TestCase
 {

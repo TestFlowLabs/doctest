@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace TestFlowLabs\DocTest\Tests\Unit\Config;
 
-use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\Test;
 use TestFlowLabs\DocTest\Config\DocTestConfig;
 
 final class DocTestConfigTest extends TestCase
@@ -29,16 +29,16 @@ final class DocTestConfigTest extends TestCase
     public function loads_from_array_with_all_keys(): void
     {
         $config = DocTestConfig::fromArray([
-            'paths' => ['src'],
-            'exclude' => ['docs/archive/*'],
+            'paths'     => ['src'],
+            'exclude'   => ['docs/archive/*'],
             'execution' => [
-                'timeout' => 60,
-                'memory_limit' => '512M',
+                'timeout'         => 60,
+                'memory_limit'    => '512M',
                 'stop_on_failure' => true,
             ],
             'output' => [
                 'normalize_whitespace' => false,
-                'trim_trailing' => false,
+                'trim_trailing'        => false,
             ],
         ]);
 
@@ -103,8 +103,8 @@ final class DocTestConfigTest extends TestCase
         $config = DocTestConfig::fromArray([
             'reporters' => [
                 'console' => true,
-                'junit' => 'build/doctest.xml',
-                'json' => 'build/doctest.json',
+                'junit'   => 'build/doctest.xml',
+                'json'    => 'build/doctest.json',
             ],
         ]);
 

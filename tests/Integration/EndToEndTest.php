@@ -4,23 +4,22 @@ declare(strict_types=1);
 
 namespace TestFlowLabs\DocTest\Tests\Integration;
 
-use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use TestFlowLabs\DocTest\DocTest;
+use PHPUnit\Framework\Attributes\Test;
+use TestFlowLabs\DocTest\Config\DocTestConfig;
 use Symfony\Component\Console\Output\BufferedOutput;
 use Symfony\Component\Console\Output\OutputInterface;
-use TestFlowLabs\DocTest\Config\DocTestConfig;
-use TestFlowLabs\DocTest\DocTest;
 
 final class EndToEndTest extends TestCase
 {
     private BufferedOutput $output;
-
     private string $fixturesDir;
 
     protected function setUp(): void
     {
-        $this->output = new BufferedOutput();
-        $this->fixturesDir = dirname(__DIR__) . '/Fixtures';
+        $this->output      = new BufferedOutput();
+        $this->fixturesDir = dirname(__DIR__).'/Fixtures';
     }
 
     private function runDocTest(DocTestConfig $config): int
@@ -39,7 +38,7 @@ final class EndToEndTest extends TestCase
     public function runs_simple_output_test_and_passes(): void
     {
         $config = DocTestConfig::fromArray([
-            'paths' => [$this->fixturesDir . '/basic.md'],
+            'paths' => [$this->fixturesDir.'/basic.md'],
         ]);
 
         $this->assertSame(0, $this->runDocTest($config));
@@ -49,11 +48,11 @@ final class EndToEndTest extends TestCase
     public function runs_failing_output_test_and_reports_failure(): void
     {
         $config = DocTestConfig::fromArray([
-            'paths' => [$this->fixturesDir . '/failing-output.md'],
+            'paths' => [$this->fixturesDir.'/failing-output.md'],
         ]);
 
         $exitCode = $this->runDocTest($config);
-        $output = $this->getOutput();
+        $output   = $this->getOutput();
 
         $this->assertSame(1, $exitCode);
         $this->assertStringContainsString('✖', $output);
@@ -63,11 +62,11 @@ final class EndToEndTest extends TestCase
     public function runs_ignored_block_and_skips_it(): void
     {
         $config = DocTestConfig::fromArray([
-            'paths' => [$this->fixturesDir . '/ignore-block.md'],
+            'paths' => [$this->fixturesDir.'/ignore-block.md'],
         ]);
 
         $exitCode = $this->runDocTest($config);
-        $output = $this->getOutput();
+        $output   = $this->getOutput();
 
         $this->assertSame(0, $exitCode);
         $this->assertStringContainsString('⊘', $output);
@@ -78,7 +77,7 @@ final class EndToEndTest extends TestCase
     public function runs_expect_assertions(): void
     {
         $config = DocTestConfig::fromArray([
-            'paths' => [$this->fixturesDir . '/expect.md'],
+            'paths' => [$this->fixturesDir.'/expect.md'],
         ]);
 
         $this->assertSame(0, $this->runDocTest($config));
@@ -89,8 +88,8 @@ final class EndToEndTest extends TestCase
     {
         $config = DocTestConfig::fromArray([
             'paths' => [
-                $this->fixturesDir . '/basic.md',
-                $this->fixturesDir . '/expect.md',
+                $this->fixturesDir.'/basic.md',
+                $this->fixturesDir.'/expect.md',
             ],
         ]);
 
@@ -103,12 +102,12 @@ final class EndToEndTest extends TestCase
     public function respects_dry_run(): void
     {
         $config = DocTestConfig::fromArray([
-            'paths' => [$this->fixturesDir . '/basic.md'],
+            'paths'   => [$this->fixturesDir.'/basic.md'],
             'dry_run' => true,
         ]);
 
         $exitCode = $this->runDocTest($config);
-        $output = $this->getOutput();
+        $output   = $this->getOutput();
 
         $this->assertSame(0, $exitCode);
         $this->assertStringContainsString('⊘', $output);
@@ -117,17 +116,17 @@ final class EndToEndTest extends TestCase
     #[Test]
     public function respects_stop_on_failure(): void
     {
-        $tempFile = sys_get_temp_dir() . '/doctest_stop_e2e_' . uniqid() . '.md';
+        $tempFile = sys_get_temp_dir().'/doctest_stop_e2e_'.uniqid().'.md';
         file_put_contents($tempFile, "```php\necho \"wrong\";\n```\n<!-- doctest: right -->\n\n```php\necho \"ok\";\n```\n<!-- doctest: ok -->\n");
 
         try {
             $config = DocTestConfig::fromArray([
-                'paths' => [$tempFile],
+                'paths'           => [$tempFile],
                 'stop_on_failure' => true,
             ]);
 
             $exitCode = $this->runDocTest($config);
-            $output = $this->getOutput();
+            $output   = $this->getOutput();
 
             $this->assertSame(1, $exitCode);
             // Should only have one FAIL, not a second PASS (stopped early)
@@ -144,7 +143,7 @@ final class EndToEndTest extends TestCase
     public function exit_code_0_when_all_pass(): void
     {
         $config = DocTestConfig::fromArray([
-            'paths' => [$this->fixturesDir . '/basic.md'],
+            'paths' => [$this->fixturesDir.'/basic.md'],
         ]);
 
         $this->assertSame(0, $this->runDocTest($config));
@@ -154,7 +153,7 @@ final class EndToEndTest extends TestCase
     public function exit_code_1_when_any_fail(): void
     {
         $config = DocTestConfig::fromArray([
-            'paths' => [$this->fixturesDir . '/failing-output.md'],
+            'paths' => [$this->fixturesDir.'/failing-output.md'],
         ]);
 
         $this->assertSame(1, $this->runDocTest($config));
@@ -164,7 +163,7 @@ final class EndToEndTest extends TestCase
     public function exit_code_3_when_no_tests_found(): void
     {
         $config = DocTestConfig::fromArray([
-            'paths' => [$this->fixturesDir . '/no-php.md'],
+            'paths' => [$this->fixturesDir.'/no-php.md'],
         ]);
 
         $this->assertSame(3, $this->runDocTest($config));
@@ -174,7 +173,7 @@ final class EndToEndTest extends TestCase
     public function handles_empty_markdown_file(): void
     {
         $config = DocTestConfig::fromArray([
-            'paths' => [$this->fixturesDir . '/empty.md'],
+            'paths' => [$this->fixturesDir.'/empty.md'],
         ]);
 
         $this->assertSame(3, $this->runDocTest($config));
@@ -184,7 +183,7 @@ final class EndToEndTest extends TestCase
     public function handles_markdown_with_no_php_blocks(): void
     {
         $config = DocTestConfig::fromArray([
-            'paths' => [$this->fixturesDir . '/no-php.md'],
+            'paths' => [$this->fixturesDir.'/no-php.md'],
         ]);
 
         $this->assertSame(3, $this->runDocTest($config));
@@ -194,7 +193,7 @@ final class EndToEndTest extends TestCase
     public function runs_result_comment_assertions(): void
     {
         $config = DocTestConfig::fromArray([
-            'paths' => [$this->fixturesDir . '/result-comment.md'],
+            'paths' => [$this->fixturesDir.'/result-comment.md'],
         ]);
 
         $exitCode = $this->runDocTest($config);
@@ -207,11 +206,11 @@ final class EndToEndTest extends TestCase
     {
         $this->output->setVerbosity(OutputInterface::VERBOSITY_VERBOSE);
         $config = DocTestConfig::fromArray([
-            'paths' => [$this->fixturesDir . '/result-comment.md'],
+            'paths' => [$this->fixturesDir.'/result-comment.md'],
         ]);
 
         $exitCode = $this->runDocTest($config);
-        $output = $this->getOutput();
+        $output   = $this->getOutput();
 
         $this->assertSame(0, $exitCode);
         $this->assertStringContainsString('=> 42', $output);
@@ -223,11 +222,11 @@ final class EndToEndTest extends TestCase
     {
         $this->output->setVerbosity(OutputInterface::VERBOSITY_VERBOSE);
         $config = DocTestConfig::fromArray([
-            'paths' => [$this->fixturesDir . '/basic.md'],
+            'paths' => [$this->fixturesDir.'/basic.md'],
         ]);
 
         $exitCode = $this->runDocTest($config);
-        $output = $this->getOutput();
+        $output   = $this->getOutput();
 
         $this->assertSame(0, $exitCode);
         $this->assertStringContainsString('output:', $output);
@@ -238,11 +237,11 @@ final class EndToEndTest extends TestCase
     {
         $this->output->setVerbosity(OutputInterface::VERBOSITY_NORMAL);
         $config = DocTestConfig::fromArray([
-            'paths' => [$this->fixturesDir . '/result-comment.md'],
+            'paths' => [$this->fixturesDir.'/result-comment.md'],
         ]);
 
         $exitCode = $this->runDocTest($config);
-        $output = $this->getOutput();
+        $output   = $this->getOutput();
 
         $this->assertSame(0, $exitCode);
         // Verbose detail lines are indented with 7 spaces + icon
@@ -254,11 +253,11 @@ final class EndToEndTest extends TestCase
     {
         $this->output->setVerbosity(OutputInterface::VERBOSITY_VERBOSE);
         $config = DocTestConfig::fromArray([
-            'paths' => [$this->fixturesDir . '/failing-output.md'],
+            'paths' => [$this->fixturesDir.'/failing-output.md'],
         ]);
 
         $exitCode = $this->runDocTest($config);
-        $output = $this->getOutput();
+        $output   = $this->getOutput();
 
         $this->assertSame(1, $exitCode);
         $this->assertStringContainsString('✖', $output);

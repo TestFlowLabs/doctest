@@ -11,11 +11,8 @@ use TestFlowLabs\DocTest\Comparison\OutputComparator;
 final readonly class Executor
 {
     private CodeGenerator $codeGenerator;
-
     private ProcessRunner $processRunner;
-
     private OutputComparator $comparator;
-
     private DiffGenerator $diffGenerator;
 
     public function __construct(
@@ -24,12 +21,12 @@ final readonly class Executor
     ) {
         $this->codeGenerator = new CodeGenerator();
         $this->processRunner = new ProcessRunner($timeout, $memoryLimit);
-        $this->comparator = new OutputComparator();
+        $this->comparator    = new OutputComparator();
         $this->diffGenerator = new DiffGenerator();
     }
 
     /**
-     * @param array<CodeBlock> $blocks
+     * @param  array<CodeBlock>  $blocks
      *
      * @return array<ExecutionResult>
      */
@@ -75,7 +72,7 @@ final readonly class Executor
     }
 
     /**
-     * @param array<CodeBlock> $blocks
+     * @param  array<CodeBlock>  $blocks
      *
      * @return array<ExecutionResult>
      */
@@ -107,12 +104,12 @@ final readonly class Executor
 
     private function syntaxCheck(CodeBlock $block): ExecutionResult
     {
-        $tempFile = tempnam(sys_get_temp_dir(), 'doctest_') . '.php';
-        file_put_contents($tempFile, "<?php\n" . $block->executableCode);
+        $tempFile = tempnam(sys_get_temp_dir(), 'doctest_').'.php';
+        file_put_contents($tempFile, "<?php\n".$block->executableCode);
 
-        $output = [];
+        $output   = [];
         $exitCode = 0;
-        exec(PHP_BINARY . ' -l ' . escapeshellarg($tempFile) . ' 2>&1', $output, $exitCode);
+        exec(PHP_BINARY.' -l '.escapeshellarg($tempFile).' 2>&1', $output, $exitCode);
         unlink($tempFile);
 
         if ($exitCode === 0) {
@@ -122,13 +119,13 @@ final readonly class Executor
         return new ExecutionResult(
             passed: false,
             codeBlock: $block,
-            error: 'Syntax error: ' . implode("\n", $output),
+            error: 'Syntax error: '.implode("\n", $output),
         );
     }
 
     private function executeParseError(CodeBlock $block): ExecutionResult
     {
-        $filePath = $this->codeGenerator->generate($block);
+        $filePath      = $this->codeGenerator->generate($block);
         $processResult = $this->processRunner->run($filePath);
         $this->cleanup($filePath);
 
@@ -145,27 +142,27 @@ final readonly class Executor
 
     private function executeThrows(CodeBlock $block): ExecutionResult
     {
-        $filePath = $this->codeGenerator->generate($block);
+        $filePath      = $this->codeGenerator->generate($block);
         $processResult = $this->processRunner->run($filePath);
         $this->cleanup($filePath);
 
         /** @var array{thrown?: bool, class?: string, message?: string} $data */
         $data = json_decode($processResult->stderr, true) ?? [];
 
-        if (! isset($data['thrown']) || $data['thrown'] !== true) {
+        if (!isset($data['thrown']) || $data['thrown'] !== true) {
             return new ExecutionResult(
                 passed: false,
                 codeBlock: $block,
-                error: 'Expected exception ' . ($block->attributes->throwsClass ?? 'Throwable') . ' but none was thrown',
+                error: 'Expected exception '.($block->attributes->throwsClass ?? 'Throwable').' but none was thrown',
                 duration: $processResult->duration,
             );
         }
 
         if ($block->attributes->throwsClass !== null && isset($data['class'])) {
-            $actualClass = $data['class'];
+            $actualClass   = $data['class'];
             $expectedClass = $block->attributes->throwsClass;
 
-            $normalizedActual = ltrim($actualClass, '\\');
+            $normalizedActual   = ltrim($actualClass, '\\');
             $normalizedExpected = ltrim($expectedClass, '\\');
 
             if ($normalizedActual !== $normalizedExpected) {
@@ -179,7 +176,7 @@ final readonly class Executor
         }
 
         if ($block->attributes->throwsMessage !== null && isset($data['message'])) {
-            if (! str_contains($data['message'], $block->attributes->throwsMessage)) {
+            if (!str_contains($data['message'], $block->attributes->throwsMessage)) {
                 return new ExecutionResult(
                     passed: false,
                     codeBlock: $block,
@@ -198,7 +195,7 @@ final readonly class Executor
 
     private function executeNormal(CodeBlock $block, ?string $setup = null, ?string $teardown = null): ExecutionResult
     {
-        $filePath = $this->codeGenerator->generate($block, setup: $setup, teardown: $teardown);
+        $filePath      = $this->codeGenerator->generate($block, setup: $setup, teardown: $teardown);
         $processResult = $this->processRunner->run($filePath);
         $this->cleanup($filePath);
 
@@ -206,10 +203,10 @@ final readonly class Executor
         if ($processResult->exitCode !== 0) {
             $decoded = json_decode($processResult->stderr, true);
 
-            if (! is_array($decoded)) {
+            if (!is_array($decoded)) {
                 $errorMessage = $processResult->stderr !== ''
-                    ? 'Process failed (exit code ' . $processResult->exitCode . '): ' . $processResult->stderr
-                    : 'Process failed with exit code ' . $processResult->exitCode;
+                    ? 'Process failed (exit code '.$processResult->exitCode.'): '.$processResult->stderr
+                    : 'Process failed with exit code '.$processResult->exitCode;
 
                 return new ExecutionResult(
                     passed: false,
@@ -229,19 +226,19 @@ final readonly class Executor
     }
 
     /**
-     * @param array<array{type: string, expected?: string, actual?: string, expression?: string, passed?: bool, line?: int}> $results
+     * @param  array<array{type: string, expected?: string, actual?: string, expression?: string, passed?: bool, line?: int}>  $results
      */
     private function evaluateResults(CodeBlock $block, array $results, ProcessResult $processResult): ExecutionResult
     {
-        $capturedOutput = [];
+        $capturedOutput   = [];
         $assertionDetails = [];
 
         foreach ($results as $result) {
             if ($result['type'] === 'output') {
-                $expected = $result['expected'] ?? '';
-                $actual = $result['actual'] ?? '';
+                $expected         = $result['expected'] ?? '';
+                $actual           = $result['actual'] ?? '';
                 $capturedOutput[] = $actual;
-                $comparison = $this->comparator->compare($expected, $actual);
+                $comparison       = $this->comparator->compare($expected, $actual);
 
                 $assertionDetails[] = new \TestFlowLabs\DocTest\Assertion\AssertionResultDetail(
                     type: 'output',
@@ -251,7 +248,7 @@ final readonly class Executor
                     line: $result['line'] ?? 0,
                 );
 
-                if (! $comparison->passed) {
+                if (!$comparison->passed) {
                     $diff = $this->diffGenerator->generate($comparison->normalizedExpected, $comparison->normalizedActual);
 
                     return new ExecutionResult(
@@ -267,10 +264,10 @@ final readonly class Executor
             }
 
             if ($result['type'] === 'output_contains') {
-                $expected = $result['expected'] ?? '';
-                $actual = $result['actual'] ?? '';
+                $expected         = $result['expected'] ?? '';
+                $actual           = $result['actual'] ?? '';
                 $capturedOutput[] = $actual;
-                $passed = str_contains($actual, $expected);
+                $passed           = str_contains($actual, $expected);
 
                 $assertionDetails[] = new \TestFlowLabs\DocTest\Assertion\AssertionResultDetail(
                     type: 'output_contains',
@@ -280,7 +277,7 @@ final readonly class Executor
                     line: $result['line'] ?? 0,
                 );
 
-                if (! $passed) {
+                if (!$passed) {
                     return new ExecutionResult(
                         passed: false,
                         codeBlock: $block,
@@ -294,8 +291,8 @@ final readonly class Executor
             }
 
             if ($result['type'] === 'output_matches') {
-                $pattern = $result['expected'] ?? '';
-                $actual = $result['actual'] ?? '';
+                $pattern          = $result['expected'] ?? '';
+                $actual           = $result['actual'] ?? '';
                 $capturedOutput[] = $actual;
 
                 $matchResult = @preg_match($pattern, $actual);
@@ -328,7 +325,7 @@ final readonly class Executor
                     line: $result['line'] ?? 0,
                 );
 
-                if (! $passed) {
+                if (!$passed) {
                     return new ExecutionResult(
                         passed: false,
                         codeBlock: $block,
@@ -342,8 +339,8 @@ final readonly class Executor
             }
 
             if ($result['type'] === 'output_json') {
-                $expectedJson = $result['expected'] ?? '';
-                $actual = $result['actual'] ?? '';
+                $expectedJson     = $result['expected'] ?? '';
+                $actual           = $result['actual'] ?? '';
                 $capturedOutput[] = $actual;
 
                 $jsonResult = $this->comparator->compareJson($expectedJson, $actual);
@@ -356,11 +353,11 @@ final readonly class Executor
                     line: $result['line'] ?? 0,
                 );
 
-                if (! $jsonResult->passed) {
+                if (!$jsonResult->passed) {
                     $error = match (true) {
-                        str_contains($jsonResult->normalizedExpected, 'Expected JSON is invalid') => $jsonResult->normalizedExpected,
+                        str_contains($jsonResult->normalizedExpected, 'Expected JSON is invalid')    => $jsonResult->normalizedExpected,
                         str_contains($jsonResult->normalizedActual, 'Actual JSON output is invalid') => $jsonResult->normalizedActual,
-                        default => 'JSON output does not match expected structure',
+                        default                                                                      => 'JSON output does not match expected structure',
                     };
 
                     return new ExecutionResult(
@@ -376,7 +373,7 @@ final readonly class Executor
             }
 
             if ($result['type'] === 'expect') {
-                $passed = (bool) ($result['passed'] ?? false);
+                $passed     = (bool) ($result['passed'] ?? false);
                 $expression = $result['expression'] ?? '';
 
                 $assertionDetails[] = new \TestFlowLabs\DocTest\Assertion\AssertionResultDetail(
@@ -388,11 +385,11 @@ final readonly class Executor
                     expression: $expression,
                 );
 
-                if (! $passed) {
+                if (!$passed) {
                     return new ExecutionResult(
                         passed: false,
                         codeBlock: $block,
-                        error: 'Expect assertion failed: ' . $expression,
+                        error: 'Expect assertion failed: '.$expression,
                         duration: $processResult->duration,
                         assertionDetails: $assertionDetails,
                     );
@@ -401,8 +398,8 @@ final readonly class Executor
 
             if ($result['type'] === 'result_comment') {
                 $expected = $result['expected'] ?? '';
-                $actual = $result['actual'] ?? '';
-                $passed = $expected === $actual;
+                $actual   = $result['actual'] ?? '';
+                $passed   = $expected === $actual;
 
                 $assertionDetails[] = new \TestFlowLabs\DocTest\Assertion\AssertionResultDetail(
                     type: 'result_comment',
@@ -413,7 +410,7 @@ final readonly class Executor
                     expression: $result['expression'] ?? null,
                 );
 
-                if (! $passed) {
+                if (!$passed) {
                     return new ExecutionResult(
                         passed: false,
                         codeBlock: $block,
@@ -437,26 +434,26 @@ final readonly class Executor
     }
 
     /**
-     * @param array<CodeBlock> $blocks
+     * @param  array<CodeBlock>  $blocks
      *
      * @return array<ExecutionResult>
      */
     private function executeGroupBlocks(array $blocks, ?string $setup = null, ?string $teardown = null): array
     {
-        $filePath = $this->codeGenerator->generateGroup($blocks, setup: $setup, teardown: $teardown);
+        $filePath      = $this->codeGenerator->generateGroup($blocks, setup: $setup, teardown: $teardown);
         $processResult = $this->processRunner->run($filePath);
         $this->cleanup($filePath);
 
         if ($processResult->exitCode !== 0) {
             $decoded = json_decode($processResult->stderr, true);
 
-            if (! is_array($decoded)) {
+            if (!is_array($decoded)) {
                 $errorMessage = $processResult->stderr !== ''
-                    ? 'Process failed (exit code ' . $processResult->exitCode . '): ' . $processResult->stderr
-                    : 'Process failed with exit code ' . $processResult->exitCode;
+                    ? 'Process failed (exit code '.$processResult->exitCode.'): '.$processResult->stderr
+                    : 'Process failed with exit code '.$processResult->exitCode;
 
                 return array_map(
-                    fn(CodeBlock $block) => new ExecutionResult(
+                    fn (CodeBlock $block) => new ExecutionResult(
                         passed: false,
                         codeBlock: $block,
                         error: $errorMessage,
@@ -476,8 +473,8 @@ final readonly class Executor
     }
 
     /**
-     * @param array<CodeBlock> $blocks
-     * @param array<array{type: string, expected?: string, actual?: string, expression?: string, passed?: bool, line?: int}> $allResults
+     * @param  array<CodeBlock>  $blocks
+     * @param  array<array{type: string, expected?: string, actual?: string, expression?: string, passed?: bool, line?: int}>  $allResults
      *
      * @return array<ExecutionResult>
      */
@@ -488,12 +485,12 @@ final readonly class Executor
         // Count expected assertions per block to partition results
         $assertionCounts = [];
         foreach ($blocks as $block) {
-            $parsed = $parser->parse($block->rawCode);
-            $count = count($block->assertions) + count($parsed->resultComments);
+            $parsed            = $parser->parse($block->rawCode);
+            $count             = count($block->assertions) + count($parsed->resultComments);
             $assertionCounts[] = $count;
         }
 
-        $results = [];
+        $results     = [];
         $resultIndex = 0;
 
         foreach ($blocks as $blockIndex => $block) {
@@ -519,13 +516,13 @@ final readonly class Executor
     }
 
     /**
-     * @param array<CodeBlock> $blocks
+     * @param  array<CodeBlock>  $blocks
      *
      * @return array{?string, ?string, array<CodeBlock>, array<string, array<CodeBlock>>}
      */
     private function collectSetupTeardownAndGroups(array $blocks): array
     {
-        $setupCode = [];
+        $setupCode    = [];
         $teardownCode = [];
         $normalBlocks = [];
         /** @var array<string, array<CodeBlock>> $groupedBlocks */
@@ -543,7 +540,7 @@ final readonly class Executor
             }
         }
 
-        $setup = $setupCode !== [] ? implode("\n", $setupCode) : null;
+        $setup    = $setupCode !== [] ? implode("\n", $setupCode) : null;
         $teardown = $teardownCode !== [] ? implode("\n", $teardownCode) : null;
 
         return [$setup, $teardown, $normalBlocks, $groupedBlocks];

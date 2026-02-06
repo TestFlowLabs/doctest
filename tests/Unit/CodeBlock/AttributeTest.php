@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace TestFlowLabs\DocTest\Tests\Unit\CodeBlock;
 
-use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\Test;
 use TestFlowLabs\DocTest\CodeBlock\Attribute;
 
 final class AttributeTest extends TestCase

@@ -4,38 +4,37 @@ declare(strict_types=1);
 
 namespace TestFlowLabs\DocTest\Tests\Unit\Executor;
 
-use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\Test;
+use TestFlowLabs\DocTest\CodeBlock\CodeBlock;
+use TestFlowLabs\DocTest\CodeBlock\Attributes;
+use TestFlowLabs\DocTest\Executor\CodeGenerator;
 use TestFlowLabs\DocTest\Assertion\AssertionParser;
 use TestFlowLabs\DocTest\Assertion\ExpectAssertion;
 use TestFlowLabs\DocTest\Assertion\OutputAssertion;
-use TestFlowLabs\DocTest\CodeBlock\Attributes;
-use TestFlowLabs\DocTest\CodeBlock\CodeBlock;
-use TestFlowLabs\DocTest\Executor\CodeGenerator;
 
 final class CodeGeneratorGroupTest extends TestCase
 {
     private CodeGenerator $generator;
-
     private AssertionParser $parser;
 
     protected function setUp(): void
     {
         $this->generator = new CodeGenerator();
-        $this->parser = new AssertionParser();
+        $this->parser    = new AssertionParser();
     }
 
     protected function tearDown(): void
     {
-        $dir = sys_get_temp_dir() . '/doctest';
+        $dir = sys_get_temp_dir().'/doctest';
 
         if (is_dir($dir)) {
-            array_map(unlink(...), glob($dir . '/*.php') ?: []);
+            array_map(unlink(...), glob($dir.'/*.php') ?: []);
         }
     }
 
     /**
-     * @param array<\TestFlowLabs\DocTest\Assertion\Assertion> $assertions
+     * @param  array<\TestFlowLabs\DocTest\Assertion\Assertion>  $assertions
      */
     private function makeBlock(string $code, array $assertions = []): CodeBlock
     {
@@ -57,7 +56,7 @@ final class CodeGeneratorGroupTest extends TestCase
         $blocks = [
             $this->makeBlock('$counter = 0;'),
             $this->makeBlock(
-                "\$counter++;",
+                '$counter++;',
                 assertions: [new ExpectAssertion('$counter === 1', 2)],
             ),
         ];
@@ -80,7 +79,7 @@ final class CodeGeneratorGroupTest extends TestCase
         ];
 
         $filePath = $this->generator->generateGroup($blocks);
-        $content = file_get_contents($filePath);
+        $content  = file_get_contents($filePath);
 
         $pos1 = strpos($content, '$x = 1;');
         $pos2 = strpos($content, '$x = 2;');
@@ -105,7 +104,7 @@ final class CodeGeneratorGroupTest extends TestCase
         ];
 
         $filePath = $this->generator->generateGroup($blocks);
-        $content = file_get_contents($filePath);
+        $content  = file_get_contents($filePath);
 
         $this->assertSame(2, substr_count($content, 'ob_start()'));
         $this->assertSame(2, substr_count($content, 'ob_get_clean()'));
@@ -126,7 +125,7 @@ final class CodeGeneratorGroupTest extends TestCase
         ];
 
         $filePath = $this->generator->generateGroup($blocks);
-        $content = file_get_contents($filePath);
+        $content  = file_get_contents($filePath);
 
         $this->assertSame(1, substr_count($content, 'fwrite(STDERR'));
     }
@@ -136,7 +135,7 @@ final class CodeGeneratorGroupTest extends TestCase
     {
         $blocks = [
             $this->makeBlock(
-                "\$x = 1;",
+                '$x = 1;',
                 assertions: [new ExpectAssertion('$x === 1', 2)],
             ),
             $this->makeBlock(
@@ -147,10 +146,10 @@ final class CodeGeneratorGroupTest extends TestCase
 
         $filePath = $this->generator->generateGroup($blocks);
 
-        $output = [];
+        $output   = [];
         $exitCode = 0;
-        exec(PHP_BINARY . ' -l ' . escapeshellarg($filePath) . ' 2>&1', $output, $exitCode);
+        exec(PHP_BINARY.' -l '.escapeshellarg($filePath).' 2>&1', $output, $exitCode);
 
-        $this->assertSame(0, $exitCode, 'Generated group file has syntax errors: ' . implode("\n", $output));
+        $this->assertSame(0, $exitCode, 'Generated group file has syntax errors: '.implode("\n", $output));
     }
 }

@@ -4,29 +4,28 @@ declare(strict_types=1);
 
 namespace TestFlowLabs\DocTest\Tests\Unit\Parser;
 
-use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
-use TestFlowLabs\DocTest\Assertion\OutputAssertion;
+use PHPUnit\Framework\Attributes\Test;
 use TestFlowLabs\DocTest\CodeBlock\Attribute;
-use TestFlowLabs\DocTest\Parser\CodeBlockExtractor;
 use TestFlowLabs\DocTest\Parser\MarkdownParser;
+use TestFlowLabs\DocTest\Assertion\OutputAssertion;
+use TestFlowLabs\DocTest\Parser\CodeBlockExtractor;
 
 final class CodeBlockExtractorTest extends TestCase
 {
     private CodeBlockExtractor $extractor;
-
     private MarkdownParser $markdownParser;
 
     protected function setUp(): void
     {
-        $this->extractor = new CodeBlockExtractor();
+        $this->extractor      = new CodeBlockExtractor();
         $this->markdownParser = new MarkdownParser();
     }
 
     #[Test]
     public function extracts_php_blocks_from_markdown(): void
     {
-        $markdown = file_get_contents(__DIR__ . '/../../Fixtures/basic.md');
+        $markdown = file_get_contents(__DIR__.'/../../Fixtures/basic.md');
         $document = $this->markdownParser->parse($markdown);
 
         $blocks = $this->extractor->extract($document, 'basic.md');
@@ -37,7 +36,7 @@ final class CodeBlockExtractorTest extends TestCase
     #[Test]
     public function skips_non_php_blocks(): void
     {
-        $markdown = file_get_contents(__DIR__ . '/../../Fixtures/mixed-languages.md');
+        $markdown = file_get_contents(__DIR__.'/../../Fixtures/mixed-languages.md');
         $document = $this->markdownParser->parse($markdown);
 
         $blocks = $this->extractor->extract($document, 'mixed-languages.md');
@@ -85,7 +84,7 @@ final class CodeBlockExtractorTest extends TestCase
     #[Test]
     public function preserves_line_numbers_from_source(): void
     {
-        $markdown = file_get_contents(__DIR__ . '/../../Fixtures/basic.md');
+        $markdown = file_get_contents(__DIR__.'/../../Fixtures/basic.md');
         $document = $this->markdownParser->parse($markdown);
 
         $blocks = $this->extractor->extract($document, 'basic.md');
@@ -97,11 +96,11 @@ final class CodeBlockExtractorTest extends TestCase
     #[Test]
     public function passes_parsed_attributes_to_code_block(): void
     {
-        $markdown = file_get_contents(__DIR__ . '/../../Fixtures/attributes.md');
+        $markdown = file_get_contents(__DIR__.'/../../Fixtures/attributes.md');
         $document = $this->markdownParser->parse($markdown);
 
-        $blocks = $this->extractor->extract($document, 'attributes.md');
-        $ignoreBlock = array_find($blocks, fn($block) => $block->attributes->isIgnore());
+        $blocks      = $this->extractor->extract($document, 'attributes.md');
+        $ignoreBlock = array_find($blocks, fn ($block) => $block->attributes->isIgnore());
 
         $this->assertNotNull($ignoreBlock);
         $this->assertSame(Attribute::Ignore, $ignoreBlock->attributes->attribute);
@@ -136,7 +135,7 @@ final class CodeBlockExtractorTest extends TestCase
     #[Test]
     public function delegates_shiki_filtering_before_parsing(): void
     {
-        $markdown = file_get_contents(__DIR__ . '/../../Fixtures/shiki.md');
+        $markdown = file_get_contents(__DIR__.'/../../Fixtures/shiki.md');
         $document = $this->markdownParser->parse($markdown);
 
         $blocks = $this->extractor->extract($document, 'shiki.md');
@@ -150,7 +149,7 @@ final class CodeBlockExtractorTest extends TestCase
     #[Test]
     public function returns_empty_array_for_no_php_blocks(): void
     {
-        $markdown = file_get_contents(__DIR__ . '/../../Fixtures/no-php.md');
+        $markdown = file_get_contents(__DIR__.'/../../Fixtures/no-php.md');
         $document = $this->markdownParser->parse($markdown);
 
         $blocks = $this->extractor->extract($document, 'no-php.md');

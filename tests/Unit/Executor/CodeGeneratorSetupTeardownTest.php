@@ -4,38 +4,37 @@ declare(strict_types=1);
 
 namespace TestFlowLabs\DocTest\Tests\Unit\Executor;
 
-use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\Test;
+use TestFlowLabs\DocTest\CodeBlock\CodeBlock;
+use TestFlowLabs\DocTest\CodeBlock\Attributes;
+use TestFlowLabs\DocTest\Executor\CodeGenerator;
 use TestFlowLabs\DocTest\Assertion\AssertionParser;
 use TestFlowLabs\DocTest\Assertion\ExpectAssertion;
 use TestFlowLabs\DocTest\Assertion\OutputAssertion;
-use TestFlowLabs\DocTest\CodeBlock\Attributes;
-use TestFlowLabs\DocTest\CodeBlock\CodeBlock;
-use TestFlowLabs\DocTest\Executor\CodeGenerator;
 
 final class CodeGeneratorSetupTeardownTest extends TestCase
 {
     private CodeGenerator $generator;
-
     private AssertionParser $parser;
 
     protected function setUp(): void
     {
         $this->generator = new CodeGenerator();
-        $this->parser = new AssertionParser();
+        $this->parser    = new AssertionParser();
     }
 
     protected function tearDown(): void
     {
-        $dir = sys_get_temp_dir() . '/doctest';
+        $dir = sys_get_temp_dir().'/doctest';
 
         if (is_dir($dir)) {
-            array_map(unlink(...), glob($dir . '/*.php') ?: []);
+            array_map(unlink(...), glob($dir.'/*.php') ?: []);
         }
     }
 
     /**
-     * @param array<\TestFlowLabs\DocTest\Assertion\Assertion> $assertions
+     * @param  array<\TestFlowLabs\DocTest\Assertion\Assertion>  $assertions
      */
     private function makeBlock(string $code, array $assertions = []): CodeBlock
     {
@@ -58,10 +57,10 @@ final class CodeGeneratorSetupTeardownTest extends TestCase
         $setup = '$greeting = "hello";';
 
         $filePath = $this->generator->generate($block, setup: $setup);
-        $content = file_get_contents($filePath);
+        $content  = file_get_contents($filePath);
 
         $setupPos = strpos($content, '$greeting = "hello"');
-        $codePos = strpos($content, 'echo $greeting');
+        $codePos  = strpos($content, 'echo $greeting');
 
         $this->assertNotFalse($setupPos);
         $this->assertNotFalse($codePos);
@@ -71,13 +70,13 @@ final class CodeGeneratorSetupTeardownTest extends TestCase
     #[Test]
     public function appends_teardown_code_after_block_code(): void
     {
-        $block = $this->makeBlock('$resource = "open";');
+        $block    = $this->makeBlock('$resource = "open";');
         $teardown = '$resource = null;';
 
         $filePath = $this->generator->generate($block, teardown: $teardown);
-        $content = file_get_contents($filePath);
+        $content  = file_get_contents($filePath);
 
-        $codePos = strpos($content, '$resource = "open"');
+        $codePos     = strpos($content, '$resource = "open"');
         $teardownPos = strpos($content, '$resource = null');
 
         $this->assertNotFalse($codePos);
@@ -88,15 +87,15 @@ final class CodeGeneratorSetupTeardownTest extends TestCase
     #[Test]
     public function setup_and_teardown_together_in_correct_order(): void
     {
-        $block = $this->makeBlock('echo $x;');
-        $setup = '$x = 42;';
+        $block    = $this->makeBlock('echo $x;');
+        $setup    = '$x = 42;';
         $teardown = 'unset($x);';
 
         $filePath = $this->generator->generate($block, setup: $setup, teardown: $teardown);
-        $content = file_get_contents($filePath);
+        $content  = file_get_contents($filePath);
 
-        $setupPos = strpos($content, '$x = 42');
-        $codePos = strpos($content, 'echo $x');
+        $setupPos    = strpos($content, '$x = 42');
+        $codePos     = strpos($content, 'echo $x');
         $teardownPos = strpos($content, 'unset($x)');
 
         $this->assertNotFalse($setupPos);
@@ -111,12 +110,12 @@ final class CodeGeneratorSetupTeardownTest extends TestCase
     {
         $block = $this->makeBlock('echo "test";');
 
-        $withoutParams = $this->generator->generate($block);
+        $withoutParams  = $this->generator->generate($block);
         $contentWithout = file_get_contents($withoutParams);
 
         // Generate new file with null params explicitly
         $withNullParams = $this->generator->generate($block, setup: null, teardown: null);
-        $contentWith = file_get_contents($withNullParams);
+        $contentWith    = file_get_contents($withNullParams);
 
         // Both should produce structurally identical content (ignoring file path differences)
         $this->assertSame(
@@ -136,11 +135,11 @@ final class CodeGeneratorSetupTeardownTest extends TestCase
 
         $filePath = $this->generator->generate($block, setup: $setup);
 
-        $output = [];
+        $output   = [];
         $exitCode = 0;
-        exec(PHP_BINARY . ' -l ' . escapeshellarg($filePath) . ' 2>&1', $output, $exitCode);
+        exec(PHP_BINARY.' -l '.escapeshellarg($filePath).' 2>&1', $output, $exitCode);
 
-        $this->assertSame(0, $exitCode, 'Generated file with setup has syntax errors: ' . implode("\n", $output));
+        $this->assertSame(0, $exitCode, 'Generated file with setup has syntax errors: '.implode("\n", $output));
     }
 
     #[Test]
@@ -149,19 +148,19 @@ final class CodeGeneratorSetupTeardownTest extends TestCase
         $blocks = [
             $this->makeBlock('$counter++;'),
             $this->makeBlock(
-                "\$counter++;",
+                '$counter++;',
                 assertions: [new ExpectAssertion('$counter === 2', 2)],
             ),
         ];
-        $setup = '$counter = 0;';
+        $setup    = '$counter = 0;';
         $teardown = 'unset($counter);';
 
         $filePath = $this->generator->generateGroup($blocks, setup: $setup, teardown: $teardown);
-        $content = file_get_contents($filePath);
+        $content  = file_get_contents($filePath);
 
-        $setupPos = strpos($content, '$counter = 0');
+        $setupPos      = strpos($content, '$counter = 0');
         $firstBlockPos = strpos($content, '$counter++');
-        $teardownPos = strpos($content, 'unset($counter)');
+        $teardownPos   = strpos($content, 'unset($counter)');
 
         $this->assertNotFalse($setupPos);
         $this->assertNotFalse($firstBlockPos);

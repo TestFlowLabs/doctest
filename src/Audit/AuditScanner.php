@@ -50,7 +50,7 @@ final class AuditScanner
     ];
 
     /**
-     * @param array<CodeBlock> $blocks
+     * @param  array<CodeBlock>  $blocks
      *
      * @return array<AuditFinding>
      */
@@ -60,7 +60,7 @@ final class AuditScanner
 
         foreach ($blocks as $block) {
             $blockFindings = $this->scanBlock($block);
-            $findings = array_merge($findings, $blockFindings);
+            $findings      = array_merge($findings, $blockFindings);
         }
 
         return $findings;
@@ -72,14 +72,14 @@ final class AuditScanner
     private function scanBlock(CodeBlock $block): array
     {
         $findings = [];
-        $seen = [];
+        $seen     = [];
 
         foreach (self::PATTERNS as $category => $functions) {
             foreach ($functions as $function) {
                 $pattern = $this->buildPattern($function);
 
                 if (preg_match($pattern, $block->rawCode) === 1) {
-                    $key = $block->file . ':' . $block->startLine . ':' . $function;
+                    $key = $block->file.':'.$block->startLine.':'.$function;
 
                     if (isset($seen[$key])) {
                         continue;
@@ -102,9 +102,9 @@ final class AuditScanner
     private function buildPattern(string $function): string
     {
         if (str_contains($function, '::')) {
-            return '/\b' . preg_quote($function, '/') . '\b/';
+            return '/\b'.preg_quote($function, '/').'\b/';
         }
 
-        return '/\b' . preg_quote($function, '/') . '\s*\(/';
+        return '/\b'.preg_quote($function, '/').'\s*\(/';
     }
 }

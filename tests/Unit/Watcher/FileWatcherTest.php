@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace TestFlowLabs\DocTest\Tests\Unit\Watcher;
 
-use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\Test;
 use TestFlowLabs\DocTest\Watcher\FileWatcher;
 
 final class FileWatcherTest extends TestCase
@@ -14,20 +14,20 @@ final class FileWatcherTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->tempDir = sys_get_temp_dir() . '/doctest_watch_' . bin2hex(random_bytes(8));
+        $this->tempDir = sys_get_temp_dir().'/doctest_watch_'.bin2hex(random_bytes(8));
         mkdir($this->tempDir, 0777, true);
     }
 
     protected function tearDown(): void
     {
-        array_map(unlink(...), glob($this->tempDir . '/*') ?: []);
+        array_map(unlink(...), glob($this->tempDir.'/*') ?: []);
         rmdir($this->tempDir);
     }
 
     #[Test]
     public function detects_modified_files(): void
     {
-        $file = $this->tempDir . '/test.md';
+        $file = $this->tempDir.'/test.md';
         file_put_contents($file, 'original');
         touch($file, time() - 10);
 
@@ -48,7 +48,7 @@ final class FileWatcherTest extends TestCase
         $watcher = new FileWatcher([$this->tempDir], ['md']);
         $watcher->snapshot();
 
-        $newFile = $this->tempDir . '/new.md';
+        $newFile = $this->tempDir.'/new.md';
         file_put_contents($newFile, 'content');
 
         $changed = $watcher->getChangedFiles();
@@ -59,7 +59,7 @@ final class FileWatcherTest extends TestCase
     #[Test]
     public function no_changes_returns_empty(): void
     {
-        $file = $this->tempDir . '/test.md';
+        $file = $this->tempDir.'/test.md';
         file_put_contents($file, 'content');
 
         $watcher = new FileWatcher([$this->tempDir], ['md']);
@@ -73,8 +73,8 @@ final class FileWatcherTest extends TestCase
     #[Test]
     public function filters_by_extension(): void
     {
-        $mdFile = $this->tempDir . '/doc.md';
-        $txtFile = $this->tempDir . '/notes.txt';
+        $mdFile  = $this->tempDir.'/doc.md';
+        $txtFile = $this->tempDir.'/notes.txt';
         file_put_contents($mdFile, 'doc');
         file_put_contents($txtFile, 'notes');
         touch($mdFile, time() - 10);
@@ -97,7 +97,7 @@ final class FileWatcherTest extends TestCase
     #[Test]
     public function snapshot_resets_change_detection(): void
     {
-        $file = $this->tempDir . '/test.md';
+        $file = $this->tempDir.'/test.md';
         file_put_contents($file, 'original');
         touch($file, time() - 10);
 

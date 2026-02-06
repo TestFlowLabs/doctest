@@ -4,23 +4,22 @@ declare(strict_types=1);
 
 namespace TestFlowLabs\DocTest\Tests\Unit\Audit;
 
-use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
-use TestFlowLabs\DocTest\Assertion\AssertionParser;
+use PHPUnit\Framework\Attributes\Test;
 use TestFlowLabs\DocTest\Audit\AuditScanner;
-use TestFlowLabs\DocTest\CodeBlock\Attributes;
 use TestFlowLabs\DocTest\CodeBlock\CodeBlock;
+use TestFlowLabs\DocTest\CodeBlock\Attributes;
+use TestFlowLabs\DocTest\Assertion\AssertionParser;
 
 final class AuditScannerTest extends TestCase
 {
     private AuditScanner $scanner;
-
     private AssertionParser $parser;
 
     protected function setUp(): void
     {
         $this->scanner = new AuditScanner();
-        $this->parser = new AssertionParser();
+        $this->parser  = new AssertionParser();
     }
 
     private function makeBlock(string $code, string $file = 'test.md', int $line = 1): CodeBlock
@@ -40,7 +39,7 @@ final class AuditScannerTest extends TestCase
     #[Test]
     public function flags_filesystem_operations(): void
     {
-        $block = $this->makeBlock('file_put_contents("/tmp/test", "data");');
+        $block    = $this->makeBlock('file_put_contents("/tmp/test", "data");');
         $findings = $this->scanner->scan([$block]);
 
         $this->assertNotEmpty($findings);
@@ -50,7 +49,7 @@ final class AuditScannerTest extends TestCase
     #[Test]
     public function flags_network_operations(): void
     {
-        $block = $this->makeBlock('$ch = curl_init("https://example.com");');
+        $block    = $this->makeBlock('$ch = curl_init("https://example.com");');
         $findings = $this->scanner->scan([$block]);
 
         $this->assertNotEmpty($findings);
@@ -60,7 +59,7 @@ final class AuditScannerTest extends TestCase
     #[Test]
     public function flags_process_execution(): void
     {
-        $block = $this->makeBlock('exec("rm -rf /");');
+        $block    = $this->makeBlock('exec("rm -rf /");');
         $findings = $this->scanner->scan([$block]);
 
         $this->assertNotEmpty($findings);
@@ -70,7 +69,7 @@ final class AuditScannerTest extends TestCase
     #[Test]
     public function finding_includes_file_and_line(): void
     {
-        $block = $this->makeBlock('shell_exec("whoami");', 'docs/api.md', 42);
+        $block    = $this->makeBlock('shell_exec("whoami");', 'docs/api.md', 42);
         $findings = $this->scanner->scan([$block]);
 
         $this->assertNotEmpty($findings);
@@ -81,7 +80,7 @@ final class AuditScannerTest extends TestCase
     #[Test]
     public function finding_includes_matched_function(): void
     {
-        $block = $this->makeBlock('unlink("/tmp/file");');
+        $block    = $this->makeBlock('unlink("/tmp/file");');
         $findings = $this->scanner->scan([$block]);
 
         $this->assertNotEmpty($findings);
@@ -91,7 +90,7 @@ final class AuditScannerTest extends TestCase
     #[Test]
     public function safe_code_produces_no_findings(): void
     {
-        $block = $this->makeBlock('$x = 1 + 2; echo $x;');
+        $block    = $this->makeBlock('$x = 1 + 2; echo $x;');
         $findings = $this->scanner->scan([$block]);
 
         $this->assertEmpty($findings);

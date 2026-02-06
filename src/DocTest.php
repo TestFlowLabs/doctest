@@ -4,37 +4,33 @@ declare(strict_types=1);
 
 namespace TestFlowLabs\DocTest;
 
-use Symfony\Component\Console\Output\OutputInterface;
-use TestFlowLabs\DocTest\Config\DocTestConfig;
 use TestFlowLabs\DocTest\Config\FileFinder;
-use TestFlowLabs\DocTest\Executor\ExecutionResult;
 use TestFlowLabs\DocTest\Executor\Executor;
-use TestFlowLabs\DocTest\Parser\CodeBlockExtractor;
+use TestFlowLabs\DocTest\Config\DocTestConfig;
 use TestFlowLabs\DocTest\Parser\MarkdownParser;
-use TestFlowLabs\DocTest\Reporter\ConsoleReporter;
 use TestFlowLabs\DocTest\Reporter\JsonReporter;
 use TestFlowLabs\DocTest\Reporter\JUnitReporter;
+use TestFlowLabs\DocTest\Executor\ExecutionResult;
+use TestFlowLabs\DocTest\Reporter\ConsoleReporter;
+use TestFlowLabs\DocTest\Parser\CodeBlockExtractor;
+use Symfony\Component\Console\Output\OutputInterface;
 
 final readonly class DocTest
 {
     private FileFinder $fileFinder;
-
     private MarkdownParser $markdownParser;
-
     private CodeBlockExtractor $extractor;
-
     private Executor $executor;
-
     private ConsoleReporter $reporter;
 
     public function __construct(
         private DocTestConfig $config,
         ?OutputInterface $output = null,
     ) {
-        $this->fileFinder = new FileFinder();
+        $this->fileFinder     = new FileFinder();
         $this->markdownParser = new MarkdownParser();
-        $this->extractor = new CodeBlockExtractor();
-        $this->executor = new Executor($config->timeout, $config->memoryLimit);
+        $this->extractor      = new CodeBlockExtractor();
+        $this->executor       = new Executor($config->timeout, $config->memoryLimit);
 
         if ($output !== null) {
             $this->reporter = new ConsoleReporter($output);
@@ -46,21 +42,21 @@ final readonly class DocTest
     public function run(): int
     {
         $startTime = microtime(true);
-        $files = $this->discoverFiles();
+        $files     = $this->discoverFiles();
 
         if ($files === []) {
             return 3;
         }
 
-        $allResults = [];
-        $hasFailure = false;
+        $allResults  = [];
+        $hasFailure  = false;
         $totalBlocks = 0;
 
         // Count total blocks and find max line number for progress reporting
-        $allBlocks = [];
+        $allBlocks     = [];
         $maxLineNumber = 0;
         foreach ($files as $file) {
-            $blocks = $this->extractBlocks($file);
+            $blocks           = $this->extractBlocks($file);
             $allBlocks[$file] = $blocks;
             $totalBlocks += count($blocks);
             foreach ($blocks as $block) {
@@ -90,7 +86,7 @@ final readonly class DocTest
             foreach ($results as $result) {
                 $this->reporter->reportResult($result);
 
-                if (! $result->passed && ! $result->skipped) {
+                if (!$result->passed && !$result->skipped) {
                     $hasFailure = true;
 
                     if ($this->config->stopOnFailure) {
@@ -128,7 +124,7 @@ final readonly class DocTest
      */
     public function testAll(): array
     {
-        $files = $this->discoverFiles();
+        $files      = $this->discoverFiles();
         $allResults = [];
 
         foreach ($files as $file) {
@@ -163,20 +159,22 @@ final readonly class DocTest
     }
 
     /**
-     * @param array<\TestFlowLabs\DocTest\CodeBlock\CodeBlock> $blocks
+     * @param  array<\TestFlowLabs\DocTest\CodeBlock\CodeBlock>  $blocks
+     *
      * @return array<\TestFlowLabs\DocTest\CodeBlock\CodeBlock>
      */
     private function applyFilter(array $blocks, string $filter): array
     {
         return array_values(array_filter(
             $blocks,
-            static fn($block) => str_contains((string) $block->rawCode, $filter)
+            static fn ($block) => str_contains((string) $block->rawCode, $filter)
                 || str_contains((string) $block->file, $filter),
         ));
     }
 
     /**
-     * @param array<\TestFlowLabs\DocTest\CodeBlock\CodeBlock> $blocks
+     * @param  array<\TestFlowLabs\DocTest\CodeBlock\CodeBlock>  $blocks
+     *
      * @return array<ExecutionResult>
      */
     private function dryRunBlocks(array $blocks): array
@@ -195,7 +193,7 @@ final readonly class DocTest
     }
 
     /**
-     * @param array<ExecutionResult> $results
+     * @param  array<ExecutionResult>  $results
      */
     private function writeReporterFiles(array $results): void
     {

@@ -8,19 +8,19 @@ final readonly class WildcardMatcher
 {
     /** @var array<string, string> */
     private const array PATTERNS = [
-        '{{any}}' => '.+?',
-        '{{int}}' => '-?\d+',
-        '{{float}}' => '-?\d+\.?\d*',
-        '{{uuid}}' => '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}',
+        '{{any}}'      => '.+?',
+        '{{int}}'      => '-?\d+',
+        '{{float}}'    => '-?\d+\.?\d*',
+        '{{uuid}}'     => '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}',
         '{{datetime}}' => '\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[^\s]*',
-        '{{date}}' => '\d{4}-\d{2}-\d{2}',
-        '{{time}}' => '\d{2}:\d{2}:\d{2}',
-        '{{...}}' => '[\s\S]*?',
+        '{{date}}'     => '\d{4}-\d{2}-\d{2}',
+        '{{time}}'     => '\d{2}:\d{2}:\d{2}',
+        '{{...}}'      => '[\s\S]*?',
     ];
 
     public function matches(string $actual, string $pattern): bool
     {
-        if (! str_contains($pattern, '{{')) {
+        if (!str_contains($pattern, '{{')) {
             return $actual === $pattern;
         }
 
@@ -31,7 +31,7 @@ final readonly class WildcardMatcher
 
     public function hasWildcards(string $pattern): bool
     {
-        return array_any(array_keys(self::PATTERNS), fn($placeholder) => str_contains($pattern, (string) $placeholder));
+        return array_any(array_keys(self::PATTERNS), fn ($placeholder) => str_contains($pattern, (string) $placeholder));
     }
 
     private function buildRegex(string $pattern): string
@@ -42,9 +42,9 @@ final readonly class WildcardMatcher
         // Replace escaped wildcards with their regex patterns
         foreach (self::PATTERNS as $placeholder => $regex) {
             $escapedPlaceholder = preg_quote($placeholder, '/');
-            $escaped = str_replace($escapedPlaceholder, $regex, $escaped);
+            $escaped            = str_replace($escapedPlaceholder, $regex, $escaped);
         }
 
-        return '/^' . $escaped . '$/s';
+        return '/^'.$escaped.'$/s';
     }
 }

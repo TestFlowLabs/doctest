@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace TestFlowLabs\DocTest\Tests\Unit\Comparison;
 
-use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\Test;
 use TestFlowLabs\DocTest\Comparison\Normalizer;
 
 final class NormalizerTest extends TestCase
@@ -44,7 +44,7 @@ final class NormalizerTest extends TestCase
     #[Test]
     public function normalizes_to_single_trailing_newline(): void
     {
-        $this->assertSame("hello\n", $this->normalizer->normalize("hello"));
+        $this->assertSame("hello\n", $this->normalizer->normalize('hello'));
         $this->assertSame("hello\n", $this->normalizer->normalize("hello\n\n\n"));
     }
 

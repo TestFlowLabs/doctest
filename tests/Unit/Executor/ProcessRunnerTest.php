@@ -5,33 +5,32 @@ declare(strict_types=1);
 namespace TestFlowLabs\DocTest\Tests\Unit\Executor;
 
 use InvalidArgumentException;
-use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\Test;
 use TestFlowLabs\DocTest\Executor\ProcessRunner;
 
 final class ProcessRunnerTest extends TestCase
 {
     private ProcessRunner $runner;
-
     private string $tmpDir;
 
     protected function setUp(): void
     {
         $this->runner = new ProcessRunner(timeout: 5, memoryLimit: '128M');
-        $this->tmpDir = sys_get_temp_dir() . '/doctest-test-' . uniqid();
+        $this->tmpDir = sys_get_temp_dir().'/doctest-test-'.uniqid();
         mkdir($this->tmpDir);
     }
 
     protected function tearDown(): void
     {
-        array_map(unlink(...), glob($this->tmpDir . '/*') ?: []);
+        array_map(unlink(...), glob($this->tmpDir.'/*') ?: []);
         rmdir($this->tmpDir);
     }
 
     private function writeTmpFile(string $code): string
     {
-        $path = $this->tmpDir . '/test_' . uniqid() . '.php';
-        file_put_contents($path, "<?php\n" . $code);
+        $path = $this->tmpDir.'/test_'.uniqid().'.php';
+        file_put_contents($path, "<?php\n".$code);
 
         return $path;
     }
@@ -39,7 +38,7 @@ final class ProcessRunnerTest extends TestCase
     #[Test]
     public function runs_php_file_and_captures_stdout(): void
     {
-        $file = $this->writeTmpFile('echo "Hello World";');
+        $file   = $this->writeTmpFile('echo "Hello World";');
         $result = $this->runner->run($file);
 
         $this->assertSame('Hello World', $result->stdout);
@@ -48,7 +47,7 @@ final class ProcessRunnerTest extends TestCase
     #[Test]
     public function captures_stderr(): void
     {
-        $file = $this->writeTmpFile('fwrite(STDERR, "error output");');
+        $file   = $this->writeTmpFile('fwrite(STDERR, "error output");');
         $result = $this->runner->run($file);
 
         $this->assertSame('error output', $result->stderr);
@@ -57,7 +56,7 @@ final class ProcessRunnerTest extends TestCase
     #[Test]
     public function returns_exit_code_zero_for_valid_script(): void
     {
-        $file = $this->writeTmpFile('echo "ok";');
+        $file   = $this->writeTmpFile('echo "ok";');
         $result = $this->runner->run($file);
 
         $this->assertSame(0, $result->exitCode);
@@ -66,7 +65,7 @@ final class ProcessRunnerTest extends TestCase
     #[Test]
     public function returns_non_zero_exit_code_for_failing_script(): void
     {
-        $file = $this->writeTmpFile('exit(1);');
+        $file   = $this->writeTmpFile('exit(1);');
         $result = $this->runner->run($file);
 
         $this->assertSame(1, $result->exitCode);
@@ -75,7 +74,7 @@ final class ProcessRunnerTest extends TestCase
     #[Test]
     public function measures_execution_duration(): void
     {
-        $file = $this->writeTmpFile('echo "fast";');
+        $file   = $this->writeTmpFile('echo "fast";');
         $result = $this->runner->run($file);
 
         $this->assertGreaterThan(0.0, $result->duration);
@@ -86,7 +85,7 @@ final class ProcessRunnerTest extends TestCase
     public function enforces_timeout(): void
     {
         $runner = new ProcessRunner(timeout: 1, memoryLimit: '128M');
-        $file = $this->writeTmpFile('sleep(10); echo "done";');
+        $file   = $this->writeTmpFile('sleep(10); echo "done";');
         $result = $runner->run($file);
 
         $this->assertNotSame(0, $result->exitCode, 'Should fail due to timeout');
@@ -97,7 +96,7 @@ final class ProcessRunnerTest extends TestCase
     #[Test]
     public function uses_php_binary(): void
     {
-        $file = $this->writeTmpFile('echo PHP_BINARY;');
+        $file   = $this->writeTmpFile('echo PHP_BINARY;');
         $result = $this->runner->run($file);
 
         $this->assertSame(PHP_BINARY, $result->stdout);

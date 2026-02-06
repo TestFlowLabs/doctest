@@ -9,23 +9,23 @@ use TestFlowLabs\DocTest\Executor\ExecutionResult;
 final class JUnitReporter
 {
     /**
-     * @param array<ExecutionResult> $results
+     * @param  array<ExecutionResult>  $results
      */
     public function generate(array $results): string
     {
-        $doc = new \DOMDocument('1.0', 'UTF-8');
+        $doc               = new \DOMDocument('1.0', 'UTF-8');
         $doc->formatOutput = true;
 
         $testsuites = $doc->createElement('testsuites');
         $doc->appendChild($testsuites);
 
-        $totalTests = count($results);
+        $totalTests    = count($results);
         $totalFailures = 0;
-        $totalSkipped = 0;
-        $totalTime = 0.0;
+        $totalSkipped  = 0;
+        $totalTime     = 0.0;
 
         foreach ($results as $result) {
-            if (! $result->passed && ! $result->skipped) {
+            if (!$result->passed && !$result->skipped) {
                 $totalFailures++;
             }
             if ($result->skipped) {
@@ -49,7 +49,7 @@ final class JUnitReporter
     }
 
     /**
-     * @param array<ExecutionResult> $results
+     * @param  array<ExecutionResult>  $results
      */
     public function generateToFile(array $results, string $filePath): void
     {
@@ -61,7 +61,7 @@ final class JUnitReporter
     }
 
     /**
-     * @param array<ExecutionResult> $results
+     * @param  array<ExecutionResult>  $results
      *
      * @return array<string, array<ExecutionResult>>
      */
@@ -77,7 +77,7 @@ final class JUnitReporter
     }
 
     /**
-     * @param array<ExecutionResult> $results
+     * @param  array<ExecutionResult>  $results
      */
     private function buildTestSuite(\DOMDocument $doc, string $file, array $results): \DOMElement
     {
@@ -86,11 +86,11 @@ final class JUnitReporter
         $suite->setAttribute('tests', (string) count($results));
 
         $failures = 0;
-        $skipped = 0;
-        $time = 0.0;
+        $skipped  = 0;
+        $time     = 0.0;
 
         foreach ($results as $result) {
-            if (! $result->passed && ! $result->skipped) {
+            if (!$result->passed && !$result->skipped) {
                 $failures++;
             }
             if ($result->skipped) {
@@ -118,12 +118,12 @@ final class JUnitReporter
 
         if ($result->skipped) {
             $testcase->appendChild($doc->createElement('skipped'));
-        } elseif (! $result->passed) {
+        } elseif (!$result->passed) {
             $failure = $doc->createElement('failure');
             $failure->setAttribute('type', 'AssertionError');
             $message = $result->error ?? 'Assertion failed';
             if ($result->diff !== null) {
-                $message .= "\n" . $result->diff;
+                $message .= "\n".$result->diff;
             }
             $failure->appendChild($doc->createTextNode($message));
             $testcase->appendChild($failure);

@@ -11,7 +11,7 @@ final readonly class ParallelRunner
     ) {}
 
     /**
-     * @param array<string> $files
+     * @param  array<string>  $files
      *
      * @return array<array<string>>
      */

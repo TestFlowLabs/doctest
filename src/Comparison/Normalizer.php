@@ -34,6 +34,6 @@ final readonly class Normalizer
         }
 
         // Single trailing newline
-        return implode("\n", $lines) . "\n";
+        return implode("\n", $lines)."\n";
     }
 }

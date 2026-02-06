@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace TestFlowLabs\DocTest\Laravel;
 
+use TestFlowLabs\DocTest\DocTest;
 use Symfony\Component\Console\Command\Command;
+use TestFlowLabs\DocTest\Config\DocTestConfig;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
-use TestFlowLabs\DocTest\Config\DocTestConfig;
-use TestFlowLabs\DocTest\DocTest;
 
 final class DocTestCommand extends Command
 {
@@ -30,7 +30,7 @@ final class DocTestCommand extends Command
         $files = $input->getArgument('files');
 
         $baseConfig = DocTestConfig::load();
-        $filter = $input->getOption('filter');
+        $filter     = $input->getOption('filter');
 
         $config = new DocTestConfig(
             paths: $files !== [] ? $files : $baseConfig->paths,

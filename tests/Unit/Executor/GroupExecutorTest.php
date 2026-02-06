@@ -4,29 +4,28 @@ declare(strict_types=1);
 
 namespace TestFlowLabs\DocTest\Tests\Unit\Executor;
 
-use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\Test;
+use TestFlowLabs\DocTest\Executor\Executor;
+use TestFlowLabs\DocTest\CodeBlock\CodeBlock;
+use TestFlowLabs\DocTest\CodeBlock\Attributes;
 use TestFlowLabs\DocTest\Assertion\AssertionParser;
 use TestFlowLabs\DocTest\Assertion\ExpectAssertion;
 use TestFlowLabs\DocTest\Assertion\OutputAssertion;
-use TestFlowLabs\DocTest\CodeBlock\Attributes;
-use TestFlowLabs\DocTest\CodeBlock\CodeBlock;
-use TestFlowLabs\DocTest\Executor\Executor;
 
 final class GroupExecutorTest extends TestCase
 {
     private Executor $executor;
-
     private AssertionParser $parser;
 
     protected function setUp(): void
     {
         $this->executor = new Executor();
-        $this->parser = new AssertionParser();
+        $this->parser   = new AssertionParser();
     }
 
     /**
-     * @param array<\TestFlowLabs\DocTest\Assertion\Assertion> $assertions
+     * @param  array<\TestFlowLabs\DocTest\Assertion\Assertion>  $assertions
      */
     private function makeBlock(string $code, ?string $group = null, array $assertions = []): CodeBlock
     {
@@ -48,7 +47,7 @@ final class GroupExecutorTest extends TestCase
         $blocks = [
             $this->makeBlock('$counter = 0;', group: 'mygroup'),
             $this->makeBlock(
-                "\$counter++;",
+                '$counter++;',
                 group: 'mygroup',
                 assertions: [new ExpectAssertion('$counter === 1', 2)],
             ),
@@ -58,7 +57,7 @@ final class GroupExecutorTest extends TestCase
 
         $this->assertCount(2, $results);
         foreach ($results as $result) {
-            $this->assertTrue($result->passed, 'Group block failed: ' . ($result->error ?? ''));
+            $this->assertTrue($result->passed, 'Group block failed: '.($result->error ?? ''));
         }
     }
 
@@ -77,7 +76,7 @@ final class GroupExecutorTest extends TestCase
         $results = $this->executor->executeGroup($blocks);
 
         $this->assertCount(2, $results);
-        $this->assertTrue($results[1]->passed, 'Later block cannot see earlier variable: ' . ($results[1]->error ?? ''));
+        $this->assertTrue($results[1]->passed, 'Later block cannot see earlier variable: '.($results[1]->error ?? ''));
     }
 
     #[Test]
@@ -127,7 +126,7 @@ final class GroupExecutorTest extends TestCase
     {
         $block1 = $this->makeBlock('$a = 1;', group: 'map');
         $block2 = $this->makeBlock(
-            "\$b = 2;",
+            '$b = 2;',
             group: 'map',
             assertions: [new ExpectAssertion('$a + $b === 3', 2)],
         );
@@ -152,7 +151,7 @@ final class GroupExecutorTest extends TestCase
 
         $results = $this->executor->executeGroup($blocks);
 
-        $this->assertTrue($results[1]->passed, 'Output assertion in group failed: ' . ($results[1]->error ?? ''));
+        $this->assertTrue($results[1]->passed, 'Output assertion in group failed: '.($results[1]->error ?? ''));
         $this->assertSame('Hello World', $results[1]->actualOutput);
     }
 

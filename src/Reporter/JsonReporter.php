@@ -9,21 +9,21 @@ use TestFlowLabs\DocTest\Executor\ExecutionResult;
 final class JsonReporter
 {
     /**
-     * @param array<ExecutionResult> $results
+     * @param  array<ExecutionResult>  $results
      */
     public function generate(array $results): string
     {
         $grouped = $this->groupByFile($results);
-        $files = [];
+        $files   = [];
 
         foreach ($grouped as $file => $fileResults) {
             $blocks = [];
 
             foreach ($fileResults as $result) {
                 $block = [
-                    'line' => $result->codeBlock->startLine,
-                    'passed' => $result->passed,
-                    'skipped' => $result->skipped,
+                    'line'     => $result->codeBlock->startLine,
+                    'passed'   => $result->passed,
+                    'skipped'  => $result->skipped,
                     'duration' => $result->duration,
                 ];
 
@@ -47,13 +47,13 @@ final class JsonReporter
             }
 
             $files[] = [
-                'file' => $file,
+                'file'   => $file,
                 'blocks' => $blocks,
             ];
         }
 
-        $passed = 0;
-        $failed = 0;
+        $passed  = 0;
+        $failed  = 0;
         $skipped = 0;
 
         foreach ($results as $result) {
@@ -67,11 +67,11 @@ final class JsonReporter
         }
 
         $data = [
-            'files' => $files,
+            'files'   => $files,
             'summary' => [
-                'total' => count($results),
-                'passed' => $passed,
-                'failed' => $failed,
+                'total'   => count($results),
+                'passed'  => $passed,
+                'failed'  => $failed,
                 'skipped' => $skipped,
             ],
         ];
@@ -80,7 +80,7 @@ final class JsonReporter
     }
 
     /**
-     * @param array<ExecutionResult> $results
+     * @param  array<ExecutionResult>  $results
      */
     public function generateToFile(array $results, string $filePath): void
     {
@@ -90,7 +90,7 @@ final class JsonReporter
     }
 
     /**
-     * @param array<ExecutionResult> $results
+     * @param  array<ExecutionResult>  $results
      *
      * @return array<string, array<ExecutionResult>>
      */

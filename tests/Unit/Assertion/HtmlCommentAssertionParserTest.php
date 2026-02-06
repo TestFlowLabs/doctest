@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace TestFlowLabs\DocTest\Tests\Unit\Assertion;
 
-use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\Test;
 use TestFlowLabs\DocTest\Assertion\ExpectAssertion;
-use TestFlowLabs\DocTest\Assertion\HtmlCommentAssertionParser;
 use TestFlowLabs\DocTest\Assertion\OutputAssertion;
-use TestFlowLabs\DocTest\Assertion\OutputContainsAssertion;
 use TestFlowLabs\DocTest\Assertion\OutputJsonAssertion;
 use TestFlowLabs\DocTest\Assertion\OutputMatchesAssertion;
+use TestFlowLabs\DocTest\Assertion\OutputContainsAssertion;
+use TestFlowLabs\DocTest\Assertion\HtmlCommentAssertionParser;
 
 final class HtmlCommentAssertionParserTest extends TestCase
 {

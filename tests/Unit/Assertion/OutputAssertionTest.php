@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace TestFlowLabs\DocTest\Tests\Unit\Assertion;
 
-use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\Test;
 use TestFlowLabs\DocTest\Assertion\Assertion;
 use TestFlowLabs\DocTest\Assertion\OutputAssertion;
 
@@ -46,7 +46,7 @@ final class OutputAssertionTest extends TestCase
     #[Test]
     public function handles_multiline_expected(): void
     {
-        $expected = "Line 1\nLine 2\nLine 3";
+        $expected  = "Line 1\nLine 2\nLine 3";
         $assertion = new OutputAssertion($expected, 15);
 
         $this->assertSame($expected, $assertion->expected);

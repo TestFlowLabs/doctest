@@ -18,10 +18,10 @@ final readonly class AttributeParser
         // Strip language identifier and Shiki metadata
         $tokens = $this->extractTokens($infoString);
 
-        $attribute = null;
-        $throwsClass = null;
+        $attribute     = null;
+        $throwsClass   = null;
         $throwsMessage = null;
-        $group = null;
+        $group         = null;
 
         // Check for group
         if (preg_match(self::GROUP_PATTERN, $infoString, $groupMatch) === 1) {
@@ -30,8 +30,8 @@ final readonly class AttributeParser
 
         // Check for throws with params
         if (preg_match(self::THROWS_PATTERN, $infoString, $throwsMatch) === 1) {
-            $attribute = Attribute::Throws;
-            $throwsClass = trim($throwsMatch[1]);
+            $attribute     = Attribute::Throws;
+            $throwsClass   = trim($throwsMatch[1]);
             $throwsMessage = isset($throwsMatch[2]) && $throwsMatch[2] !== '' ? $throwsMatch[2] : null;
         } else {
             // Check for keyword attributes

@@ -19,7 +19,7 @@ final readonly class ProcessRunner
     {
         $command = [
             PHP_BINARY,
-            '-d', 'memory_limit=' . $this->memoryLimit,
+            '-d', 'memory_limit='.$this->memoryLimit,
             $phpFilePath,
         ];
 
@@ -33,7 +33,7 @@ final readonly class ProcessRunner
 
         $process = proc_open($command, $descriptors, $pipes);
 
-        if (! is_resource($process)) {
+        if (!is_resource($process)) {
             return new ProcessResult(
                 stdout: '',
                 stderr: 'Failed to start process',
@@ -47,14 +47,14 @@ final readonly class ProcessRunner
         stream_set_blocking($pipes[1], false);
         stream_set_blocking($pipes[2], false);
 
-        $stdout = '';
-        $stderr = '';
+        $stdout   = '';
+        $stderr   = '';
         $timedOut = false;
 
         while (true) {
             $status = proc_get_status($process);
 
-            if (! $status['running']) {
+            if (!$status['running']) {
                 $stdout .= stream_get_contents($pipes[1]) ?: '';
                 $stderr .= stream_get_contents($pipes[2]) ?: '';
 

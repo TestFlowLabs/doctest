@@ -4,15 +4,15 @@ declare(strict_types=1);
 
 namespace TestFlowLabs\DocTest\Tests\Unit\Reporter;
 
-use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\Test;
+use TestFlowLabs\DocTest\CodeBlock\CodeBlock;
+use TestFlowLabs\DocTest\CodeBlock\Attributes;
+use TestFlowLabs\DocTest\Executor\ExecutionResult;
+use TestFlowLabs\DocTest\Reporter\ConsoleReporter;
 use Symfony\Component\Console\Output\BufferedOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 use TestFlowLabs\DocTest\Assertion\AssertionResultDetail;
-use TestFlowLabs\DocTest\CodeBlock\Attributes;
-use TestFlowLabs\DocTest\CodeBlock\CodeBlock;
-use TestFlowLabs\DocTest\Executor\ExecutionResult;
-use TestFlowLabs\DocTest\Reporter\ConsoleReporter;
 
 final class ConsoleReporterTest extends TestCase
 {
@@ -97,7 +97,7 @@ final class ConsoleReporterTest extends TestCase
     public function reports_summary_statistics(): void
     {
         $reporter = new ConsoleReporter($this->output);
-        $results = [
+        $results  = [
             $this->makeResult(passed: true),
             $this->makeResult(passed: true),
             $this->makeResult(passed: false, error: 'fail'),
@@ -149,7 +149,7 @@ final class ConsoleReporterTest extends TestCase
     public function pass_result_shows_first_code_line(): void
     {
         $reporter = new ConsoleReporter($this->output);
-        $block = new CodeBlock(
+        $block    = new CodeBlock(
             file: 'docs/test.md',
             startLine: 42,
             rawCode: "\$name = 'World';\necho \"Hello, {\$name}!\";",
@@ -170,7 +170,7 @@ final class ConsoleReporterTest extends TestCase
     public function skip_result_shows_first_code_line(): void
     {
         $reporter = new ConsoleReporter($this->output);
-        $block = new CodeBlock(
+        $block    = new CodeBlock(
             file: 'docs/test.md',
             startLine: 10,
             rawCode: "// This is skipped\necho 'skip';",
@@ -192,7 +192,7 @@ final class ConsoleReporterTest extends TestCase
     {
         $reporter = new ConsoleReporter($this->output);
         $longLine = str_repeat('x', 80);
-        $block = new CodeBlock(
+        $block    = new CodeBlock(
             file: 'docs/test.md',
             startLine: 1,
             rawCode: $longLine,

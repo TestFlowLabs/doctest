@@ -33,6 +33,6 @@ final readonly class BootstrapFileLoader
             return null;
         }
 
-        return "require_once '" . addslashes($this->resolvedPath) . "';";
+        return "require_once '".addslashes($this->resolvedPath)."';";
     }
 }

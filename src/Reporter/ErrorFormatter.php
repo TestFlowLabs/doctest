@@ -25,19 +25,19 @@ final readonly class ErrorFormatter
 
         // Error or assertion failure
         if ($result->error !== null) {
-            $lines[] = '  Error: ' . $result->error;
+            $lines[] = '  Error: '.$result->error;
         }
 
         if ($result->expectedOutput !== null && $result->actualOutput !== null) {
-            $lines[] = '  Expected: ' . $result->expectedOutput;
-            $lines[] = '  Actual:   ' . $result->actualOutput;
+            $lines[] = '  Expected: '.$result->expectedOutput;
+            $lines[] = '  Actual:   '.$result->actualOutput;
         }
 
         if ($result->diff !== null) {
             $lines[] = '';
             $lines[] = '  Diff:';
             foreach (explode("\n", $result->diff) as $diffLine) {
-                $lines[] = '    ' . $diffLine;
+                $lines[] = '    '.$diffLine;
             }
         }
 
@@ -48,11 +48,11 @@ final readonly class ErrorFormatter
     {
         $codeLines = explode("\n", $result->codeBlock->rawCode);
         $startLine = $result->codeBlock->startLine;
-        $output = [];
+        $output    = [];
 
         foreach ($codeLines as $index => $codeLine) {
             $lineNumber = $startLine + $index;
-            $output[] = sprintf('  %4d | %s', $lineNumber, $codeLine);
+            $output[]   = sprintf('  %4d | %s', $lineNumber, $codeLine);
         }
 
         return implode("\n", $output);

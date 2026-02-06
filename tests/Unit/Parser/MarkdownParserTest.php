@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace TestFlowLabs\DocTest\Tests\Unit\Parser;
 
-use League\CommonMark\Node\Block\Document;
-use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\Test;
+use League\CommonMark\Node\Block\Document;
 use TestFlowLabs\DocTest\Parser\MarkdownParser;
 
 final class MarkdownParserTest extends TestCase

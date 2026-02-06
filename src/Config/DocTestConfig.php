@@ -7,8 +7,8 @@ namespace TestFlowLabs\DocTest\Config;
 final readonly class DocTestConfig
 {
     /**
-     * @param array<string> $paths
-     * @param array<string> $exclude
+     * @param  array<string>  $paths
+     * @param  array<string>  $exclude
      */
     public function __construct(
         public array $paths = ['docs', 'README.md'],
@@ -27,7 +27,7 @@ final readonly class DocTestConfig
     ) {}
 
     /**
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      */
     public static function fromArray(array $data): self
     {
@@ -62,19 +62,19 @@ final readonly class DocTestConfig
 
     public static function load(?string $configPath = null): self
     {
-        $path = $configPath ?? getcwd() . '/doctest.php';
+        $path = $configPath ?? getcwd().'/doctest.php';
 
-        if (! file_exists($path)) {
+        if (!file_exists($path)) {
             return new self();
         }
 
         $data = require $path;
 
-        if (! is_array($data)) {
+        if (!is_array($data)) {
             return new self();
         }
 
-        /** @var array<string, mixed> $data */
+        /* @var array<string, mixed> $data */
         return self::fromArray($data);
     }
 }

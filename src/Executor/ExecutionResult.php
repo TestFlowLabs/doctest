@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace TestFlowLabs\DocTest\Executor;
 
-use TestFlowLabs\DocTest\Assertion\AssertionResultDetail;
 use TestFlowLabs\DocTest\CodeBlock\CodeBlock;
+use TestFlowLabs\DocTest\Assertion\AssertionResultDetail;
 
 final readonly class ExecutionResult
 {
     /**
-     * @param array<AssertionResultDetail> $assertionDetails
+     * @param  array<AssertionResultDetail>  $assertionDetails
      */
     public function __construct(
         public bool $passed,

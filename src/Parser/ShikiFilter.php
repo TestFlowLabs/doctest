@@ -12,7 +12,7 @@ final readonly class ShikiFilter
         $cleanedInfoString = preg_replace('/\{[\d,\s-]+\}/', '', $infoString) ?? $infoString;
 
         // Process code lines
-        $lines = explode("\n", $code);
+        $lines    = explode("\n", $code);
         $filtered = [];
 
         foreach ($lines as $line) {

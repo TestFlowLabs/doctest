@@ -4,15 +4,16 @@ declare(strict_types=1);
 
 namespace TestFlowLabs\DocTest\Config;
 
-use RecursiveDirectoryIterator;
-use RecursiveIteratorIterator;
 use SplFileInfo;
+use RecursiveIteratorIterator;
+use RecursiveDirectoryIterator;
 
 final readonly class FileFinder
 {
     /**
-     * @param array<string> $paths
-     * @param array<string> $exclude
+     * @param  array<string>  $paths
+     * @param  array<string>  $exclude
+     *
      * @return array<string>
      */
     public function find(array $paths, array $exclude): array
@@ -65,8 +66,9 @@ final readonly class FileFinder
     }
 
     /**
-     * @param array<string> $files
-     * @param array<string> $exclude
+     * @param  array<string>  $files
+     * @param  array<string>  $exclude
+     *
      * @return array<string>
      */
     private function applyExclusions(array $files, array $exclude): array

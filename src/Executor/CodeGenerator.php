@@ -4,18 +4,18 @@ declare(strict_types=1);
 
 namespace TestFlowLabs\DocTest\Executor;
 
-use TestFlowLabs\DocTest\Assertion\AssertionParser;
 use TestFlowLabs\DocTest\CodeBlock\CodeBlock;
+use TestFlowLabs\DocTest\Assertion\AssertionParser;
 
 final readonly class CodeGenerator
 {
     public function generate(CodeBlock $block, ?string $setup = null, ?string $teardown = null): string
     {
-        $dir = $this->ensureTempDir();
-        $filePath = $dir . '/doctest_' . bin2hex(random_bytes(16)) . '.php';
+        $dir      = $this->ensureTempDir();
+        $filePath = $dir.'/doctest_'.bin2hex(random_bytes(16)).'.php';
 
         if ($block->attributes->isParseError()) {
-            $content = "<?php\n" . $block->rawCode . "\n";
+            $content = "<?php\n".$block->rawCode."\n";
             $this->writeFile($filePath, $content);
 
             return $filePath;
@@ -28,15 +28,15 @@ final readonly class CodeGenerator
     }
 
     /**
-     * @param array<CodeBlock> $blocks
+     * @param  array<CodeBlock>  $blocks
      */
     public function generateGroup(array $blocks, ?string $setup = null, ?string $teardown = null): string
     {
-        $dir = $this->ensureTempDir();
-        $filePath = $dir . '/doctest_group_' . bin2hex(random_bytes(16)) . '.php';
-        $parser = new AssertionParser();
+        $dir      = $this->ensureTempDir();
+        $filePath = $dir.'/doctest_group_'.bin2hex(random_bytes(16)).'.php';
+        $parser   = new AssertionParser();
 
-        $lines = ["<?php\n"];
+        $lines   = ["<?php\n"];
         $lines[] = '$__doctest_results = [];';
         $lines[] = '';
 
@@ -59,16 +59,16 @@ final readonly class CodeGenerator
                     if ($assertion instanceof \TestFlowLabs\DocTest\Assertion\ExpectAssertion) {
                         $lines[] = '$__doctest_results[] = [';
                         $lines[] = "    'type' => 'expect',";
-                        $lines[] = "    'expression' => " . var_export($assertion->expression, true) . ',';
-                        $lines[] = "    'passed' => (bool)(" . $assertion->expression . '),';
-                        $lines[] = "    'line' => " . $assertion->line() . ',';
+                        $lines[] = "    'expression' => ".var_export($assertion->expression, true).',';
+                        $lines[] = "    'passed' => (bool)(".$assertion->expression.'),';
+                        $lines[] = "    'line' => ".$assertion->line().',';
                         $lines[] = '];';
                     } else {
                         $lines[] = '$__doctest_results[] = [';
-                        $lines[] = "    'type' => " . var_export($assertion->type(), true) . ',';
-                        $lines[] = "    'expected' => " . var_export($expected, true) . ',';
+                        $lines[] = "    'type' => ".var_export($assertion->type(), true).',';
+                        $lines[] = "    'expected' => ".var_export($expected, true).',';
                         $lines[] = "    'actual' => \$__doctest_output,";
-                        $lines[] = "    'line' => " . $assertion->line() . ',';
+                        $lines[] = "    'line' => ".$assertion->line().',';
                         $lines[] = '];';
                     }
 
@@ -80,13 +80,13 @@ final readonly class CodeGenerator
             }
 
             foreach ($parsed->resultComments as $rc) {
-                $lines[] = '$__doctest_result = ' . $rc->expression . ';';
+                $lines[] = '$__doctest_result = '.$rc->expression.';';
                 $lines[] = '$__doctest_results[] = [';
                 $lines[] = "    'type' => 'result_comment',";
-                $lines[] = "    'expected' => " . var_export($rc->expectedValue, true) . ',';
+                $lines[] = "    'expected' => ".var_export($rc->expectedValue, true).',';
                 $lines[] = "    'actual' => var_export(\$__doctest_result, true),";
-                $lines[] = "    'expression' => " . var_export($rc->expression, true) . ',';
-                $lines[] = "    'line' => " . $rc->line() . ',';
+                $lines[] = "    'expression' => ".var_export($rc->expression, true).',';
+                $lines[] = "    'line' => ".$rc->line().',';
                 $lines[] = '];';
                 $lines[] = '';
             }
@@ -122,7 +122,7 @@ final readonly class CodeGenerator
 
     private function generateSegmentCapture(\TestFlowLabs\DocTest\Assertion\AssertionParserResult $parsed, CodeBlock $block, ?string $setup = null, ?string $teardown = null): string
     {
-        $lines = [];
+        $lines   = [];
         $lines[] = '$__doctest_results = [];';
         $lines[] = '';
 
@@ -142,16 +142,16 @@ final readonly class CodeGenerator
                 if ($assertion instanceof \TestFlowLabs\DocTest\Assertion\ExpectAssertion) {
                     $lines[] = '$__doctest_results[] = [';
                     $lines[] = "    'type' => 'expect',";
-                    $lines[] = "    'expression' => " . var_export($assertion->expression, true) . ',';
-                    $lines[] = "    'passed' => (bool)(" . $assertion->expression . '),';
-                    $lines[] = "    'line' => " . $assertion->line() . ',';
+                    $lines[] = "    'expression' => ".var_export($assertion->expression, true).',';
+                    $lines[] = "    'passed' => (bool)(".$assertion->expression.'),';
+                    $lines[] = "    'line' => ".$assertion->line().',';
                     $lines[] = '];';
                 } else {
                     $lines[] = '$__doctest_results[] = [';
-                    $lines[] = "    'type' => " . var_export($assertion->type(), true) . ',';
-                    $lines[] = "    'expected' => " . var_export($expected, true) . ',';
+                    $lines[] = "    'type' => ".var_export($assertion->type(), true).',';
+                    $lines[] = "    'expected' => ".var_export($expected, true).',';
                     $lines[] = "    'actual' => \$__doctest_output,";
-                    $lines[] = "    'line' => " . $assertion->line() . ',';
+                    $lines[] = "    'line' => ".$assertion->line().',';
                     $lines[] = '];';
                 }
 
@@ -163,13 +163,13 @@ final readonly class CodeGenerator
         }
 
         foreach ($parsed->resultComments as $rc) {
-            $lines[] = '$__doctest_result = ' . $rc->expression . ';';
+            $lines[] = '$__doctest_result = '.$rc->expression.';';
             $lines[] = '$__doctest_results[] = [';
             $lines[] = "    'type' => 'result_comment',";
-            $lines[] = "    'expected' => " . var_export($rc->expectedValue, true) . ',';
+            $lines[] = "    'expected' => ".var_export($rc->expectedValue, true).',';
             $lines[] = "    'actual' => var_export(\$__doctest_result, true),";
-            $lines[] = "    'expression' => " . var_export($rc->expression, true) . ',';
-            $lines[] = "    'line' => " . $rc->line() . ',';
+            $lines[] = "    'expression' => ".var_export($rc->expression, true).',';
+            $lines[] = "    'line' => ".$rc->line().',';
             $lines[] = '];';
             $lines[] = '';
         }
@@ -187,19 +187,19 @@ final readonly class CodeGenerator
     private function getExpectedValue(\TestFlowLabs\DocTest\Assertion\Assertion $assertion): string
     {
         return match (true) {
-            $assertion instanceof \TestFlowLabs\DocTest\Assertion\OutputAssertion => $assertion->expected,
+            $assertion instanceof \TestFlowLabs\DocTest\Assertion\OutputAssertion         => $assertion->expected,
             $assertion instanceof \TestFlowLabs\DocTest\Assertion\OutputContainsAssertion => $assertion->expected,
-            $assertion instanceof \TestFlowLabs\DocTest\Assertion\OutputMatchesAssertion => $assertion->pattern,
-            $assertion instanceof \TestFlowLabs\DocTest\Assertion\OutputJsonAssertion => $assertion->expectedJson,
-            default => '',
+            $assertion instanceof \TestFlowLabs\DocTest\Assertion\OutputMatchesAssertion  => $assertion->pattern,
+            $assertion instanceof \TestFlowLabs\DocTest\Assertion\OutputJsonAssertion     => $assertion->expectedJson,
+            default                                                                       => '',
         };
     }
 
     private function ensureTempDir(): string
     {
-        $dir = sys_get_temp_dir() . '/doctest';
+        $dir = sys_get_temp_dir().'/doctest';
 
-        if (! is_dir($dir)) {
+        if (!is_dir($dir)) {
             @mkdir($dir, 0700, true);
         }
 
@@ -215,12 +215,12 @@ final readonly class CodeGenerator
 
     private function generateThrowsWrapper(CodeBlock $block, string $executableCode): string
     {
-        $lines = [];
+        $lines   = [];
         $lines[] = 'try {';
-        $lines[] = '    ' . str_replace("\n", "\n    ", $executableCode);
+        $lines[] = '    '.str_replace("\n", "\n    ", $executableCode);
         $lines[] = "    fwrite(STDERR, json_encode(['thrown' => false]));";
         $lines[] = '} catch (\Throwable $__doctest_e) {';
-        $lines[] = "    fwrite(STDERR, json_encode([";
+        $lines[] = '    fwrite(STDERR, json_encode([';
         $lines[] = "        'thrown' => true,";
         $lines[] = "        'class' => get_class(\$__doctest_e),";
         $lines[] = "        'message' => \$__doctest_e->getMessage(),";

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace TestFlowLabs\DocTest\Tests\Unit\Laravel;
 
-use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\Test;
 use TestFlowLabs\DocTest\Laravel\LaravelBootstrap;
 
 final class ServiceProviderRegistrationTest extends TestCase
@@ -14,9 +14,9 @@ final class ServiceProviderRegistrationTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->tempDir = sys_get_temp_dir() . '/doctest_laravel_' . bin2hex(random_bytes(8));
-        mkdir($this->tempDir . '/bootstrap', 0777, true);
-        file_put_contents($this->tempDir . '/bootstrap/app.php', '<?php return new stdClass();');
+        $this->tempDir = sys_get_temp_dir().'/doctest_laravel_'.bin2hex(random_bytes(8));
+        mkdir($this->tempDir.'/bootstrap', 0777, true);
+        file_put_contents($this->tempDir.'/bootstrap/app.php', '<?php return new stdClass();');
     }
 
     protected function tearDown(): void
@@ -29,7 +29,7 @@ final class ServiceProviderRegistrationTest extends TestCase
     {
         $bootstrap = new LaravelBootstrap($this->tempDir);
         $providers = ['App\\Providers\\CustomProvider', 'App\\Providers\\AnotherProvider'];
-        $code = $bootstrap->getProviderRegistrationCode($providers);
+        $code      = $bootstrap->getProviderRegistrationCode($providers);
 
         $this->assertStringContainsString('App\\Providers\\CustomProvider', $code);
         $this->assertStringContainsString('App\\Providers\\AnotherProvider', $code);
@@ -40,7 +40,7 @@ final class ServiceProviderRegistrationTest extends TestCase
     public function empty_providers_returns_empty_string(): void
     {
         $bootstrap = new LaravelBootstrap($this->tempDir);
-        $code = $bootstrap->getProviderRegistrationCode([]);
+        $code      = $bootstrap->getProviderRegistrationCode([]);
 
         $this->assertSame('', $code);
     }
@@ -49,14 +49,14 @@ final class ServiceProviderRegistrationTest extends TestCase
     public function provider_code_calls_register_on_app(): void
     {
         $bootstrap = new LaravelBootstrap($this->tempDir);
-        $code = $bootstrap->getProviderRegistrationCode(['App\\MyProvider']);
+        $code      = $bootstrap->getProviderRegistrationCode(['App\\MyProvider']);
 
         $this->assertStringContainsString('$app->register', $code);
     }
 
     private function removeDir(string $dir): void
     {
-        if (! is_dir($dir)) {
+        if (!is_dir($dir)) {
             return;
         }
 

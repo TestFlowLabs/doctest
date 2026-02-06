@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace TestFlowLabs\DocTest\Parser;
 
+use League\CommonMark\Node\Block\Document;
 use League\CommonMark\Environment\Environment;
 use League\CommonMark\Extension\CommonMark\CommonMarkCoreExtension;
-use League\CommonMark\Node\Block\Document;
 use League\CommonMark\Parser\MarkdownParser as LeagueMarkdownParser;
 
 final readonly class MarkdownParser

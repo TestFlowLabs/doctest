@@ -4,20 +4,19 @@ declare(strict_types=1);
 
 namespace TestFlowLabs\DocTest\Tests\Unit\Config;
 
-use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\Test;
 use TestFlowLabs\DocTest\Config\FileFinder;
 
 final class FileFinderTest extends TestCase
 {
     private string $fixturesDir;
-
     private FileFinder $finder;
 
     protected function setUp(): void
     {
-        $this->fixturesDir = __DIR__ . '/../../Fixtures';
-        $this->finder = new FileFinder();
+        $this->fixturesDir = __DIR__.'/../../Fixtures';
+        $this->finder      = new FileFinder();
     }
 
     #[Test]
@@ -34,7 +33,7 @@ final class FileFinderTest extends TestCase
     #[Test]
     public function finds_single_file_when_path_is_a_file(): void
     {
-        $file = $this->fixturesDir . '/basic.md';
+        $file  = $this->fixturesDir.'/basic.md';
         $files = $this->finder->find([$file], []);
 
         $this->assertCount(1, $files);
@@ -62,7 +61,7 @@ final class FileFinderTest extends TestCase
     #[Test]
     public function returns_sorted_unique_list(): void
     {
-        $file = $this->fixturesDir . '/basic.md';
+        $file  = $this->fixturesDir.'/basic.md';
         $files = $this->finder->find([$file, $file, $this->fixturesDir], []);
 
         $sorted = $files;
@@ -74,7 +73,7 @@ final class FileFinderTest extends TestCase
     #[Test]
     public function handles_mix_of_files_and_directories(): void
     {
-        $file = $this->fixturesDir . '/basic.md';
+        $file  = $this->fixturesDir.'/basic.md';
         $files = $this->finder->find([$file, $this->fixturesDir], []);
 
         $this->assertNotEmpty($files);

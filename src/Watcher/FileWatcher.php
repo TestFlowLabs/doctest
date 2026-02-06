@@ -10,8 +10,8 @@ final class FileWatcher
     private array $fileTimestamps = [];
 
     /**
-     * @param array<string> $paths
-     * @param array<string> $extensions
+     * @param  array<string>  $paths
+     * @param  array<string>  $extensions
      */
     public function __construct(
         private readonly array $paths,
@@ -32,7 +32,7 @@ final class FileWatcher
         $changed = [];
 
         foreach ($current as $file => $mtime) {
-            if (! isset($this->fileTimestamps[$file]) || $this->fileTimestamps[$file] < $mtime) {
+            if (!isset($this->fileTimestamps[$file]) || $this->fileTimestamps[$file] < $mtime) {
                 $changed[] = $file;
             }
         }
@@ -48,7 +48,7 @@ final class FileWatcher
         $timestamps = [];
 
         foreach ($this->paths as $path) {
-            if (! is_dir($path)) {
+            if (!is_dir($path)) {
                 continue;
             }
 
@@ -59,7 +59,7 @@ final class FileWatcher
     }
 
     /**
-     * @param array<string, int> $timestamps
+     * @param  array<string, int>  $timestamps
      */
     private function scanDirectory(string $dir, array &$timestamps): void
     {
@@ -74,7 +74,7 @@ final class FileWatcher
                 continue;
             }
 
-            $fullPath = $dir . '/' . $entry;
+            $fullPath = $dir.'/'.$entry;
 
             if (is_dir($fullPath)) {
                 $this->scanDirectory($fullPath, $timestamps);

@@ -13,7 +13,7 @@ final readonly class HtmlCommentAssertionParser
     {
         $html = trim($html);
 
-        if (! str_starts_with($html, '<!--')) {
+        if (!str_starts_with($html, '<!--')) {
             return [];
         }
 

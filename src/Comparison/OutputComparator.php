@@ -7,19 +7,18 @@ namespace TestFlowLabs\DocTest\Comparison;
 final readonly class OutputComparator
 {
     private Normalizer $normalizer;
-
     private WildcardMatcher $wildcardMatcher;
 
     public function __construct()
     {
-        $this->normalizer = new Normalizer();
+        $this->normalizer      = new Normalizer();
         $this->wildcardMatcher = new WildcardMatcher();
     }
 
     public function compare(string $expected, string $actual): ComparisonResult
     {
         $normalizedExpected = $this->normalizer->normalize($expected);
-        $normalizedActual = $this->normalizer->normalize($actual);
+        $normalizedActual   = $this->normalizer->normalize($actual);
 
         if ($this->wildcardMatcher->hasWildcards($normalizedExpected)) {
             $passed = $this->wildcardMatcher->matches($normalizedActual, $normalizedExpected);
@@ -40,7 +39,7 @@ final readonly class OutputComparator
         if (json_last_error() !== JSON_ERROR_NONE) {
             return new ComparisonResult(
                 passed: false,
-                normalizedExpected: 'Expected JSON is invalid: ' . json_last_error_msg(),
+                normalizedExpected: 'Expected JSON is invalid: '.json_last_error_msg(),
                 normalizedActual: $actualJson,
             );
         }
@@ -50,7 +49,7 @@ final readonly class OutputComparator
             return new ComparisonResult(
                 passed: false,
                 normalizedExpected: $expectedJson,
-                normalizedActual: 'Actual JSON output is invalid: ' . json_last_error_msg(),
+                normalizedActual: 'Actual JSON output is invalid: '.json_last_error_msg(),
             );
         }
 
@@ -66,7 +65,7 @@ final readonly class OutputComparator
 
     private function recursiveKeySort(mixed &$value): void
     {
-        if (! is_array($value)) {
+        if (!is_array($value)) {
             return;
         }
 
@@ -79,7 +78,9 @@ final readonly class OutputComparator
         }
     }
 
-    /** @param array<mixed> $array */
+    /**
+     * @param  array<mixed>  $array
+     */
     private function isAssociativeArray(array $array): bool
     {
         return array_keys($array) !== range(0, count($array) - 1);

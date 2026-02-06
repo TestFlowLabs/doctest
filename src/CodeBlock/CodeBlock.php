@@ -9,7 +9,7 @@ use TestFlowLabs\DocTest\Assertion\Assertion;
 final readonly class CodeBlock
 {
     /**
-     * @param array<Assertion> $assertions
+     * @param  array<Assertion>  $assertions
      */
     public function __construct(
         public string $file,

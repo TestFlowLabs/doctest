@@ -4,21 +4,18 @@ declare(strict_types=1);
 
 namespace TestFlowLabs\DocTest\Reporter;
 
-use Symfony\Component\Console\Output\ConsoleOutput;
-use Symfony\Component\Console\Output\OutputInterface;
 use TestFlowLabs\DocTest\CodeBlock\CodeBlock;
 use TestFlowLabs\DocTest\Executor\ExecutionResult;
+use Symfony\Component\Console\Output\ConsoleOutput;
+use Symfony\Component\Console\Output\OutputInterface;
 
 final class ConsoleReporter
 {
     private const int MAX_PREVIEW_LENGTH = 60;
 
     private readonly ErrorFormatter $errorFormatter;
-
-    private int $totalBlocks = 0;
-
-    private int $currentBlock = 0;
-
+    private int $totalBlocks     = 0;
+    private int $currentBlock    = 0;
     private int $lineNumberWidth = 1;
 
     public function __construct(
@@ -51,9 +48,9 @@ final class ConsoleReporter
             ? " [{$this->currentBlock}/{$this->totalBlocks}]"
             : '';
 
-        $preview = $this->codePreview($result->codeBlock);
+        $preview    = $this->codePreview($result->codeBlock);
         $paddedLine = str_pad((string) $result->codeBlock->startLine, $this->lineNumberWidth, ' ', STR_PAD_LEFT);
-        $location = ":{$paddedLine}";
+        $location   = ":{$paddedLine}";
 
         if ($result->skipped) {
             $this->output->writeln("  <fg=gray>{$location}</> <fg=gray>⊘</> {$preview}{$progress}");
@@ -72,7 +69,7 @@ final class ConsoleReporter
         }
 
         $duration = sprintf('<fg=gray>%.2fs</>', $result->duration);
-        $line = "  <fg=gray>{$location}</> <fg=red>✖</> {$preview}{$progress} {$duration}";
+        $line     = "  <fg=gray>{$location}</> <fg=red>✖</> {$preview}{$progress} {$duration}";
 
         $this->output->writeln($line);
 
@@ -98,13 +95,13 @@ final class ConsoleReporter
     }
 
     /**
-     * @param array<ExecutionResult> $results
+     * @param  array<ExecutionResult>  $results
      */
     public function reportSummary(array $results, float $duration): void
     {
-        $total = count($results);
-        $passed = 0;
-        $failed = 0;
+        $total   = count($results);
+        $passed  = 0;
+        $failed  = 0;
         $skipped = 0;
 
         foreach ($results as $result) {
@@ -146,7 +143,7 @@ final class ConsoleReporter
 
     private function writeAssertionDetails(ExecutionResult $result): void
     {
-        if (! $this->output->isVerbose() || $result->assertionDetails === []) {
+        if (!$this->output->isVerbose() || $result->assertionDetails === []) {
             return;
         }
 
@@ -157,7 +154,7 @@ final class ConsoleReporter
                     ? "{$detail->expression} => {$detail->actual}"
                     : "=> {$detail->actual}",
                 'expect' => $detail->expression ?? $detail->expected,
-                default => $detail->expected === $detail->actual
+                default  => $detail->expected === $detail->actual
                     ? "{$detail->type}: {$detail->actual}"
                     : "{$detail->type}: expected {$detail->expected}, got {$detail->actual}",
             };
@@ -171,7 +168,7 @@ final class ConsoleReporter
         $firstLine = trim(explode("\n", $codeBlock->rawCode)[0]);
 
         if (mb_strlen($firstLine) > self::MAX_PREVIEW_LENGTH) {
-            return mb_substr($firstLine, 0, self::MAX_PREVIEW_LENGTH - 3) . '...';
+            return mb_substr($firstLine, 0, self::MAX_PREVIEW_LENGTH - 3).'...';
         }
 
         return $firstLine;

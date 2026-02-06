@@ -8,6 +8,6 @@ final readonly class LaravelDetector
 {
     public function isLaravel(string $projectRoot): bool
     {
-        return file_exists($projectRoot . '/bootstrap/app.php');
+        return file_exists($projectRoot.'/bootstrap/app.php');
     }
 }

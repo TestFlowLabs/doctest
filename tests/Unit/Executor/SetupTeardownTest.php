@@ -4,29 +4,28 @@ declare(strict_types=1);
 
 namespace TestFlowLabs\DocTest\Tests\Unit\Executor;
 
-use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\Test;
+use TestFlowLabs\DocTest\Executor\Executor;
+use TestFlowLabs\DocTest\CodeBlock\Attribute;
+use TestFlowLabs\DocTest\CodeBlock\CodeBlock;
+use TestFlowLabs\DocTest\CodeBlock\Attributes;
 use TestFlowLabs\DocTest\Assertion\AssertionParser;
 use TestFlowLabs\DocTest\Assertion\OutputAssertion;
-use TestFlowLabs\DocTest\CodeBlock\Attribute;
-use TestFlowLabs\DocTest\CodeBlock\Attributes;
-use TestFlowLabs\DocTest\CodeBlock\CodeBlock;
-use TestFlowLabs\DocTest\Executor\Executor;
 
 final class SetupTeardownTest extends TestCase
 {
     private Executor $executor;
-
     private AssertionParser $parser;
 
     protected function setUp(): void
     {
         $this->executor = new Executor();
-        $this->parser = new AssertionParser();
+        $this->parser   = new AssertionParser();
     }
 
     /**
-     * @param array<\TestFlowLabs\DocTest\Assertion\Assertion> $assertions
+     * @param  array<\TestFlowLabs\DocTest\Assertion\Assertion>  $assertions
      */
     private function makeBlock(string $code, ?Attribute $attribute = null, ?string $group = null, array $assertions = []): CodeBlock
     {
@@ -57,7 +56,7 @@ final class SetupTeardownTest extends TestCase
 
         // Setup block is not executed standalone — only 1 result for the normal block
         $this->assertCount(1, $results);
-        $this->assertTrue($results[0]->passed, 'Block with setup failed: ' . ($results[0]->error ?? ''));
+        $this->assertTrue($results[0]->passed, 'Block with setup failed: '.($results[0]->error ?? ''));
     }
 
     #[Test]
@@ -93,7 +92,7 @@ final class SetupTeardownTest extends TestCase
         $results = $this->executor->executeAll($blocks);
 
         $this->assertCount(1, $results);
-        $this->assertTrue($results[0]->passed, 'Multiple setup blocks failed: ' . ($results[0]->error ?? ''));
+        $this->assertTrue($results[0]->passed, 'Multiple setup blocks failed: '.($results[0]->error ?? ''));
     }
 
     #[Test]
@@ -152,7 +151,7 @@ final class SetupTeardownTest extends TestCase
 
         $this->assertCount(2, $results);
         foreach ($results as $result) {
-            $this->assertTrue($result->passed, 'Grouped block with setup/teardown failed: ' . ($result->error ?? ''));
+            $this->assertTrue($result->passed, 'Grouped block with setup/teardown failed: '.($result->error ?? ''));
         }
     }
 
@@ -170,7 +169,7 @@ final class SetupTeardownTest extends TestCase
         $results = $this->executor->executeAll($blocks);
 
         $this->assertCount(1, $results);
-        $this->assertTrue($results[0]->passed, 'Setup variables not available: ' . ($results[0]->error ?? ''));
+        $this->assertTrue($results[0]->passed, 'Setup variables not available: '.($results[0]->error ?? ''));
         $this->assertSame('value', $results[0]->actualOutput);
     }
 }

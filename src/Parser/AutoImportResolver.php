@@ -10,8 +10,8 @@ final readonly class AutoImportResolver
     private array $resolvedImports;
 
     /**
-     * @param array<string>              $imports
-     * @param array<string, string>|null $classMap
+     * @param  array<string>  $imports
+     * @param  array<string, string>|null  $classMap
      */
     public function __construct(
         array $imports,
@@ -31,8 +31,8 @@ final readonly class AutoImportResolver
         $lines = [];
 
         foreach ($this->resolvedImports as $import) {
-            if (! in_array($import, $existingImports, true)) {
-                $lines[] = 'use ' . $import . ';';
+            if (!in_array($import, $existingImports, true)) {
+                $lines[] = 'use '.$import.';';
             }
         }
 
@@ -44,8 +44,8 @@ final readonly class AutoImportResolver
     }
 
     /**
-     * @param array<string>         $imports
-     * @param array<string, string> $classMap
+     * @param  array<string>  $imports
+     * @param  array<string, string>  $classMap
      *
      * @return array<string>
      */

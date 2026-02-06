@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace TestFlowLabs\DocTest\Tests\Unit\Executor;
 
-use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\Test;
 use TestFlowLabs\DocTest\Executor\ParallelRunner;
 
 final class ParallelRunnerTest extends TestCase
@@ -13,7 +13,7 @@ final class ParallelRunnerTest extends TestCase
     #[Test]
     public function distributes_files_across_workers(): void
     {
-        $runner = new ParallelRunner(workers: 2);
+        $runner  = new ParallelRunner(workers: 2);
         $batches = $runner->distribute(['a.md', 'b.md', 'c.md', 'd.md']);
 
         $this->assertCount(2, $batches);
@@ -24,7 +24,7 @@ final class ParallelRunnerTest extends TestCase
     #[Test]
     public function single_worker_gets_all_files(): void
     {
-        $runner = new ParallelRunner(workers: 1);
+        $runner  = new ParallelRunner(workers: 1);
         $batches = $runner->distribute(['a.md', 'b.md', 'c.md']);
 
         $this->assertCount(1, $batches);
@@ -34,21 +34,21 @@ final class ParallelRunnerTest extends TestCase
     #[Test]
     public function more_workers_than_files(): void
     {
-        $runner = new ParallelRunner(workers: 5);
+        $runner  = new ParallelRunner(workers: 5);
         $batches = $runner->distribute(['a.md', 'b.md']);
 
         // Only 2 non-empty batches
-        $nonEmpty = array_filter($batches, fn(array $b) => $b !== []);
+        $nonEmpty = array_filter($batches, fn (array $b) => $b !== []);
         $this->assertCount(2, $nonEmpty);
     }
 
     #[Test]
     public function empty_file_list_returns_empty_batches(): void
     {
-        $runner = new ParallelRunner(workers: 3);
+        $runner  = new ParallelRunner(workers: 3);
         $batches = $runner->distribute([]);
 
-        $nonEmpty = array_filter($batches, fn(array $b) => $b !== []);
+        $nonEmpty = array_filter($batches, fn (array $b) => $b !== []);
         $this->assertEmpty($nonEmpty);
     }
 

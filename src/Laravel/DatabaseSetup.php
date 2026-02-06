@@ -33,7 +33,7 @@ final readonly class DatabaseSetup
 
     public function getTeardownCode(): string
     {
-        $lines = [];
+        $lines   = [];
         $lines[] = "\\Illuminate\\Support\\Facades\\DB::disconnect('{$this->connection}');";
 
         return implode("\n", $lines);

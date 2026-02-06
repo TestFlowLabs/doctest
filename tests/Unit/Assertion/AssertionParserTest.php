@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace TestFlowLabs\DocTest\Tests\Unit\Assertion;
 
-use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\Test;
 use TestFlowLabs\DocTest\Assertion\AssertionParser;
 use TestFlowLabs\DocTest\Assertion\ResultCommentAssertion;
 
@@ -150,7 +150,7 @@ final class AssertionParserTest extends TestCase
     #[Test]
     public function handles_multiple_result_comments(): void
     {
-        $code = "\$x = 1; // => 1\n\$y = 2; // => 2\n\$z = 3; // => 3";
+        $code   = "\$x = 1; // => 1\n\$y = 2; // => 2\n\$z = 3; // => 3";
         $result = $this->parser->parse($code);
 
         $this->assertCount(3, $result->resultComments);

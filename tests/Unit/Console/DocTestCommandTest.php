@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace TestFlowLabs\DocTest\Tests\Unit\Console;
 
-use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
-use Symfony\Component\Console\Tester\CommandTester;
+use PHPUnit\Framework\Attributes\Test;
 use TestFlowLabs\DocTest\Console\DocTestCommand;
+use Symfony\Component\Console\Tester\CommandTester;
 
 final class DocTestCommandTest extends TestCase
 {
@@ -15,7 +15,7 @@ final class DocTestCommandTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->fixturesDir = dirname(__DIR__, 2) . '/Fixtures';
+        $this->fixturesDir = dirname(__DIR__, 2).'/Fixtures';
     }
 
     #[Test]
@@ -37,7 +37,7 @@ final class DocTestCommandTest extends TestCase
     #[Test]
     public function command_accepts_file_arguments(): void
     {
-        $command = new DocTestCommand();
+        $command    = new DocTestCommand();
         $definition = $command->getDefinition();
 
         $this->assertTrue($definition->hasArgument('files'));
@@ -88,9 +88,9 @@ final class DocTestCommandTest extends TestCase
     public function execute_returns_zero_for_passing_fixture(): void
     {
         $command = new DocTestCommand();
-        $tester = new CommandTester($command);
+        $tester  = new CommandTester($command);
 
-        $tester->execute(['files' => [$this->fixturesDir . '/basic.md']]);
+        $tester->execute(['files' => [$this->fixturesDir.'/basic.md']]);
 
         $this->assertSame(0, $tester->getStatusCode());
     }
@@ -99,9 +99,9 @@ final class DocTestCommandTest extends TestCase
     public function execute_returns_one_for_failing_fixture(): void
     {
         $command = new DocTestCommand();
-        $tester = new CommandTester($command);
+        $tester  = new CommandTester($command);
 
-        $tester->execute(['files' => [$this->fixturesDir . '/failing-output.md']]);
+        $tester->execute(['files' => [$this->fixturesDir.'/failing-output.md']]);
 
         $this->assertSame(1, $tester->getStatusCode());
     }
@@ -110,7 +110,7 @@ final class DocTestCommandTest extends TestCase
     public function execute_returns_three_when_no_files_found(): void
     {
         $command = new DocTestCommand();
-        $tester = new CommandTester($command);
+        $tester  = new CommandTester($command);
 
         $tester->execute(['files' => ['/nonexistent/path.md']]);
 
@@ -121,9 +121,9 @@ final class DocTestCommandTest extends TestCase
     public function execute_with_dry_run_returns_zero(): void
     {
         $command = new DocTestCommand();
-        $tester = new CommandTester($command);
+        $tester  = new CommandTester($command);
 
-        $tester->execute(['files' => [$this->fixturesDir . '/basic.md'], '--dry-run' => true]);
+        $tester->execute(['files' => [$this->fixturesDir.'/basic.md'], '--dry-run' => true]);
 
         $this->assertSame(0, $tester->getStatusCode());
     }
@@ -132,9 +132,9 @@ final class DocTestCommandTest extends TestCase
     public function execute_output_contains_pass_for_passing_fixture(): void
     {
         $command = new DocTestCommand();
-        $tester = new CommandTester($command);
+        $tester  = new CommandTester($command);
 
-        $tester->execute(['files' => [$this->fixturesDir . '/basic.md']]);
+        $tester->execute(['files' => [$this->fixturesDir.'/basic.md']]);
 
         $this->assertStringContainsString('✔', $tester->getDisplay());
     }
@@ -142,12 +142,12 @@ final class DocTestCommandTest extends TestCase
     #[Test]
     public function execute_with_stop_on_failure_stops_early(): void
     {
-        $tempFile = sys_get_temp_dir() . '/doctest_cmd_stop_' . uniqid() . '.md';
+        $tempFile = sys_get_temp_dir().'/doctest_cmd_stop_'.uniqid().'.md';
         file_put_contents($tempFile, "```php\necho \"wrong\";\n```\n<!-- doctest: right -->\n\n```php\necho \"ok\";\n```\n<!-- doctest: ok -->\n");
 
         try {
             $command = new DocTestCommand();
-            $tester = new CommandTester($command);
+            $tester  = new CommandTester($command);
 
             $tester->execute(['files' => [$tempFile], '--stop-on-failure' => true]);
 

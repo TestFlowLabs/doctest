@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace TestFlowLabs\DocTest\Tests\Unit\CodeBlock;
 
-use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
-use TestFlowLabs\DocTest\Assertion\OutputAssertion;
-use TestFlowLabs\DocTest\CodeBlock\Attributes;
+use PHPUnit\Framework\Attributes\Test;
 use TestFlowLabs\DocTest\CodeBlock\CodeBlock;
+use TestFlowLabs\DocTest\CodeBlock\Attributes;
+use TestFlowLabs\DocTest\Assertion\OutputAssertion;
 
 final class CodeBlockTest extends TestCase
 {
@@ -21,7 +21,7 @@ final class CodeBlockTest extends TestCase
         $block = new CodeBlock(
             file: 'docs/README.md',
             startLine: 10,
-            rawCode: 'echo "Hello";' . "\n" . '// Output: Hello',
+            rawCode: 'echo "Hello";'."\n".'// Output: Hello',
             executableCode: 'echo "Hello";',
             attributes: $attributes,
             assertions: $assertions,
@@ -29,7 +29,7 @@ final class CodeBlockTest extends TestCase
 
         $this->assertSame('docs/README.md', $block->file);
         $this->assertSame(10, $block->startLine);
-        $this->assertSame('echo "Hello";' . "\n" . '// Output: Hello', $block->rawCode);
+        $this->assertSame('echo "Hello";'."\n".'// Output: Hello', $block->rawCode);
         $this->assertSame('echo "Hello";', $block->executableCode);
         $this->assertSame($attributes, $block->attributes);
         $this->assertSame($assertions, $block->assertions);

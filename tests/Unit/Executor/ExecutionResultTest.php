@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace TestFlowLabs\DocTest\Tests\Unit\Executor;
 
-use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
-use TestFlowLabs\DocTest\Assertion\AssertionResultDetail;
-use TestFlowLabs\DocTest\CodeBlock\Attributes;
+use PHPUnit\Framework\Attributes\Test;
 use TestFlowLabs\DocTest\CodeBlock\CodeBlock;
+use TestFlowLabs\DocTest\CodeBlock\Attributes;
 use TestFlowLabs\DocTest\Executor\ExecutionResult;
+use TestFlowLabs\DocTest\Assertion\AssertionResultDetail;
 
 final class ExecutionResultTest extends TestCase
 {
@@ -28,7 +28,7 @@ final class ExecutionResultTest extends TestCase
     #[Test]
     public function construction_with_all_properties(): void
     {
-        $block = $this->makeBlock();
+        $block  = $this->makeBlock();
         $result = new ExecutionResult(
             passed: true,
             codeBlock: $block,

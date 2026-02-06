@@ -7,7 +7,7 @@ namespace TestFlowLabs\DocTest\Assertion;
 final readonly class AssertionParserResult
 {
     /**
-     * @param array<ResultCommentAssertion> $resultComments
+     * @param  array<ResultCommentAssertion>  $resultComments
      */
     public function __construct(
         public string $executableCode,

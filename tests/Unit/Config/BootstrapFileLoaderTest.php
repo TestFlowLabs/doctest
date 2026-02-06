@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace TestFlowLabs\DocTest\Tests\Unit\Config;
 
 use InvalidArgumentException;
-use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\Test;
 use TestFlowLabs\DocTest\Config\BootstrapFileLoader;
 
 final class BootstrapFileLoaderTest extends TestCase
@@ -49,7 +49,7 @@ final class BootstrapFileLoaderTest extends TestCase
         file_put_contents($tempFile, '<?php // bootstrap');
 
         $loader = new BootstrapFileLoader($tempFile);
-        $code = $loader->getBootstrapCode();
+        $code   = $loader->getBootstrapCode();
 
         $this->assertStringContainsString(realpath($tempFile), $code);
 

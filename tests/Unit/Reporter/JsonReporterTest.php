@@ -4,24 +4,23 @@ declare(strict_types=1);
 
 namespace TestFlowLabs\DocTest\Tests\Unit\Reporter;
 
-use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
-use TestFlowLabs\DocTest\Assertion\AssertionParser;
-use TestFlowLabs\DocTest\CodeBlock\Attributes;
+use PHPUnit\Framework\Attributes\Test;
 use TestFlowLabs\DocTest\CodeBlock\CodeBlock;
-use TestFlowLabs\DocTest\Executor\ExecutionResult;
+use TestFlowLabs\DocTest\CodeBlock\Attributes;
 use TestFlowLabs\DocTest\Reporter\JsonReporter;
+use TestFlowLabs\DocTest\Executor\ExecutionResult;
+use TestFlowLabs\DocTest\Assertion\AssertionParser;
 
 final class JsonReporterTest extends TestCase
 {
     private JsonReporter $reporter;
-
     private AssertionParser $parser;
 
     protected function setUp(): void
     {
         $this->reporter = new JsonReporter();
-        $this->parser = new AssertionParser();
+        $this->parser   = new AssertionParser();
     }
 
     private function makeResult(
@@ -61,7 +60,7 @@ final class JsonReporterTest extends TestCase
     {
         $results = [$this->makeResult(passed: true)];
 
-        $json = $this->reporter->generate($results);
+        $json    = $this->reporter->generate($results);
         $decoded = json_decode($json, true);
 
         $this->assertNotNull($decoded, 'Generated output is not valid JSON');
@@ -141,8 +140,8 @@ final class JsonReporterTest extends TestCase
     #[Test]
     public function writes_to_file_path(): void
     {
-        $results = [$this->makeResult(passed: true)];
-        $filePath = sys_get_temp_dir() . '/doctest_json_' . uniqid() . '.json';
+        $results  = [$this->makeResult(passed: true)];
+        $filePath = sys_get_temp_dir().'/doctest_json_'.uniqid().'.json';
 
         $this->reporter->generateToFile($results, $filePath);
 
