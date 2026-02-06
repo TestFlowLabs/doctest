@@ -46,7 +46,8 @@
             "@test:pint",
             "@test:phpstan",
             "@test:unit",
-            "@test:types"
+            "@test:types",
+            "@test:doc"
         ]
     },
     "config": {
