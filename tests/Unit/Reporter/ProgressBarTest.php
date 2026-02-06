@@ -6,6 +6,7 @@ namespace TestFlowLabs\DocTest\Tests\Unit\Reporter;
 
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\Console\Output\BufferedOutput;
 use TestFlowLabs\DocTest\Assertion\AssertionParser;
 use TestFlowLabs\DocTest\CodeBlock\Attributes;
 use TestFlowLabs\DocTest\CodeBlock\CodeBlock;
@@ -16,9 +17,12 @@ final class ProgressBarTest extends TestCase
 {
     private AssertionParser $parser;
 
+    private BufferedOutput $output;
+
     protected function setUp(): void
     {
         $this->parser = new AssertionParser();
+        $this->output = new BufferedOutput();
     }
 
     private function makePassingResult(int $line = 1): ExecutionResult
@@ -41,15 +45,12 @@ final class ProgressBarTest extends TestCase
     #[Test]
     public function shows_progress_count_when_total_set(): void
     {
-        $output = fopen('php://memory', 'rw');
-        $reporter = new ConsoleReporter($output, colors: false);
+        $reporter = new ConsoleReporter($this->output);
         $reporter->setTotalBlocks(5);
 
         $reporter->reportResult($this->makePassingResult());
 
-        rewind($output);
-        $content = stream_get_contents($output);
-        fclose($output);
+        $content = $this->output->fetch();
 
         $this->assertMatchesRegularExpression('/\[1\/5\]/', $content);
     }
@@ -57,16 +58,13 @@ final class ProgressBarTest extends TestCase
     #[Test]
     public function progress_count_increments(): void
     {
-        $output = fopen('php://memory', 'rw');
-        $reporter = new ConsoleReporter($output, colors: false);
+        $reporter = new ConsoleReporter($this->output);
         $reporter->setTotalBlocks(3);
 
         $reporter->reportResult($this->makePassingResult(1));
         $reporter->reportResult($this->makePassingResult(5));
 
-        rewind($output);
-        $content = stream_get_contents($output);
-        fclose($output);
+        $content = $this->output->fetch();
 
         $this->assertStringContainsString('[1/3]', $content);
         $this->assertStringContainsString('[2/3]', $content);
@@ -75,33 +73,26 @@ final class ProgressBarTest extends TestCase
     #[Test]
     public function no_progress_when_total_not_set(): void
     {
-        $output = fopen('php://memory', 'rw');
-        $reporter = new ConsoleReporter($output, colors: false);
+        $reporter = new ConsoleReporter($this->output);
 
         $reporter->reportResult($this->makePassingResult());
 
-        rewind($output);
-        $content = stream_get_contents($output);
-        fclose($output);
+        $content = $this->output->fetch();
 
         $this->assertDoesNotMatchRegularExpression('/\[\d+\/\d+\]/', $content);
     }
 
     #[Test]
-    public function progress_works_with_non_tty_output(): void
+    public function progress_works_with_buffered_output(): void
     {
-        $output = fopen('php://memory', 'rw');
-        $reporter = new ConsoleReporter($output, colors: false);
+        $reporter = new ConsoleReporter($this->output);
         $reporter->setTotalBlocks(2);
 
         $reporter->reportResult($this->makePassingResult());
         $reporter->reportResult($this->makePassingResult(5));
 
-        rewind($output);
-        $content = stream_get_contents($output);
-        fclose($output);
+        $content = $this->output->fetch();
 
-        // Should still show progress even on non-TTY (no ANSI cursor movement, just inline)
         $this->assertStringContainsString('[1/2]', $content);
         $this->assertStringContainsString('[2/2]', $content);
     }
