@@ -9,7 +9,7 @@ use TestFlowLabs\DocTest\CodeBlock\CodeBlock;
 
 final readonly class CodeGenerator
 {
-    public function generate(CodeBlock $block): string
+    public function generate(CodeBlock $block, ?string $setup = null, ?string $teardown = null): string
     {
         $dir = sys_get_temp_dir() . '/doctest';
 
@@ -26,7 +26,7 @@ final readonly class CodeGenerator
             return $filePath;
         }
 
-        $content = $this->generateInstrumented($block);
+        $content = $this->generateInstrumented($block, $setup, $teardown);
         file_put_contents($filePath, $content);
 
         return $filePath;
@@ -35,7 +35,7 @@ final readonly class CodeGenerator
     /**
      * @param array<CodeBlock> $blocks
      */
-    public function generateGroup(array $blocks): string
+    public function generateGroup(array $blocks, ?string $setup = null, ?string $teardown = null): string
     {
         $dir = sys_get_temp_dir() . '/doctest';
 
@@ -50,6 +50,11 @@ final readonly class CodeGenerator
         $lines[] = '$__doctest_results = [];';
         $lines[] = '$__doctest_segment = 0;';
         $lines[] = '';
+
+        if ($setup !== null) {
+            $lines[] = $setup;
+            $lines[] = '';
+        }
 
         foreach ($blocks as $block) {
             $parsed = $parser->parse($block->rawCode);
@@ -85,6 +90,11 @@ final readonly class CodeGenerator
             }
         }
 
+        if ($teardown !== null) {
+            $lines[] = $teardown;
+            $lines[] = '';
+        }
+
         $lines[] = 'fwrite(STDERR, json_encode($__doctest_results));';
 
         file_put_contents($filePath, implode("\n", $lines));
@@ -92,7 +102,7 @@ final readonly class CodeGenerator
         return $filePath;
     }
 
-    private function generateInstrumented(CodeBlock $block): string
+    private function generateInstrumented(CodeBlock $block, ?string $setup = null, ?string $teardown = null): string
     {
         $parser = new AssertionParser();
         $parsed = $parser->parse($block->rawCode);
@@ -102,18 +112,23 @@ final readonly class CodeGenerator
         if ($block->attributes->isThrows()) {
             $lines[] = $this->generateThrowsWrapper($block, $parsed->executableCode);
         } else {
-            $lines[] = $this->generateSegmentCapture($parsed);
+            $lines[] = $this->generateSegmentCapture($parsed, $setup, $teardown);
         }
 
         return implode("\n", $lines);
     }
 
-    private function generateSegmentCapture(\TestFlowLabs\DocTest\Assertion\AssertionParserResult $parsed): string
+    private function generateSegmentCapture(\TestFlowLabs\DocTest\Assertion\AssertionParserResult $parsed, ?string $setup = null, ?string $teardown = null): string
     {
         $lines = [];
         $lines[] = '$__doctest_results = [];';
         $lines[] = '$__doctest_segment = 0;';
         $lines[] = '';
+
+        if ($setup !== null) {
+            $lines[] = $setup;
+            $lines[] = '';
+        }
 
         foreach ($parsed->segments as $segment) {
             if ($segment->outputAssertion !== null) {
@@ -142,6 +157,11 @@ final readonly class CodeGenerator
             $lines[] = "    'passed' => (bool)(" . $expect->expression . '),';
             $lines[] = "    'line' => " . $expect->line() . ',';
             $lines[] = '];';
+            $lines[] = '';
+        }
+
+        if ($teardown !== null) {
+            $lines[] = $teardown;
             $lines[] = '';
         }
 
