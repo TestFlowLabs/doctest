@@ -7,6 +7,8 @@ namespace TestFlowLabs\DocTest\Tests\Unit\Executor;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use TestFlowLabs\DocTest\Assertion\AssertionParser;
+use TestFlowLabs\DocTest\Assertion\ExpectAssertion;
+use TestFlowLabs\DocTest\Assertion\OutputAssertion;
 use TestFlowLabs\DocTest\CodeBlock\Attribute;
 use TestFlowLabs\DocTest\CodeBlock\Attributes;
 use TestFlowLabs\DocTest\CodeBlock\CodeBlock;
@@ -24,7 +26,10 @@ final class ExecutorTest extends TestCase
         $this->assertionParser = new AssertionParser();
     }
 
-    private function makeBlock(string $code, ?Attribute $attribute = null, ?string $throwsClass = null, ?string $throwsMessage = null): CodeBlock
+    /**
+     * @param array<\TestFlowLabs\DocTest\Assertion\Assertion> $assertions
+     */
+    private function makeBlock(string $code, ?Attribute $attribute = null, ?string $throwsClass = null, ?string $throwsMessage = null, array $assertions = []): CodeBlock
     {
         $parsed = $this->assertionParser->parse($code);
 
@@ -38,14 +43,17 @@ final class ExecutorTest extends TestCase
                 throwsClass: $throwsClass,
                 throwsMessage: $throwsMessage,
             ),
-            assertions: $parsed->assertions,
+            assertions: $assertions,
         );
     }
 
     #[Test]
     public function executes_simple_echo_and_captures_output(): void
     {
-        $block = $this->makeBlock("echo \"Hello World\";\n// Output: Hello World");
+        $block = $this->makeBlock(
+            'echo "Hello World";',
+            assertions: [new OutputAssertion('Hello World', 1)],
+        );
         $result = $this->executor->execute($block);
 
         $this->assertTrue($result->passed);
@@ -118,7 +126,10 @@ final class ExecutorTest extends TestCase
     #[Test]
     public function evaluates_expect_expressions(): void
     {
-        $block = $this->makeBlock("\$x = 42;\n// Expect: \$x === 42");
+        $block = $this->makeBlock(
+            "\$x = 42;",
+            assertions: [new ExpectAssertion('$x === 42', 2)],
+        );
         $result = $this->executor->execute($block);
 
         $this->assertTrue($result->passed);
@@ -127,16 +138,22 @@ final class ExecutorTest extends TestCase
     #[Test]
     public function expect_with_falsy_result_fails(): void
     {
-        $block = $this->makeBlock("\$x = 42;\n// Expect: \$x === 99");
+        $block = $this->makeBlock(
+            "\$x = 42;",
+            assertions: [new ExpectAssertion('$x === 99', 2)],
+        );
         $result = $this->executor->execute($block);
 
         $this->assertFalse($result->passed);
     }
 
     #[Test]
-    public function multiple_output_assertions_per_block(): void
+    public function output_assertion_with_combined_output(): void
     {
-        $block = $this->makeBlock("echo \"a\";\n// Output: a\necho \"b\";\n// Output: b");
+        $block = $this->makeBlock(
+            "echo \"a\";\necho \"b\";",
+            assertions: [new OutputAssertion('ab', 1)],
+        );
         $result = $this->executor->execute($block);
 
         $this->assertTrue($result->passed);
@@ -156,7 +173,10 @@ final class ExecutorTest extends TestCase
     #[Test]
     public function output_assertion_failure_reports_diff(): void
     {
-        $block = $this->makeBlock("echo \"wrong\";\n// Output: right");
+        $block = $this->makeBlock(
+            'echo "wrong";',
+            assertions: [new OutputAssertion('right', 2)],
+        );
         $result = $this->executor->execute($block);
 
         $this->assertFalse($result->passed);
@@ -212,9 +232,12 @@ final class ExecutorTest extends TestCase
     }
 
     #[Test]
-    public function result_comment_mixed_with_output_assertion(): void
+    public function result_comment_mixed_with_html_output_assertion(): void
     {
-        $block = $this->makeBlock("\$x = 42; // => 42\necho \$x;\n// Output: 42");
+        $block = $this->makeBlock(
+            "\$x = 42; // => 42\necho \$x;",
+            assertions: [new OutputAssertion('42', 3)],
+        );
         $result = $this->executor->execute($block);
 
         $this->assertTrue($result->passed);
@@ -223,7 +246,10 @@ final class ExecutorTest extends TestCase
     #[Test]
     public function populates_assertion_details_for_output(): void
     {
-        $block = $this->makeBlock("echo \"Hello\";\n// Output: Hello");
+        $block = $this->makeBlock(
+            'echo "Hello";',
+            assertions: [new OutputAssertion('Hello', 2)],
+        );
         $result = $this->executor->execute($block);
 
         $this->assertTrue($result->passed);
@@ -251,7 +277,10 @@ final class ExecutorTest extends TestCase
     #[Test]
     public function populates_assertion_details_for_expect(): void
     {
-        $block = $this->makeBlock("\$x = 42;\n// Expect: \$x === 42");
+        $block = $this->makeBlock(
+            "\$x = 42;",
+            assertions: [new ExpectAssertion('$x === 42', 2)],
+        );
         $result = $this->executor->execute($block);
 
         $this->assertTrue($result->passed);
@@ -275,12 +304,16 @@ final class ExecutorTest extends TestCase
     #[Test]
     public function populates_multiple_assertion_details(): void
     {
-        $block = $this->makeBlock("echo \"a\";\n// Output: a\necho \"b\";\n// Output: b");
+        $block = $this->makeBlock(
+            "echo \"a\";\necho \"b\";",
+            assertions: [
+                new OutputAssertion('ab', 3),
+            ],
+        );
         $result = $this->executor->execute($block);
 
         $this->assertTrue($result->passed);
-        $this->assertCount(2, $result->assertionDetails);
-        $this->assertSame('a', $result->assertionDetails[0]->expected);
-        $this->assertSame('b', $result->assertionDetails[1]->expected);
+        $this->assertCount(1, $result->assertionDetails);
+        $this->assertSame('ab', $result->assertionDetails[0]->expected);
     }
 }
