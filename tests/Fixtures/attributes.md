@@ -54,11 +54,11 @@ Group attribute:
 ```php group="order-flow"
 $state = 'pending';
 echo $state;
-// Output: pending
 ```
+<!-- doctest: pending -->
 
 ```php group="order-flow"
 $state = 'paid';
 echo $state;
-// Output: paid
 ```
+<!-- doctest: paid -->
