@@ -9,7 +9,6 @@ use TestFlowLabs\DocTest\Executor\Executor;
 use TestFlowLabs\DocTest\Config\DocTestConfig;
 use TestFlowLabs\DocTest\Parser\MarkdownParser;
 use TestFlowLabs\DocTest\Reporter\JsonReporter;
-use TestFlowLabs\DocTest\Reporter\JUnitReporter;
 use TestFlowLabs\DocTest\Executor\ExecutionResult;
 use TestFlowLabs\DocTest\Reporter\ConsoleReporter;
 use TestFlowLabs\DocTest\Parser\CodeBlockExtractor;
@@ -217,11 +216,6 @@ final readonly class DocTest
      */
     private function writeReporterFiles(array $results): void
     {
-        if ($this->config->reporterJunit !== null) {
-            $reporter = new JUnitReporter();
-            $reporter->generateToFile($results, $this->config->reporterJunit);
-        }
-
         if ($this->config->reporterJson !== null) {
             $reporter = new JsonReporter();
             $reporter->generateToFile($results, $this->config->reporterJson);
