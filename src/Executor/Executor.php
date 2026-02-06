@@ -27,45 +27,53 @@ final readonly class Executor
 
     /**
      * @param  array<CodeBlock>  $blocks
+     * @param  ?\Closure(ExecutionResult): ?bool  $onResult  Return false to stop execution early
      *
      * @return array<ExecutionResult>
      */
-    public function executeAll(array $blocks): array
+    public function executeAll(array $blocks, ?\Closure $onResult = null): array
     {
         [$setup, $teardown, $normalBlocks, $groupedBlocks] = $this->collectSetupTeardownAndGroups($blocks);
 
         $results = [];
+        $stopped = false;
 
         foreach ($normalBlocks as $block) {
             if ($block->attributes->isIgnore()) {
-                $results[] = new ExecutionResult(passed: true, codeBlock: $block, skipped: true);
-
-                continue;
+                $result = new ExecutionResult(passed: true, codeBlock: $block, skipped: true);
+            } elseif ($block->attributes->isNoRun()) {
+                $result = $this->syntaxCheck($block);
+            } elseif ($block->attributes->isParseError()) {
+                $result = $this->executeParseError($block);
+            } elseif ($block->attributes->isThrows()) {
+                $result = $this->executeThrows($block);
+            } else {
+                $result = $this->executeNormal($block, $setup, $teardown);
             }
 
-            if ($block->attributes->isNoRun()) {
-                $results[] = $this->syntaxCheck($block);
+            $results[] = $result;
 
-                continue;
+            if ($onResult !== null && $onResult($result) === false) {
+                $stopped = true;
+
+                break;
             }
-
-            if ($block->attributes->isParseError()) {
-                $results[] = $this->executeParseError($block);
-
-                continue;
-            }
-
-            if ($block->attributes->isThrows()) {
-                $results[] = $this->executeThrows($block);
-
-                continue;
-            }
-
-            $results[] = $this->executeNormal($block, $setup, $teardown);
         }
 
-        foreach ($groupedBlocks as $groupBlocks) {
-            $results = array_merge($results, $this->executeGroupBlocks($groupBlocks, $setup, $teardown));
+        if (!$stopped) {
+            foreach ($groupedBlocks as $groupBlocks) {
+                $groupResults = $this->executeGroupBlocks($groupBlocks, $setup, $teardown);
+
+                foreach ($groupResults as $result) {
+                    $results[] = $result;
+
+                    if ($onResult !== null && $onResult($result) === false) {
+                        $stopped = true;
+
+                        break 2;
+                    }
+                }
+            }
         }
 
         return $results;
