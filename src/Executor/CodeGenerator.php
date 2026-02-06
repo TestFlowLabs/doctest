@@ -11,12 +11,7 @@ final readonly class CodeGenerator
 {
     public function generate(CodeBlock $block, ?string $setup = null, ?string $teardown = null): string
     {
-        $dir = sys_get_temp_dir() . '/doctest';
-
-        if (! is_dir($dir)) {
-            mkdir($dir, 0700, true);
-        }
-
+        $dir = $this->ensureTempDir();
         $filePath = $dir . '/doctest_' . bin2hex(random_bytes(16)) . '.php';
 
         if ($block->attributes->isParseError()) {
@@ -37,12 +32,7 @@ final readonly class CodeGenerator
      */
     public function generateGroup(array $blocks, ?string $setup = null, ?string $teardown = null): string
     {
-        $dir = sys_get_temp_dir() . '/doctest';
-
-        if (! is_dir($dir)) {
-            mkdir($dir, 0700, true);
-        }
-
+        $dir = $this->ensureTempDir();
         $filePath = $dir . '/doctest_group_' . bin2hex(random_bytes(16)) . '.php';
         $parser = new AssertionParser();
 
@@ -179,6 +169,17 @@ final readonly class CodeGenerator
             $assertion instanceof \TestFlowLabs\DocTest\Assertion\OutputJsonAssertion => $assertion->expectedJson,
             default => '',
         };
+    }
+
+    private function ensureTempDir(): string
+    {
+        $dir = sys_get_temp_dir() . '/doctest';
+
+        if (! is_dir($dir)) {
+            @mkdir($dir, 0700, true);
+        }
+
+        return $dir;
     }
 
     private function writeFile(string $filePath, string $content): void
