@@ -276,33 +276,6 @@ echo 'This is fine';
 
 If an example can run, let it run. Only use `ignore` for genuinely non-runnable code.
 
-## Lessons from Other Languages
-
-### Python: The Pioneer
-
-Python's `doctest` module (1999) proved that testing documentation is practical. Key insight: examples written in REPL format (`>>>`) are naturally testable because they include both input and expected output.
-
-### Rust: Test by Default
-
-Rust compiles and runs every code example in documentation. If an example shouldn't run, you must explicitly mark it with `no_run` or `ignore`. This "test by default" philosophy means Rust documentation rarely has broken examples.
-
-### Go: Examples as First-Class Tests
-
-Go's `Example` functions live in `_test.go` files and serve dual purpose — they appear in documentation AND run as tests. The `// Output:` comment declares expected output.
-
-### Elixir: Documentation is a First-Class Citizen
-
-Elixir's `@doc` attributes with `iex>` examples are extracted by ExUnit.DocTest and run as tests. The community treats untested documentation as a code smell.
-
-### The Common Thread
-
-Every language that adopted testable documentation saw the same results:
-
-- Documentation accuracy improved dramatically
-- API changes were caught at the documentation level
-- Developer trust in documentation increased
-- The documentation itself became better — clearer, more focused, more practical
-
 ## Checklist
 
 Before publishing documentation, verify each example:
