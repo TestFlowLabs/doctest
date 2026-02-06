@@ -349,6 +349,20 @@ final readonly class Executor
                     );
                 }
             }
+
+            if ($result['type'] === 'result_comment') {
+                $expected = $result['expected'] ?? '';
+                $actual = $result['actual'] ?? '';
+
+                if ($expected !== $actual) {
+                    return new ExecutionResult(
+                        passed: false,
+                        codeBlock: $block,
+                        error: "result_comment assertion failed: expected {$expected} but got {$actual}",
+                        duration: $processResult->duration,
+                    );
+                }
+            }
         }
 
         $actualOutput = $capturedOutput !== [] ? implode('', $capturedOutput) : ($processResult->stdout !== '' ? $processResult->stdout : null);
@@ -421,6 +435,7 @@ final readonly class Executor
                 }
             }
             $count += count($parsed->expects);
+            $count += count($parsed->resultComments);
             $assertionCounts[] = $count;
         }
 
