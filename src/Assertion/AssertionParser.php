@@ -11,6 +11,7 @@ final readonly class AssertionParser
         $lines = explode("\n", $code);
         $assertions = [];
         $expects = [];
+        $resultComments = [];
         $executableLines = [];
         $segments = [];
         $currentSegmentCode = [];
@@ -89,6 +90,20 @@ final readonly class AssertionParser
                 continue;
             }
 
+            // Check for result comment assertion: expression // => value
+            if (preg_match('/^(.+?)\s*\/\/\s*=>\s*(.+)$/', $trimmed, $match) === 1) {
+                $expression = rtrim(trim($match[1]), ';');
+                $resultComments[] = new ResultCommentAssertion($expression, trim($match[2]), $lineNumber);
+                // Keep the expression (without // => comment) in executable code
+                $codeLine = rtrim($match[1]);
+                if (! str_ends_with($codeLine, ';')) {
+                    $codeLine .= ';';
+                }
+                $executableLines[] = $codeLine;
+                $currentSegmentCode[] = $codeLine;
+                continue;
+            }
+
             // Regular code line
             $executableLines[] = $line;
             $currentSegmentCode[] = $line;
@@ -113,6 +128,7 @@ final readonly class AssertionParser
             executableCode: implode("\n", $executableLines),
             segments: $segments,
             expects: $expects,
+            resultComments: $resultComments,
         );
     }
 }
