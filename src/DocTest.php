@@ -162,8 +162,8 @@ final readonly class DocTest
     {
         return array_values(array_filter(
             $blocks,
-            static fn($block) => str_contains($block->rawCode, $filter)
-                || str_contains($block->file, $filter),
+            static fn($block) => str_contains((string) $block->rawCode, $filter)
+                || str_contains((string) $block->file, $filter),
         ));
     }
 
