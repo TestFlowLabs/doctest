@@ -13,6 +13,7 @@
     "require-dev": {
         "laravel/pint": "^1.0",
         "pestphp/pest": "^3.8",
+        "pestphp/pest-plugin-type-coverage": "^3.6",
         "phpstan/phpstan": "^2.0",
         "rector/rector": "^2.0"
     },
