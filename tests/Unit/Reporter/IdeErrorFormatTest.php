@@ -37,7 +37,7 @@ final class IdeErrorFormatTest extends TestCase
                 rawCode: 'echo "test";',
                 executableCode: $parsed->executableCode,
                 attributes: new Attributes(),
-                assertions: $parsed->assertions,
+                assertions: [],
             ),
             error: $error ?? 'Output mismatch',
         );
@@ -85,7 +85,7 @@ final class IdeErrorFormatTest extends TestCase
                 rawCode: 'echo "ok";',
                 executableCode: $parsed->executableCode,
                 attributes: new Attributes(),
-                assertions: $parsed->assertions,
+                assertions: [],
             ),
         );
 
