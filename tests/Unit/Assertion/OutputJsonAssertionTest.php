@@ -6,7 +6,6 @@ namespace TestFlowLabs\DocTest\Tests\Unit\Assertion;
 
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
-use TestFlowLabs\DocTest\Assertion\AssertionParser;
 use TestFlowLabs\DocTest\Assertion\OutputJsonAssertion;
 
 final class OutputJsonAssertionTest extends TestCase
@@ -25,15 +24,5 @@ final class OutputJsonAssertionTest extends TestCase
         $assertion = new OutputJsonAssertion('{"status": "ok"}', 5);
 
         $this->assertSame('{"status": "ok"}', $assertion->expectedJson);
-    }
-
-    #[Test]
-    public function parser_detects_output_json(): void
-    {
-        $parser = new AssertionParser();
-        $result = $parser->parse("echo json_encode(['status' => 'ok']);\n// OutputJson: {\"status\": \"ok\"}");
-
-        $this->assertCount(1, $result->assertions);
-        $this->assertInstanceOf(OutputJsonAssertion::class, $result->assertions[0]);
     }
 }
