@@ -215,11 +215,11 @@ $pdo->exec('DROP TABLE users');
 
 <div class="feature-badge">Shiki</div>
 
-## VitePress-Native
+## Shiki Compatible
 
 Write documentation with Shiki markers — diffs, highlights, and hidden boilerplate. DocTest strips the markers and executes the real code underneath.
 
-Hide setup lines with `// [!code hide]` so readers see clean examples while tests run the full code.
+Works with any Shiki-powered tool: VitePress, Astro, Nuxt Content, Slidev. Hide setup lines with `// [!code hide]` so readers see clean examples while tests run the full code.
 
 [See Shiki support &rarr;](/shiki/)
 
