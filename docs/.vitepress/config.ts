@@ -93,7 +93,13 @@ export default defineConfig({
         items: [
           { text: 'CI/CD', link: '/ci-cd/' },
           { text: 'AI Agents', link: '/integrations/' },
-          { text: 'Shiki', link: '/shiki/' },
+        ],
+      },
+      {
+        text: 'Shiki',
+        items: [
+          { text: 'Overview', link: '/shiki/' },
+          { text: 'Marker Reference', link: '/shiki/markers' },
           { text: 'shiki-hide-lines', link: '/shiki-hide-lines/' },
         ],
       },
