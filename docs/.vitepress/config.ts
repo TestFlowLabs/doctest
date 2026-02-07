@@ -1,5 +1,6 @@
 import { defineConfig } from 'vitepress'
 import { tabsMarkdownPlugin } from 'vitepress-plugin-tabs'
+import { transformerHideLines } from 'shiki-hide-lines'
 
 export default defineConfig({
   title: 'DocTest',
@@ -20,6 +21,9 @@ export default defineConfig({
     config(md) {
       md.use(tabsMarkdownPlugin)
     },
+    codeTransformers: [
+      transformerHideLines({ reveal: true })
+    ],
   },
   themeConfig: {
     logo: '/doctest-logo.svg',
