@@ -272,27 +272,16 @@ Reveal mode needs the companion CSS:
 import 'shiki-hide-lines/style.css'
 ```
 
-**Collapsed state:**
-```
-┌──────────────────────────────────────┐
-│ ··· 4 hidden lines                   │  ← clickable
-│                                      │
-│ $user = User::find(1);              │
-│ echo $user->name;                   │
-└──────────────────────────────────────┘
-```
+**Live example** — click the placeholder below to reveal the hidden lines:
 
-**Expanded state:**
-```
-┌──────────────────────────────────────┐
-│ <?php                                │  ← dimmed
-│ declare(strict_types=1);             │  ← dimmed
-│ require_once 'vendor/autoload.php';  │  ← dimmed
-│ use App\Models\User;                 │  ← dimmed
-│                                      │
-│ $user = User::find(1);              │
-│ echo $user->name;                   │
-└──────────────────────────────────────┘
+```php
+<?php // [!code hide]
+declare(strict_types=1); // [!code hide]
+require_once 'vendor/autoload.php'; // [!code hide]
+use App\Models\User; // [!code hide]
+
+$user = User::find(1);
+echo $user->name;
 ```
 
 ### Platform Integrations
