@@ -225,7 +225,7 @@ This approach forces you to think about what the reader should learn from each e
 
 ### Hidden State
 
-```php
+```php no_run
 // BAD: Where does $config come from?
 echo $config['database'];
 ```
