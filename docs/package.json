@@ -12,6 +12,6 @@
     "vitepress-plugin-tabs": "^0.7.3"
   },
   "dependencies": {
-    "shiki-hide-lines": "^1.0.2"
+    "shiki-hide-lines": "^1.1.0"
   }
 }
