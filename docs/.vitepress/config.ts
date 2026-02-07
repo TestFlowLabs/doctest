@@ -89,7 +89,7 @@ export default defineConfig({
         items: [
           { text: 'CI/CD', link: '/ci-cd/' },
           { text: 'AI Agents', link: '/integrations/' },
-          { text: 'Shiki / VitePress', link: '/shiki/' },
+          { text: 'Shiki', link: '/shiki/' },
         ],
       },
       {
