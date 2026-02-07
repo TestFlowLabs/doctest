@@ -93,3 +93,163 @@ test('highlight notation with range stripped', function (): void {
 
     expect($result->infoString)->toBe('php');
 });
+
+// --- hide single-line marker tests (doctest-6v3t) ---
+
+test('strips hide marker but keeps code', function (): void {
+    $code   = '$x = 1; // [!code hide]';
+    $result = $this->filter->filter($code, 'php');
+
+    expect($result->code)->toBe('$x = 1;');
+});
+
+test('strips hide marker with code before marker', function (): void {
+    $code   = '<?php // [!code hide]';
+    $result = $this->filter->filter($code, 'php');
+
+    expect($result->code)->toBe('<?php');
+});
+
+test('hide marker at line start is stripped', function (): void {
+    $code   = "// [!code hide]\n\$x = 1;";
+    $result = $this->filter->filter($code, 'php');
+
+    $this->assertStringNotContainsString('[!code hide]', $result->code);
+    $this->assertStringContainsString('$x = 1;', $result->code);
+});
+
+// --- hide:start / hide:end block tests (doctest-bek7) ---
+
+test('removes hide:start and hide:end lines but keeps inner lines', function (): void {
+    $code = implode("\n", [
+        '$visible = 1;',
+        '// [!code hide:start]',
+        '$hidden_but_kept = 2;',
+        '// [!code hide:end]',
+        '$also_visible = 3;',
+    ]);
+    $result = $this->filter->filter($code, 'php');
+
+    expect($result->code)->toBe("\$visible = 1;\n\$hidden_but_kept = 2;\n\$also_visible = 3;");
+});
+
+test('handles multiple hide blocks', function (): void {
+    $code = implode("\n", [
+        '$a = 1;',
+        '// [!code hide:start]',
+        '$b = 2;',
+        '// [!code hide:end]',
+        '$c = 3;',
+        '// [!code hide:start]',
+        '$d = 4;',
+        '// [!code hide:end]',
+        '$e = 5;',
+    ]);
+    $result = $this->filter->filter($code, 'php');
+
+    expect($result->code)->toBe("\$a = 1;\n\$b = 2;\n\$c = 3;\n\$d = 4;\n\$e = 5;");
+});
+
+test('handles empty hide block', function (): void {
+    $code = implode("\n", [
+        '$a = 1;',
+        '// [!code hide:start]',
+        '// [!code hide:end]',
+        '$b = 2;',
+    ]);
+    $result = $this->filter->filter($code, 'php');
+
+    expect($result->code)->toBe("\$a = 1;\n\$b = 2;");
+});
+
+// --- catch-all marker stripping tests (doctest-1dan) ---
+
+test('strips highlight marker but keeps code', function (): void {
+    $code   = '$x = 1; // [!code highlight]';
+    $result = $this->filter->filter($code, 'php');
+
+    expect($result->code)->toBe('$x = 1;');
+});
+
+test('strips focus marker but keeps code', function (): void {
+    $code   = '$x = 1; // [!code focus]';
+    $result = $this->filter->filter($code, 'php');
+
+    expect($result->code)->toBe('$x = 1;');
+});
+
+test('strips warning marker but keeps code', function (): void {
+    $code   = '$x = 1; // [!code warning]';
+    $result = $this->filter->filter($code, 'php');
+
+    expect($result->code)->toBe('$x = 1;');
+});
+
+test('strips error marker but keeps code', function (): void {
+    $code   = '$x = 1; // [!code error]';
+    $result = $this->filter->filter($code, 'php');
+
+    expect($result->code)->toBe('$x = 1;');
+});
+
+test('strips word highlight marker but keeps code', function (): void {
+    $code   = '$x = 1; // [!code word:xxx]';
+    $result = $this->filter->filter($code, 'php');
+
+    expect($result->code)->toBe('$x = 1;');
+});
+
+// --- mixed markers tests (doctest-9zx9) ---
+
+test('handles hide with -- and ++ and highlight on different lines', function (): void {
+    $code = implode("\n", [
+        '$removed = 0; // [!code --]',
+        '$added = 1; // [!code ++]',
+        '$hidden = 2; // [!code hide]',
+        '$highlighted = 3; // [!code highlight]',
+        '$normal = 4;',
+    ]);
+    $result = $this->filter->filter($code, 'php');
+
+    expect($result->code)->toBe("\$added = 1;\n\$hidden = 2;\n\$highlighted = 3;\n\$normal = 4;");
+});
+
+test('preserves line order after filtering with all marker types', function (): void {
+    $code = implode("\n", [
+        '$a = 1; // [!code highlight]',
+        '// [!code hide:start]',
+        '$b = 2;',
+        '// [!code hide:end]',
+        '$c = 3; // [!code --]',
+        '$d = 4; // [!code hide]',
+        '$e = 5; // [!code focus]',
+    ]);
+    $result = $this->filter->filter($code, 'php');
+
+    expect($result->code)->toBe("\$a = 1;\n\$b = 2;\n\$d = 4;\n\$e = 5;");
+});
+
+// --- edge case tests (doctest-k0je) ---
+
+test('unclosed hide:start removes only the marker line', function (): void {
+    $code = implode("\n", [
+        '$a = 1;',
+        '// [!code hide:start]',
+        '$b = 2;',
+        '$c = 3;',
+    ]);
+    $result = $this->filter->filter($code, 'php');
+
+    expect($result->code)->toBe("\$a = 1;\n\$b = 2;\n\$c = 3;");
+});
+
+test('orphan hide:end is removed', function (): void {
+    $code = implode("\n", [
+        '$a = 1;',
+        '// [!code hide:end]',
+        '$b = 2;',
+    ]);
+    $result = $this->filter->filter($code, 'php');
+
+    expect($result->code)->toBe("\$a = 1;\n\$b = 2;");
+});
