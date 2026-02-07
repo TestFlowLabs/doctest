@@ -8,6 +8,7 @@ Code examples in documentation rot. APIs change, methods get renamed, return typ
 
 - **Tested documentation** — code examples are verified on every CI run
 - **Invisible assertions** — HTML comments keep assertions hidden from rendered docs
+- **Shiki compatible** — handles `// [!code hide]`, diff markers, highlights, and all Shiki annotations
 - **Process isolation** — each example runs in its own process, no side effects
 - **Zero setup** — run `vendor/bin/doctest` and it just works
 
