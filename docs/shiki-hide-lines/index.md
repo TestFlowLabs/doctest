@@ -45,7 +45,7 @@ import 'shiki-hide-lines/style.css'
 
 **Live example** — click the placeholder below to reveal the hidden lines:
 
-```php
+```php no_run
 <?php // [!code hide]
 declare(strict_types=1); // [!code hide]
 require_once 'vendor/autoload.php'; // [!code hide]
