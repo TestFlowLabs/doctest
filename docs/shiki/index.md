@@ -94,7 +94,7 @@ DocTest's `ShikiFilter` processes all Shiki markers before executing code. Every
 The `{...}` notation is **stripped from the info string** so it doesn't interfere with attribute parsing:
 
 ```
-```php{1,4-6}  →  ```php
+php{1,4-6}  →  php
 ```
 
 ### Diff Removal `// [!code --]`
@@ -144,7 +144,7 @@ $user = User::find(1);
 echo $user->name;
 ```
 
-All lines are kept for execution. In rendered docs (with the `shiki-hide-lines` transformer), only the last two lines are visible.
+All lines are kept for execution. In rendered docs (with the `shiki-hide-lines` transformer), only the non-hidden lines are visible to readers.
 
 ### Block Hide `// [!code hide:start]` / `// [!code hide:end]`
 
