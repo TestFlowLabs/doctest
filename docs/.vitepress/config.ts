@@ -94,6 +94,7 @@ export default defineConfig({
           { text: 'CI/CD', link: '/ci-cd/' },
           { text: 'AI Agents', link: '/integrations/' },
           { text: 'Shiki', link: '/shiki/' },
+          { text: 'shiki-hide-lines', link: '/shiki-hide-lines/' },
         ],
       },
       {
