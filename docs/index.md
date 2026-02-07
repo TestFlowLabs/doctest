@@ -213,6 +213,37 @@ $pdo->exec('DROP TABLE users');
 <div class="feature-section">
 <div class="feature-text">
 
+<div class="feature-badge">Shiki</div>
+
+## VitePress-Native
+
+Write documentation with Shiki markers — diffs, highlights, and hidden boilerplate. DocTest strips the markers and executes the real code underneath.
+
+Hide setup lines with `// [!code hide]` so readers see clean examples while tests run the full code.
+
+[See Shiki support &rarr;](/shiki/)
+
+</div>
+<div class="feature-code">
+
+````markdown
+```php
+<?php // [!code hide]
+require 'vendor/autoload.php'; // [!code hide]
+
+$greeting = 'Hello';           // [!code --]
+$greeting = 'Hello, World!';   // [!code ++]
+echo $greeting;
+```
+<!-- doctest: Hello, World! -->
+````
+
+</div>
+</div>
+
+<div class="feature-section">
+<div class="feature-text">
+
 <div class="feature-badge">CI/CD</div>
 
 ## CI-Ready from Day One
