@@ -1,4 +1,7 @@
-# DocTest
+<div align="center">
+  <img src="docs/public/doctest-logo.svg" width="80" alt="DocTest">
+  <h1>DocTest</h1>
+</div>
 
 A PHP documentation testing tool that validates code examples in your markdown files. Write documentation with confidence — if it compiles and runs, it stays correct.
 
