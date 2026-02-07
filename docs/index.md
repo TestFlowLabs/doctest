@@ -248,7 +248,7 @@ echo $greeting;
 
 ## CI-Ready from Day One
 
-Add one line to your CI pipeline. DocTest returns proper exit codes and generates JUnit XML reports for your CI dashboard.
+Add one line to your CI pipeline. DocTest returns proper exit codes for your CI dashboard.
 
 [Set up CI &rarr;](/ci-cd/)
 
