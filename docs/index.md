@@ -221,7 +221,7 @@ Write documentation with Shiki markers — diffs, highlights, and hidden boilerp
 
 Works with any Shiki-powered tool: VitePress, Astro, Nuxt Content, Slidev. Hide setup lines with `// [!code hide]` so readers see clean examples while tests run the full code.
 
-[See Shiki support &rarr;](/shiki/)
+[See Shiki support &rarr;](/shiki/) · [shiki-hide-lines &rarr;](/shiki-hide-lines/)
 
 </div>
 <div class="feature-code">
