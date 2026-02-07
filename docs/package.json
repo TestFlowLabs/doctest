@@ -10,5 +10,8 @@
   "devDependencies": {
     "vitepress": "^1.5.0",
     "vitepress-plugin-tabs": "^0.7.3"
+  },
+  "dependencies": {
+    "shiki-hide-lines": "^1.0.2"
   }
 }
