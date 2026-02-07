@@ -16,15 +16,18 @@ final readonly class ShikiFilter
         $filtered = [];
 
         foreach ($lines as $line) {
-            // Remove lines with [!code --] entirely
+            // 1. Remove lines with [!code --] entirely (changes execution semantics)
             if (str_contains($line, '// [!code --]')) {
                 continue;
             }
 
-            // Strip [!code ++] marker but keep the code
-            if (str_contains($line, '// [!code ++]')) {
-                $line = (string) preg_replace('/\s*\/\/\s*\[!code \+\+\]/', '', $line);
+            // 2. Remove block delimiter lines entirely
+            if (str_contains($line, '// [!code hide:start]') || str_contains($line, '// [!code hide:end]')) {
+                continue;
             }
+
+            // 3. Strip any remaining // [!code xxx] marker (++, hide, highlight, focus, etc.)
+            $line = (string) preg_replace('/\s*\/\/\s*\[!code [^\]]+\]/', '', $line);
 
             $filtered[] = $line;
         }
