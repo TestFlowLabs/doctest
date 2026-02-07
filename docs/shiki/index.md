@@ -1,10 +1,10 @@
 # Shiki Compatibility
 
-DocTest handles [Shiki](https://shiki.style/) line highlights, diff markers, and hide markers used in VitePress and similar documentation tools.
+DocTest handles [Shiki](https://shiki.style/) line highlights, diff markers, and hide markers used in any Shiki-powered documentation tool — VitePress, Astro, Nuxt Content, Slidev, or direct Shiki usage.
 
 ## What Shiki Adds
 
-VitePress uses Shiki for syntax highlighting and supports special markers in code blocks:
+Shiki-powered documentation tools support special markers in code blocks:
 
 ### Line Highlights
 
@@ -238,13 +238,66 @@ echo $items->sum();
 <!-- doctest: 6 -->
 ````
 
-## VitePress Integration with `shiki-hide-lines`
+## Rendering Hidden Lines with `shiki-hide-lines`
 
-To render hidden lines in VitePress, use the [`shiki-hide-lines`](https://www.npmjs.com/package/shiki-hide-lines) transformer:
+The [`shiki-hide-lines`](https://www.npmjs.com/package/shiki-hide-lines) Shiki transformer renders `// [!code hide]` markers in the browser. It works with any Shiki-powered tool.
 
 ```bash
 npm install shiki-hide-lines
 ```
+
+### Two Modes
+
+#### Fully Hidden (default)
+
+Hidden lines are completely removed from the rendered output. No trace remains.
+
+```ts
+import { transformerHideLines } from 'shiki-hide-lines'
+
+transformerHideLines()
+```
+
+#### Revealable (`reveal: true`)
+
+Hidden lines are collapsed behind a clickable placeholder that readers can expand.
+
+```ts
+transformerHideLines({ reveal: true })
+```
+
+Reveal mode needs the companion CSS:
+
+```ts
+import 'shiki-hide-lines/style.css'
+```
+
+**Collapsed state:**
+```
+┌──────────────────────────────────────┐
+│ ··· 4 hidden lines                   │  ← clickable
+│                                      │
+│ $user = User::find(1);              │
+│ echo $user->name;                   │
+└──────────────────────────────────────┘
+```
+
+**Expanded state:**
+```
+┌──────────────────────────────────────┐
+│ <?php                                │  ← dimmed
+│ declare(strict_types=1);             │  ← dimmed
+│ require_once 'vendor/autoload.php';  │  ← dimmed
+│ use App\Models\User;                 │  ← dimmed
+│                                      │
+│ $user = User::find(1);              │
+│ echo $user->name;                   │
+└──────────────────────────────────────┘
+```
+
+### Platform Integrations
+
+#### VitePress
 
 ```ts
 // .vitepress/config.ts
@@ -259,14 +312,64 @@ export default defineConfig({
 })
 ```
 
-With `reveal: true`, hidden lines are collapsed behind a clickable placeholder that readers can expand. Without it, hidden lines are fully removed from rendered output.
-
-Import the CSS for reveal mode styling:
+#### Astro
 
 ```ts
-// .vitepress/theme/index.ts
-import 'shiki-hide-lines/style.css'
+// astro.config.mjs
+import { transformerHideLines } from 'shiki-hide-lines'
+
+export default defineConfig({
+  markdown: {
+    shikiConfig: {
+      transformers: [transformerHideLines()]
+    }
+  }
+})
 ```
+
+#### Nuxt Content
+
+```ts
+// nuxt.config.ts
+import { transformerHideLines } from 'shiki-hide-lines'
+
+export default defineNuxtConfig({
+  content: {
+    highlight: {
+      transformers: [transformerHideLines()]
+    }
+  }
+})
+```
+
+#### Direct Shiki
+
+```ts
+import { codeToHtml } from 'shiki'
+import { transformerHideLines } from 'shiki-hide-lines'
+
+const html = await codeToHtml(code, {
+  lang: 'php',
+  theme: 'github-dark',
+  transformers: [transformerHideLines()]
+})
+```
+
+### Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `reveal` | `boolean` | `false` | Enable reveal mode with a clickable toggle |
+| `marker` | `string` | `'hide'` | Custom marker keyword (e.g. `'hidden'` uses `// [!code hidden]`) |
+
+### CSS Classes
+
+| Class | Applied to | When |
+|-------|-----------|------|
+| `has-hidden-lines` | `<pre>` | Code block has hidden lines |
+| `hidden-line` | `<span class="line">` | Line is hidden (reveal mode) |
+| `hidden-lines-summary` | `<span>` | Placeholder element (reveal mode) |
+| `hidden-lines-revealed` | `<pre>` | Toggle is expanded (reveal mode) |
 
 ## No Configuration Needed
 
