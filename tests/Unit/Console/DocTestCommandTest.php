@@ -89,14 +89,22 @@ test('execute output contains pass for passing fixture', function (): void {
 
     $this->assertStringContainsString('✔', $tester->getDisplay());
 });
-test('command has parallel option', function (): void {
+test('command has parallel option that accepts optional value', function (): void {
     $command = new DocTestCommand();
 
     $definition = $command->getDefinition();
 
     expect($definition->hasOption('parallel'))->toBeTrue();
-    expect($definition->getOption('parallel')->getDefault())->toBeNull();
     expect($definition->getOption('parallel')->acceptValue())->toBeTrue();
+    expect($definition->getOption('parallel')->isValueRequired())->toBeFalse();
+});
+test('parallel option without value auto-detects CPU cores', function (): void {
+    $command = new DocTestCommand();
+    $tester  = new CommandTester($command);
+
+    $tester->execute(['files' => [$this->fixturesDir.'/basic.md'], '--parallel' => null]);
+
+    expect($tester->getStatusCode())->toBe(0);
 });
 test('execute with stop on failure stops early', function (): void {
     $tempFile = sys_get_temp_dir().'/doctest_cmd_stop_'.uniqid().'.md';
