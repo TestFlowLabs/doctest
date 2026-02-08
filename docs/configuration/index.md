@@ -8,9 +8,11 @@ If no config file exists, DocTest uses these defaults:
 
 ```php ignore
 return [
-    'paths'     => ['docs', 'README.md'],
-    'exclude'   => [],
-    'execution' => [
+    'paths'          => ['docs', 'README.md'],
+    'exclude'        => [],
+    'bootstrap'      => null,
+    'bootstraps_dir' => '.doctest',
+    'execution'      => [
         'timeout'      => 30,
         'memory_limit' => '256M',
     ],
@@ -62,6 +64,24 @@ PHP memory limit for each code block process.
     'memory_limit' => '256M',
 ],
 ```
+
+### `bootstrap`
+
+Global PHP code loaded before every code block. Typically used for Composer autoloader or common setup.
+
+```php ignore
+'bootstrap' => "require_once __DIR__.'/vendor/autoload.php';",
+```
+
+### `bootstraps_dir`
+
+Directory containing bootstrap profile files (default: `.doctest`). Each `.php` file in this directory becomes a profile that blocks can load via `bootstrap="name"`.
+
+```php ignore
+'bootstraps_dir' => '.doctest',
+```
+
+See [bootstrap attribute](/attributes/bootstrap) for details on per-block bootstrap profiles.
 
 ### `stop_on_failure`
 
