@@ -159,3 +159,27 @@ test('bootstrap non string falls back to null', function (): void {
 
     expect($config->bootstrap)->toBeNull();
 });
+test('bootstraps dir defaults to .doctest', function (): void {
+    $config = DocTestConfig::fromArray([]);
+
+    expect($config->bootstrapsDir)->toBe('.doctest');
+});
+test('bootstraps dir loaded from array', function (): void {
+    $config = DocTestConfig::fromArray([
+        'bootstraps_dir' => 'custom/bootstraps',
+    ]);
+
+    expect($config->bootstrapsDir)->toBe('custom/bootstraps');
+});
+test('bootstraps dir non string falls back to default', function (): void {
+    $config = DocTestConfig::fromArray([
+        'bootstraps_dir' => 42,
+    ]);
+
+    expect($config->bootstrapsDir)->toBe('.doctest');
+});
+test('bootstraps dir in constructor defaults to .doctest', function (): void {
+    $config = new DocTestConfig();
+
+    expect($config->bootstrapsDir)->toBe('.doctest');
+});
