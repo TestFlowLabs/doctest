@@ -300,3 +300,17 @@ test('throws RuntimeException when both sources set bootstrap', function (): voi
     expect(fn () => $this->extractor->extract($document, 'test.md'))
         ->toThrow(RuntimeException::class, 'Conflicting');
 });
+test('throws RuntimeException when multiple doctest-attr comments before code block', function (): void {
+    $markdown = "<!-- doctest-attr: group=\"a\" -->\n<!-- doctest-attr: bootstrap=\"db\" -->\n```php\necho 1;\n```\n";
+    $document = $this->markdownParser->parse($markdown);
+
+    expect(fn () => $this->extractor->extract($document, 'test.md'))
+        ->toThrow(RuntimeException::class, 'Multiple');
+});
+test('throws RuntimeException when both sources set throwsClass', function (): void {
+    $markdown = "<!-- doctest-attr: throws(InvalidArgumentException) -->\n```php throws(RuntimeException)\nthrow new \\Exception('x');\n```\n";
+    $document = $this->markdownParser->parse($markdown);
+
+    expect(fn () => $this->extractor->extract($document, 'test.md'))
+        ->toThrow(RuntimeException::class, 'Conflicting');
+});
