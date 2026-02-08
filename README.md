@@ -42,7 +42,7 @@ DocTest scans `docs/` and `README.md` by default. That's it.
 
 ## What Can It Do?
 
-DocTest supports six assertion types, wildcards for dynamic output, code block attributes (`ignore`, `no_run`, `throws`, `parse_error`), grouped examples with shared state, and a `bootstrap` config for loading your project's autoloader. A few examples:
+DocTest supports six assertion types, wildcards for dynamic output, code block attributes (`ignore`, `no_run`, `throws`, `parse_error`), grouped examples with shared state, a `bootstrap` config for loading your project's autoloader, and **bootstrap profiles** for per-block environments via the `.doctest/` directory. A few examples:
 
 ```php
 echo 2 + 3;
