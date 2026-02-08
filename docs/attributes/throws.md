@@ -69,3 +69,14 @@ validate(['email' => 'not-an-email'], ['email' => 'email']);
 throw new RuntimeException('File not found');
 ```
 ````
+
+## Alternative: HTML Comment Syntax
+
+````markdown
+<!-- doctest-attr: throws(RuntimeException, "not found") -->
+```php
+throw new RuntimeException('File not found');
+```
+````
+
+See [HTML Comment Syntax](/attributes/html-comment-syntax) for details.
