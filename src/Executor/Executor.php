@@ -15,19 +15,28 @@ final readonly class Executor
     private ProcessRunner $processRunner;
     private OutputComparator $comparator;
     private DiffGenerator $diffGenerator;
+    private ?ParallelExecutor $parallelExecutor;
 
     public function __construct(
-        int $timeout = 5,
-        string $memoryLimit = '128M',
+        private int $timeout = 5,
+        private string $memoryLimit = '128M',
         bool $normalizeWhitespace = true,
         bool $trimTrailing = true,
         ?string $bootstrapCode = null,
         private ?BootstrapResolver $bootstrapResolver = null,
+        private int $parallel = 1,
     ) {
         $this->codeGenerator = new CodeGenerator($bootstrapCode);
         $this->processRunner = new ProcessRunner($timeout, $memoryLimit);
         $this->comparator    = new OutputComparator($normalizeWhitespace, $trimTrailing);
         $this->diffGenerator = new DiffGenerator();
+
+        if ($this->parallel > 1) {
+            $workerPool             = new WorkerPool($this->parallel, $this->timeout, $this->memoryLimit);
+            $this->parallelExecutor = new ParallelExecutor($this->codeGenerator, $workerPool);
+        } else {
+            $this->parallelExecutor = null;
+        }
     }
 
     /**
@@ -40,6 +49,22 @@ final readonly class Executor
     {
         [$setup, $teardown, $normalBlocks, $groupedBlocks] = $this->collectSetupTeardownAndGroups($blocks);
 
+        if ($this->parallelExecutor !== null) {
+            return $this->executeAllParallel($normalBlocks, $groupedBlocks, $setup, $teardown, $onResult);
+        }
+
+        return $this->executeAllSequential($normalBlocks, $groupedBlocks, $setup, $teardown, $onResult);
+    }
+
+    /**
+     * @param  array<CodeBlock>  $normalBlocks
+     * @param  array<string, array<CodeBlock>>  $groupedBlocks
+     * @param  ?\Closure(ExecutionResult): ?bool  $onResult
+     *
+     * @return array<ExecutionResult>
+     */
+    private function executeAllSequential(array $normalBlocks, array $groupedBlocks, ?string $setup, ?string $teardown, ?\Closure $onResult): array
+    {
         $results = [];
         $stopped = false;
 
@@ -82,6 +107,177 @@ final readonly class Executor
         }
 
         return $results;
+    }
+
+    /**
+     * @param  array<CodeBlock>  $normalBlocks
+     * @param  array<string, array<CodeBlock>>  $groupedBlocks
+     * @param  ?\Closure(ExecutionResult): ?bool  $onResult
+     *
+     * @return array<ExecutionResult>
+     */
+    private function executeAllParallel(array $normalBlocks, array $groupedBlocks, ?string $setup, ?string $teardown, ?\Closure $onResult): array
+    {
+        $results = [];
+        $stopped = false;
+
+        // Separate blocks that need process execution from skip/syntax-only blocks
+        $processableBlocks   = [];
+        $processableIndexMap = [];
+
+        foreach ($normalBlocks as $i => $block) {
+            if ($block->attributes->isIgnore()) {
+                $result    = new ExecutionResult(passed: true, codeBlock: $block, skipped: true);
+                $results[] = $result;
+
+                if ($onResult !== null && $onResult($result) === false) {
+                    return $results;
+                }
+            } elseif ($block->attributes->isNoRun()) {
+                $result    = $this->syntaxCheck($block);
+                $results[] = $result;
+
+                if ($onResult !== null && $onResult($result) === false) {
+                    return $results;
+                }
+            } else {
+                $processableIndexMap[] = $i;
+                $processableBlocks[]   = $block;
+            }
+        }
+
+        // Run processable blocks in parallel
+        if ($processableBlocks !== [] && $this->parallelExecutor !== null) {
+            $processResults = $this->parallelExecutor->execute($processableBlocks, $setup, $teardown);
+
+            foreach ($processableBlocks as $index => $block) {
+                if (!isset($processResults[$index])) {
+                    continue;
+                }
+
+                $processResult = $processResults[$index];
+                $result        = $this->evaluateProcessResult($block, $processResult);
+                $results[]     = $result;
+
+                if ($onResult !== null && $onResult($result) === false) {
+                    $stopped = true;
+
+                    break;
+                }
+            }
+        }
+
+        // Groups still run sequentially
+        if (!$stopped) {
+            foreach ($groupedBlocks as $groupBlocks) {
+                $groupResults = $this->executeGroupBlocks($groupBlocks, $setup, $teardown);
+
+                foreach ($groupResults as $result) {
+                    $results[] = $result;
+
+                    if ($onResult !== null && $onResult($result) === false) {
+                        $stopped = true;
+
+                        break 2;
+                    }
+                }
+            }
+        }
+
+        return $results;
+    }
+
+    private function evaluateProcessResult(CodeBlock $block, ProcessResult $processResult): ExecutionResult
+    {
+        if ($block->attributes->isParseError()) {
+            $passed = $processResult->exitCode !== 0;
+
+            return new ExecutionResult(
+                passed: $passed,
+                codeBlock: $block,
+                error: $passed ? null : 'Expected parse error but code ran successfully',
+                duration: $processResult->duration,
+            );
+        }
+
+        if ($block->attributes->isThrows()) {
+            return $this->evaluateThrowsResult($block, $processResult);
+        }
+
+        return $this->evaluateNormalResult($block, $processResult);
+    }
+
+    private function evaluateThrowsResult(CodeBlock $block, ProcessResult $processResult): ExecutionResult
+    {
+        /** @var array{thrown?: bool, class?: string, message?: string} $data */
+        $data = json_decode($processResult->stderr, true) ?? [];
+
+        if (!isset($data['thrown']) || $data['thrown'] !== true) {
+            return new ExecutionResult(
+                passed: false,
+                codeBlock: $block,
+                error: 'Expected exception '.($block->attributes->throwsClass ?? 'Throwable').' but none was thrown',
+                duration: $processResult->duration,
+            );
+        }
+
+        if ($block->attributes->throwsClass !== null && isset($data['class'])) {
+            $normalizedActual   = ltrim($data['class'], '\\');
+            $normalizedExpected = ltrim($block->attributes->throwsClass, '\\');
+
+            if ($normalizedActual !== $normalizedExpected) {
+                return new ExecutionResult(
+                    passed: false,
+                    codeBlock: $block,
+                    error: "Expected exception {$block->attributes->throwsClass} but got {$data['class']}",
+                    duration: $processResult->duration,
+                );
+            }
+        }
+
+        if ($block->attributes->throwsMessage !== null && isset($data['message'])) {
+            if (!str_contains($data['message'], $block->attributes->throwsMessage)) {
+                return new ExecutionResult(
+                    passed: false,
+                    codeBlock: $block,
+                    error: "Expected message containing \"{$block->attributes->throwsMessage}\" but got \"{$data['message']}\"",
+                    duration: $processResult->duration,
+                );
+            }
+        }
+
+        return new ExecutionResult(
+            passed: true,
+            codeBlock: $block,
+            duration: $processResult->duration,
+        );
+    }
+
+    private function evaluateNormalResult(CodeBlock $block, ProcessResult $processResult): ExecutionResult
+    {
+        if ($processResult->exitCode !== 0) {
+            $decoded = json_decode($processResult->stderr, true);
+
+            if (!is_array($decoded)) {
+                $errorMessage = $processResult->stderr !== ''
+                    ? 'Process failed (exit code '.$processResult->exitCode.'): '.$processResult->stderr
+                    : 'Process failed with exit code '.$processResult->exitCode;
+
+                return new ExecutionResult(
+                    passed: false,
+                    codeBlock: $block,
+                    error: $errorMessage,
+                    duration: $processResult->duration,
+                );
+            }
+        }
+
+        $decoded = json_decode($processResult->stderr, true);
+
+        /** @var array<array{type: string, expected?: string, actual?: string, expression?: string, passed?: bool, line?: int, value?: string}> $results */
+        $results = is_array($decoded) ? $decoded : [];
+
+        return $this->evaluateResults($block, $results, $processResult);
     }
 
     /**
