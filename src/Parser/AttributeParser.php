@@ -17,9 +17,16 @@ final readonly class AttributeParser
 
     public function parse(string $infoString): Attributes
     {
-        // Strip language identifier and Shiki metadata
         $tokens = $this->extractTokens($infoString);
 
+        return $this->resolveAttributes($infoString, $tokens);
+    }
+
+    /**
+     * @param  array<string>  $tokens
+     */
+    public function resolveAttributes(string $content, array $tokens = []): Attributes
+    {
         $attribute     = null;
         $throwsClass   = null;
         $throwsMessage = null;
@@ -27,17 +34,17 @@ final readonly class AttributeParser
         $bootstraps    = [];
 
         // Check for group
-        if (preg_match(self::GROUP_PATTERN, $infoString, $groupMatch) === 1) {
+        if (preg_match(self::GROUP_PATTERN, $content, $groupMatch) === 1) {
             $group = $groupMatch[1];
         }
 
         // Check for bootstrap profiles
-        if (preg_match(self::BOOTSTRAP_PATTERN, $infoString, $bootstrapMatch) === 1) {
+        if (preg_match(self::BOOTSTRAP_PATTERN, $content, $bootstrapMatch) === 1) {
             $bootstraps = array_map(trim(...), explode(',', $bootstrapMatch[1]));
         }
 
         // Check for throws with params
-        if (preg_match(self::THROWS_PATTERN, $infoString, $throwsMatch) === 1) {
+        if (preg_match(self::THROWS_PATTERN, $content, $throwsMatch) === 1) {
             $attribute     = Attribute::Throws;
             $throwsClass   = trim($throwsMatch[1]);
             $throwsMessage = isset($throwsMatch[2]) && $throwsMatch[2] !== '' ? $throwsMatch[2] : null;
