@@ -520,3 +520,35 @@ test('executor resolves different bootstraps per block in executeAll', function 
     unlink($tmpDir.'/greet.php');
     rmdir($tmpDir);
 });
+test('group blocks with mismatched bootstrap profiles throws exception', function (): void {
+    $tmpDir = sys_get_temp_dir().'/doctest-executor-test-'.bin2hex(random_bytes(8));
+    mkdir($tmpDir, 0755, true);
+    file_put_contents($tmpDir.'/math.php', "<?php\nfunction doctest_add(\$a, \$b) { return \$a + \$b; }");
+    file_put_contents($tmpDir.'/greet.php', "<?php\nfunction doctest_greet() { return 'hi'; }");
+
+    $resolver = new \TestFlowLabs\DocTest\Config\BootstrapResolver($tmpDir);
+    $executor = new Executor(bootstrapResolver: $resolver);
+
+    $block1 = new CodeBlock(
+        file: 'test.md', startLine: 1,
+        rawCode: '$x = 1;',
+        executableCode: '$x = 1;',
+        attributes: new Attributes(group: 'calc', bootstraps: ['math']),
+        assertions: [],
+    );
+
+    $block2 = new CodeBlock(
+        file: 'test.md', startLine: 5,
+        rawCode: 'echo $x;',
+        executableCode: 'echo $x;',
+        attributes: new Attributes(group: 'calc', bootstraps: ['greet']),
+        assertions: [new OutputAssertion('1', 1)],
+    );
+
+    expect(fn () => $executor->executeAll([$block1, $block2]))
+        ->toThrow(RuntimeException::class, 'All blocks in group "calc" must have identical bootstrap profiles');
+
+    unlink($tmpDir.'/math.php');
+    unlink($tmpDir.'/greet.php');
+    rmdir($tmpDir);
+});
