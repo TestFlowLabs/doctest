@@ -13,20 +13,21 @@ final readonly class CodeGenerator
         private ?string $bootstrapCode = null,
     ) {}
 
-    public function generate(CodeBlock $block, ?string $setup = null, ?string $teardown = null): string
+    public function generate(CodeBlock $block, ?string $setup = null, ?string $teardown = null, ?string $blockBootstrapCode = null): string
     {
         $dir      = $this->ensureTempDir();
         $filePath = $dir.'/doctest_'.bin2hex(random_bytes(16)).'.php';
 
         if ($block->attributes->isParseError()) {
-            $bootstrapLine = $this->bootstrapCode !== null ? $this->bootstrapCode."\n" : '';
-            $content       = "<?php\n".$bootstrapLine.$block->rawCode."\n";
+            $bootstrapLine      = $this->bootstrapCode !== null ? $this->bootstrapCode."\n" : '';
+            $blockBootstrapLine = $blockBootstrapCode !== null ? $blockBootstrapCode."\n" : '';
+            $content            = "<?php\n".$bootstrapLine.$blockBootstrapLine.$block->rawCode."\n";
             $this->writeFile($filePath, $content);
 
             return $filePath;
         }
 
-        $content = $this->generateInstrumented($block, $setup, $teardown);
+        $content = $this->generateInstrumented($block, $setup, $teardown, $blockBootstrapCode);
         $this->writeFile($filePath, $content);
 
         return $filePath;
@@ -35,7 +36,7 @@ final readonly class CodeGenerator
     /**
      * @param  array<CodeBlock>  $blocks
      */
-    public function generateGroup(array $blocks, ?string $setup = null, ?string $teardown = null): string
+    public function generateGroup(array $blocks, ?string $setup = null, ?string $teardown = null, ?string $blockBootstrapCode = null): string
     {
         $dir      = $this->ensureTempDir();
         $filePath = $dir.'/doctest_group_'.bin2hex(random_bytes(16)).'.php';
@@ -45,6 +46,11 @@ final readonly class CodeGenerator
 
         if ($this->bootstrapCode !== null) {
             $lines[] = $this->bootstrapCode;
+            $lines[] = '';
+        }
+
+        if ($blockBootstrapCode !== null) {
+            $lines[] = $blockBootstrapCode;
             $lines[] = '';
         }
 
@@ -115,7 +121,7 @@ final readonly class CodeGenerator
         return $filePath;
     }
 
-    private function generateInstrumented(CodeBlock $block, ?string $setup = null, ?string $teardown = null): string
+    private function generateInstrumented(CodeBlock $block, ?string $setup = null, ?string $teardown = null, ?string $blockBootstrapCode = null): string
     {
         $parser = new AssertionParser();
         $parsed = $parser->parse($block->rawCode);
@@ -124,6 +130,11 @@ final readonly class CodeGenerator
 
         if ($this->bootstrapCode !== null) {
             $lines[] = $this->bootstrapCode;
+            $lines[] = '';
+        }
+
+        if ($blockBootstrapCode !== null) {
+            $lines[] = $blockBootstrapCode;
             $lines[] = '';
         }
 
