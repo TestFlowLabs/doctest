@@ -81,6 +81,27 @@ test('reports summary statistics', function (): void {
     $this->assertStringContainsString('2', $output);
     $this->assertStringContainsString('1', $output);
 });
+test('summary shows parallel worker count when parallel is greater than 1', function (): void {
+    $reporter = new ConsoleReporter($this->output);
+    $reporter->setParallelWorkers(4);
+    $results = [
+        ($this->makeResult)(passed: true),
+    ];
+    $reporter->reportSummary($results, 1.0);
+
+    $output = ($this->getOutput)();
+    $this->assertStringContainsString('Parallel: 4', $output);
+});
+test('summary does not show parallel info when sequential', function (): void {
+    $reporter = new ConsoleReporter($this->output);
+    $results  = [
+        ($this->makeResult)(passed: true),
+    ];
+    $reporter->reportSummary($results, 1.0);
+
+    $output = ($this->getOutput)();
+    $this->assertStringNotContainsString('Parallel', $output);
+});
 test('uses symfony formatting tags', function (): void {
     $this->output->setDecorated(true);
     $reporter = new ConsoleReporter($this->output);
