@@ -13,6 +13,8 @@ final readonly class AttributeParser
 
     private const string GROUP_PATTERN = '/group="([^"]+)"/';
 
+    private const string BOOTSTRAP_PATTERN = '/bootstrap="([^"]+)"/';
+
     public function parse(string $infoString): Attributes
     {
         // Strip language identifier and Shiki metadata
@@ -22,10 +24,16 @@ final readonly class AttributeParser
         $throwsClass   = null;
         $throwsMessage = null;
         $group         = null;
+        $bootstraps    = [];
 
         // Check for group
         if (preg_match(self::GROUP_PATTERN, $infoString, $groupMatch) === 1) {
             $group = $groupMatch[1];
+        }
+
+        // Check for bootstrap profiles
+        if (preg_match(self::BOOTSTRAP_PATTERN, $infoString, $bootstrapMatch) === 1) {
+            $bootstraps = array_map(trim(...), explode(',', $bootstrapMatch[1]));
         }
 
         // Check for throws with params
@@ -49,6 +57,7 @@ final readonly class AttributeParser
             throwsClass: $throwsClass,
             throwsMessage: $throwsMessage,
             group: $group,
+            bootstraps: $bootstraps,
         );
     }
 
