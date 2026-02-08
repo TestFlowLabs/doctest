@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace TestFlowLabs\DocTest\Console;
 
+use Composer\InstalledVersions;
 use TestFlowLabs\DocTest\DocTest;
 use Symfony\Component\Console\Command\Command;
 use TestFlowLabs\DocTest\Config\DocTestConfig;
@@ -25,7 +26,8 @@ final class DocTestCommand extends Command
             ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Parse and show blocks without executing')
             ->addOption('stop-on-failure', null, InputOption::VALUE_NONE, 'Stop on first failure')
             ->addOption('config', 'c', InputOption::VALUE_REQUIRED, 'Path to doctest.php config file')
-            ->setHelp(<<<'HELP'
+            ->setHelp(
+                '<comment>DocTest</comment> v'.(InstalledVersions::getPrettyVersion('testflowlabs/doctest') ?? 'dev')."\n\n".<<<'HELP'
                 Extracts PHP code blocks from markdown files and executes them,
                 verifying output and assertions match expected values.
 
@@ -91,7 +93,8 @@ final class DocTestCommand extends Command
 
                   <info>doctest -c custom-doctest.php</info>
                     Use a custom config file
-                HELP);
+                HELP
+            );
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
