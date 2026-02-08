@@ -55,6 +55,14 @@ final class DocTestCommand extends Command
                   <info>```php bootstrap="name"</info>              Use named bootstrap profile
                   <info>```php bootstrap="a,b"</info>               Compose multiple profiles
 
+                <comment>Attributes (HTML comment — preserves editor syntax highlighting):</comment>
+                  \<!-- doctest-attr: ignore --\>            Same as info string, but in a comment
+                  \<!-- doctest-attr: group="name" --\>      Group via comment
+                  \<!-- doctest-attr: throws(Ex) --\>        Expect exception via comment
+                  \<!-- doctest-attr: bootstrap="name" --\>  Bootstrap via comment
+                  Place the comment on the line before the code block.
+                  Both syntaxes can coexist (but not for the same attribute).
+
                 <comment>Bootstrap profiles (.doctest/ directory):</comment>
                   Files in <info>.doctest/</info> are auto-discovered as profiles.
                   Profile name = filename without .php extension.
