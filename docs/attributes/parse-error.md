@@ -61,3 +61,15 @@ The block fails if the code executes successfully without a parse error:
 echo 'Hello';
 ```
 ````
+
+## Alternative: HTML Comment Syntax
+
+````markdown
+<!-- doctest-attr: parse_error -->
+```php
+$x = 42
+echo $x;
+```
+````
+
+See [HTML Comment Syntax](/attributes/html-comment-syntax) for details.
