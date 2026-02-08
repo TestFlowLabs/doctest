@@ -100,3 +100,25 @@ $config = ['debug' => true];
 - Setup blocks don't need assertions — they're purely for initialization
 - Teardown blocks are optional but recommended for resource cleanup
 - If a setup block fails, all blocks in the group fail
+
+## Alternative: HTML Comment Syntax
+
+````markdown
+<!-- doctest-attr: setup group="db" -->
+```php
+$pdo = new PDO('sqlite::memory:');
+```
+
+<!-- doctest-attr: group="db" -->
+```php
+echo 'connected';
+```
+<!-- doctest: connected -->
+
+<!-- doctest-attr: teardown group="db" -->
+```php
+unset($pdo);
+```
+````
+
+See [HTML Comment Syntax](/attributes/html-comment-syntax) for details.
