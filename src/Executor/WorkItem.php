@@ -8,18 +8,9 @@ use TestFlowLabs\DocTest\CodeBlock\CodeBlock;
 
 final readonly class WorkItem
 {
-    /**
-     * @param  array<CodeBlock>  $groupBlocks
-     */
     public function __construct(
         public int $index,
         public string $filePath,
         public CodeBlock $codeBlock,
-        public array $groupBlocks = [],
     ) {}
-
-    public function isGroup(): bool
-    {
-        return $this->groupBlocks !== [];
-    }
 }
