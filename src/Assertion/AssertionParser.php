@@ -10,6 +10,7 @@ final readonly class AssertionParser
     {
         $lines           = explode("\n", $code);
         $resultComments  = [];
+        $debugMarkers    = [];
         $executableLines = [];
 
         foreach ($lines as $lineIndex => $line) {
@@ -18,14 +19,22 @@ final readonly class AssertionParser
 
             // Check for result comment assertion: expression // => value
             if (preg_match('/^(.+?)\s*\/\/\s*=>\s*(.+)$/', $trimmed, $match) === 1) {
-                $expression       = rtrim(trim($match[1]), ';');
-                $resultComments[] = new ResultCommentAssertion($expression, trim($match[2]), $lineNumber);
+                $expression = rtrim(trim($match[1]), ';');
+                $value      = trim($match[2]);
+
                 // Keep the expression (without // => comment) in executable code
                 $codeLine = rtrim($match[1]);
                 if (!str_ends_with($codeLine, ';')) {
                     $codeLine .= ';';
                 }
                 $executableLines[] = $codeLine;
+
+                // Check for debug marker: // => dd()
+                if ($value === 'dd()') {
+                    $debugMarkers[] = new DebugMarker($expression, $lineNumber);
+                } else {
+                    $resultComments[] = new ResultCommentAssertion($expression, $value, $lineNumber);
+                }
 
                 continue;
             }
@@ -37,6 +46,7 @@ final readonly class AssertionParser
         return new AssertionParserResult(
             executableCode: implode("\n", $executableLines),
             resultComments: $resultComments,
+            debugMarkers: $debugMarkers,
         );
     }
 }

@@ -8,9 +8,11 @@ final readonly class AssertionParserResult
 {
     /**
      * @param  array<ResultCommentAssertion>  $resultComments
+     * @param  array<DebugMarker>  $debugMarkers
      */
     public function __construct(
         public string $executableCode,
         public array $resultComments = [],
+        public array $debugMarkers = [],
     ) {}
 }
