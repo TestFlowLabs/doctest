@@ -6,11 +6,15 @@ namespace TestFlowLabs\DocTest\CodeBlock;
 
 final readonly class Attributes
 {
+    /**
+     * @param  array<string>  $bootstraps
+     */
     public function __construct(
         public ?Attribute $attribute = null,
         public ?string $throwsClass = null,
         public ?string $throwsMessage = null,
         public ?string $group = null,
+        public array $bootstraps = [],
     ) {}
 
     public function isIgnore(): bool
@@ -46,5 +50,10 @@ final readonly class Attributes
     public function hasGroup(): bool
     {
         return $this->group !== null;
+    }
+
+    public function hasBootstraps(): bool
+    {
+        return $this->bootstraps !== [];
     }
 }
