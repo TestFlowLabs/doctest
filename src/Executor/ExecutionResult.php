@@ -11,6 +11,7 @@ final readonly class ExecutionResult
 {
     /**
      * @param  array<AssertionResultDetail>  $assertionDetails
+     * @param  array<DebugOutput>  $debugOutputs
      */
     public function __construct(
         public bool $passed,
@@ -22,5 +23,6 @@ final readonly class ExecutionResult
         public float $duration = 0.0,
         public bool $skipped = false,
         public array $assertionDetails = [],
+        public array $debugOutputs = [],
     ) {}
 }
