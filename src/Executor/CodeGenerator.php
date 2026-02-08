@@ -21,7 +21,7 @@ final readonly class CodeGenerator
         if ($block->attributes->isParseError()) {
             $bootstrapLine      = $this->bootstrapCode !== null ? $this->bootstrapCode."\n" : '';
             $blockBootstrapLine = $blockBootstrapCode !== null ? $blockBootstrapCode."\n" : '';
-            $content            = "<?php\n".$bootstrapLine.$blockBootstrapLine.$block->rawCode."\n";
+            $content            = "<?php\n".$bootstrapLine.$blockBootstrapLine.$this->resolveDir($block->rawCode, $block->file)."\n";
             $this->writeFile($filePath, $content);
 
             return $filePath;
@@ -63,7 +63,8 @@ final readonly class CodeGenerator
         }
 
         foreach ($blocks as $block) {
-            $parsed = $parser->parse($block->rawCode);
+            $rawCode = $this->resolveDir($block->rawCode, $block->file);
+            $parsed  = $parser->parse($rawCode);
 
             if ($block->assertions !== []) {
                 $lines[] = 'ob_start();';
@@ -134,8 +135,9 @@ final readonly class CodeGenerator
 
     private function generateInstrumented(CodeBlock $block, ?string $setup = null, ?string $teardown = null, ?string $blockBootstrapCode = null): string
     {
-        $parser = new AssertionParser();
-        $parsed = $parser->parse($block->rawCode);
+        $parser  = new AssertionParser();
+        $rawCode = $this->resolveDir($block->rawCode, $block->file);
+        $parsed  = $parser->parse($rawCode);
 
         $lines = ["<?php\n"];
 
@@ -260,6 +262,17 @@ final readonly class CodeGenerator
         if (file_put_contents($filePath, $content) === false) {
             throw new \RuntimeException("Failed to write generated code to {$filePath}");
         }
+    }
+
+    private function resolveDir(string $code, string $sourceFile): string
+    {
+        if (!str_contains($code, '__DIR__')) {
+            return $code;
+        }
+
+        $sourceDir = dirname(realpath($sourceFile) ?: $sourceFile);
+
+        return str_replace('__DIR__', var_export($sourceDir, true), $code);
     }
 
     private function generateThrowsWrapper(CodeBlock $block, string $executableCode): string
