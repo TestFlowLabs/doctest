@@ -709,3 +709,8 @@ test('pre-syntax check catches syntax error in group', function (): void {
     // At least one result should exist
     expect($results)->not->toBeEmpty();
 });
+test('executeGroup with empty array returns empty results', function (): void {
+    $results = $this->executor->executeGroup([]);
+
+    expect($results)->toBe([]);
+});
