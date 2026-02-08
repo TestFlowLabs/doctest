@@ -456,3 +456,67 @@ test('execution result includes duration', function (): void {
     expect($result->duration)->not->toBeNull();
     expect($result->duration)->toBeGreaterThan(0.0);
 });
+test('executor with bootstrap resolver resolves per-block profiles', function (): void {
+    $tmpDir = sys_get_temp_dir().'/doctest-executor-test-'.bin2hex(random_bytes(8));
+    mkdir($tmpDir, 0755, true);
+    file_put_contents($tmpDir.'/math.php', "<?php\nfunction doctest_add(\$a, \$b) { return \$a + \$b; }");
+
+    $resolver = new \TestFlowLabs\DocTest\Config\BootstrapResolver($tmpDir);
+    $executor = new Executor(bootstrapResolver: $resolver);
+
+    $block = new CodeBlock(
+        file: 'test.md',
+        startLine: 1,
+        rawCode: 'echo doctest_add(2, 3);',
+        executableCode: 'echo doctest_add(2, 3);',
+        attributes: new Attributes(bootstraps: ['math']),
+        assertions: [new OutputAssertion('5', 1)],
+    );
+
+    $result = $executor->execute($block);
+
+    expect($result->passed)->toBeTrue();
+    expect($result->actualOutput)->toBe('5');
+
+    unlink($tmpDir.'/math.php');
+    rmdir($tmpDir);
+});
+test('executor without bootstrap resolver ignores block bootstraps', function (): void {
+    $block  = ($this->makeBlock)('echo "ok";', assertions: [new OutputAssertion('ok', 1)]);
+    $result = $this->executor->execute($block);
+
+    expect($result->passed)->toBeTrue();
+});
+test('executor resolves different bootstraps per block in executeAll', function (): void {
+    $tmpDir = sys_get_temp_dir().'/doctest-executor-test-'.bin2hex(random_bytes(8));
+    mkdir($tmpDir, 0755, true);
+    file_put_contents($tmpDir.'/greet.php', "<?php\nfunction doctest_greet() { return 'hi'; }");
+
+    $resolver = new \TestFlowLabs\DocTest\Config\BootstrapResolver($tmpDir);
+    $executor = new Executor(bootstrapResolver: $resolver);
+
+    $block1 = new CodeBlock(
+        file: 'test.md', startLine: 1,
+        rawCode: 'echo doctest_greet();',
+        executableCode: 'echo doctest_greet();',
+        attributes: new Attributes(bootstraps: ['greet']),
+        assertions: [new OutputAssertion('hi', 1)],
+    );
+
+    $block2 = new CodeBlock(
+        file: 'test.md', startLine: 5,
+        rawCode: 'echo "plain";',
+        executableCode: 'echo "plain";',
+        attributes: new Attributes(),
+        assertions: [new OutputAssertion('plain', 1)],
+    );
+
+    $results = $executor->executeAll([$block1, $block2]);
+
+    expect($results)->toHaveCount(2);
+    expect($results[0]->passed)->toBeTrue();
+    expect($results[1]->passed)->toBeTrue();
+
+    unlink($tmpDir.'/greet.php');
+    rmdir($tmpDir);
+});
