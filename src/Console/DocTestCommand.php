@@ -134,7 +134,7 @@ final class DocTestCommand extends Command
         $parallel = $input->getOption('parallel');
 
         if (is_numeric($parallel)) {
-            $parallelValue = (int) $parallel;
+            $parallelValue = max(1, (int) $parallel);
         } elseif ($parallel === null && $input->hasParameterOption(['--parallel', '-p'])) {
             $parallelValue = CpuCoreDetector::detect();
         } else {
