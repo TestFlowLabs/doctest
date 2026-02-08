@@ -110,3 +110,77 @@ test('works without bootstraps_dir configured', function (): void {
     // The block with bootstrap="math" will fail because the function isn't available
     expect($exitCode)->toBe(1);
 });
+
+// --- Edge case tests ---
+
+test('bootstrap profile that defines a class makes it available in block', function (): void {
+    $config = DocTestConfig::fromArray([
+        'paths'          => [$this->fixturesDir.'/bootstrap-class.md'],
+        'bootstraps_dir' => $this->fixturesDir.'/.doctest',
+    ]);
+
+    $exitCode = ($this->runDocTest)($config);
+
+    expect($exitCode)->toBe(0);
+});
+
+test('bootstrap profile with side effects applies them to block', function (): void {
+    $config = DocTestConfig::fromArray([
+        'paths'          => [$this->fixturesDir.'/bootstrap-side-effects.md'],
+        'bootstraps_dir' => $this->fixturesDir.'/.doctest',
+    ]);
+
+    $exitCode = ($this->runDocTest)($config);
+
+    expect($exitCode)->toBe(0);
+});
+
+test('multiple blocks with same bootstrap profile all pass', function (): void {
+    $config = DocTestConfig::fromArray([
+        'paths'          => [$this->fixturesDir.'/bootstrap-same-profile-twice.md'],
+        'bootstraps_dir' => $this->fixturesDir.'/.doctest',
+    ]);
+
+    $exitCode = ($this->runDocTest)($config);
+    $output   = ($this->getOutput)();
+
+    expect($exitCode)->toBe(0);
+    expect(substr_count((string) $output, '✔'))->toBe(2);
+});
+
+test('bootstrap with group and setup/teardown all compose correctly', function (): void {
+    $config = DocTestConfig::fromArray([
+        'paths'          => [$this->fixturesDir.'/bootstrap-with-setup-teardown.md'],
+        'bootstraps_dir' => $this->fixturesDir.'/.doctest',
+    ]);
+
+    $exitCode = ($this->runDocTest)($config);
+
+    expect($exitCode)->toBe(0);
+});
+
+test('bootstrap profile with syntax error reports failure', function (): void {
+    $tmpDir     = sys_get_temp_dir().'/doctest-edge-'.bin2hex(random_bytes(4));
+    $profileDir = $tmpDir.'/.doctest';
+    mkdir($profileDir, 0755, true);
+    file_put_contents($profileDir.'/broken.php', "<?php\nfunction broken( {");
+
+    $mdFile = $tmpDir.'/test.md';
+    file_put_contents($mdFile, "```php bootstrap=\"broken\"\necho 'hi';\n```\n<!-- doctest: hi -->\n");
+
+    try {
+        $config = DocTestConfig::fromArray([
+            'paths'          => [$mdFile],
+            'bootstraps_dir' => $profileDir,
+        ]);
+
+        $exitCode = ($this->runDocTest)($config);
+
+        expect($exitCode)->toBe(1);
+    } finally {
+        @unlink($mdFile);
+        @unlink($profileDir.'/broken.php');
+        @rmdir($profileDir);
+        @rmdir($tmpDir);
+    }
+});
