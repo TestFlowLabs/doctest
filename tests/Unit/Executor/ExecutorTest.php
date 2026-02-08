@@ -610,3 +610,35 @@ test('dd marker with output assertion both work', function (): void {
     expect($result->debugOutputs)->toHaveCount(1);
     expect($result->debugOutputs[0]->value)->toBe('42');
 });
+test('executeAll with parallel > 1 runs blocks and returns correct results', function (): void {
+    $executor = new Executor(parallel: 2);
+
+    $block1 = ($this->makeBlock)('echo "one";', assertions: [new OutputAssertion('one', 1)]);
+    $block2 = ($this->makeBlock)('echo "two";', assertions: [new OutputAssertion('two', 1)]);
+
+    $results = $executor->executeAll([$block1, $block2]);
+
+    expect($results)->toHaveCount(2);
+    expect($results[0]->passed)->toBeTrue();
+    expect($results[1]->passed)->toBeTrue();
+});
+test('executeAll with parallel > 1 detects failures', function (): void {
+    $executor = new Executor(parallel: 2);
+
+    $block = ($this->makeBlock)('echo "actual";', assertions: [new OutputAssertion('expected', 1)]);
+
+    $results = $executor->executeAll([$block]);
+
+    expect($results)->toHaveCount(1);
+    expect($results[0]->passed)->toBeFalse();
+});
+test('executeAll with parallel skips ignored blocks', function (): void {
+    $executor = new Executor(parallel: 2);
+
+    $block = ($this->makeBlock)('echo "skip";', attribute: Attribute::Ignore);
+
+    $results = $executor->executeAll([$block]);
+
+    expect($results)->toHaveCount(1);
+    expect($results[0]->skipped)->toBeTrue();
+});
