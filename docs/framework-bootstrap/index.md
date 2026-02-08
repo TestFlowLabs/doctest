@@ -48,6 +48,66 @@ $kernel = new \App\Kernel('test', true);
 $kernel->boot();
 ```
 
+### Laravel Packages (Orchestra Testbench)
+
+Laravel packages don't have a full application — they need [Orchestra Testbench](https://packages.tools/testbench) to create one. A bootstrap profile can set up the application, register service providers, configure the database, and run migrations:
+
+```php ignore
+// .doctest/laravel.php
+require_once __DIR__.'/../vendor/autoload.php';
+
+$app = \Orchestra\Testbench\Foundation\Application::create(
+    options: [
+        'extra' => [
+            'providers' => [
+                \YourVendor\YourPackage\YourServiceProvider::class,
+                // Add any dependency service providers
+            ],
+        ],
+    ],
+);
+```
+
+**Setting config values** — use `config()->set()` after the application boots:
+
+```php ignore
+// .doctest/database.php
+config()->set('database.default', 'testing');
+config()->set('database.connections.testing', [
+    'driver'   => 'sqlite',
+    'database' => ':memory:',
+]);
+config()->set('cache.default', 'array');
+```
+
+**Running migrations** — include migration stubs directly from your package's `database/migrations/` directory:
+
+```php ignore
+// .doctest/migrations.php
+$migration = include __DIR__.'/../database/migrations/create_your_table.php.stub';
+$migration->up();
+```
+
+Then compose profiles as needed:
+
+````markdown
+```php bootstrap="laravel"
+// Only needs the framework — no database
+echo config('app.name');
+```
+
+```php bootstrap="laravel,database,migrations"
+// Needs framework + database + tables
+$count = DB::table('your_table')->count();
+echo $count;
+```
+<!-- doctest: 0 -->
+````
+
+::: tip
+Keep each concern in a separate profile. Blocks that only need the framework skip the database overhead, and blocks that need the database get it by composing profiles.
+:::
+
 ### Custom Autoloader
 
 For projects without a framework, just load the autoloader:
