@@ -101,3 +101,45 @@ test('bootstrap via HTML comment attribute', function (): void {
 
     expect($exitCode)->toBe(0);
 });
+
+test('first doctest-attr wins when multiple comments precede a block', function (): void {
+    $config = DocTestConfig::fromArray([
+        'paths' => [$this->fixturesDir.'/multiple-comments.md'],
+    ]);
+
+    $exitCode = ($this->runDocTest)($config);
+
+    expect($exitCode)->toBe(0);
+});
+
+test('text between comment and block breaks adjacency', function (): void {
+    $config = DocTestConfig::fromArray([
+        'paths' => [$this->fixturesDir.'/text-between.md'],
+    ]);
+
+    $exitCode = ($this->runDocTest)($config);
+    $output   = ($this->getOutput)();
+
+    expect($exitCode)->toBe(0);
+    // Should NOT be skipped — the text paragraph cleared pending HTML blocks
+    $this->assertStringNotContainsString('⊘', $output);
+});
+
+test('malformed doctest-attr comment is ignored', function (): void {
+    $config = DocTestConfig::fromArray([
+        'paths' => [$this->fixturesDir.'/malformed.md'],
+    ]);
+
+    $exitCode = ($this->runDocTest)($config);
+
+    expect($exitCode)->toBe(0);
+});
+
+test('conflicting attributes from both sources throws RuntimeException', function (): void {
+    $config = DocTestConfig::fromArray([
+        'paths' => [dirname(__DIR__).'/FixturesErrors/html-comment-attrs/conflict.md'],
+    ]);
+
+    expect(fn () => ($this->runDocTest)($config))
+        ->toThrow(RuntimeException::class, 'Conflicting');
+});
