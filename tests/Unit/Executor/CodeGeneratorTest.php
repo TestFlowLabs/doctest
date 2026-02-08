@@ -120,7 +120,7 @@ test('generates result comment capture', function (): void {
     $filePath = $this->generator->generate($block);
     $content  = file_get_contents($filePath);
 
-    $this->assertStringContainsString('var_export', $content);
+    $this->assertStringContainsString('__doctest_safe_export', $content);
     $this->assertStringContainsString("'type' => 'result_comment'", $content);
     $this->assertStringContainsString('$x = 42', $content);
 });
@@ -373,7 +373,7 @@ test('generates debug dump code for dd marker', function (): void {
     $content  = file_get_contents($filePath);
 
     $this->assertStringContainsString("'type' => 'debug'", $content);
-    $this->assertStringContainsString('var_export', $content);
+    $this->assertStringContainsString('__doctest_safe_export', $content);
     $this->assertStringContainsString('$x = 42', $content);
 });
 test('debug dump generated code passes syntax check', function (): void {
@@ -447,6 +447,70 @@ test('debug dump in group passes syntax check', function (): void {
     exec(PHP_BINARY.' -l '.escapeshellarg((string) $filePath).' 2>&1', $output, $exitCode);
 
     expect($exitCode)->toBe(0, 'Generated group PHP file has syntax errors: '.implode("\n", $output));
+});
+test('debug dump handles circular references with error handler', function (): void {
+    $code = <<<'PHP'
+set_error_handler(function ($severity, $message) { throw new ErrorException($message, 0, $severity); });
+$a = new stdClass();
+$b = new stdClass();
+$a->child = $b;
+$b->parent = $a;
+$a; // => dd()
+PHP;
+    $block    = ($this->makeBlock)($code);
+    $filePath = $this->generator->generate($block);
+
+    $descriptors = [
+        0 => ['pipe', 'r'],
+        1 => ['pipe', 'w'],
+        2 => ['pipe', 'w'],
+    ];
+    $process = proc_open([PHP_BINARY, $filePath], $descriptors, $pipes);
+    $stderr  = stream_get_contents($pipes[2]);
+    $stdout  = stream_get_contents($pipes[1]);
+    fclose($pipes[0]);
+    fclose($pipes[1]);
+    fclose($pipes[2]);
+    $exitCode = proc_close($process);
+
+    expect($exitCode)->toBe(0, "Process failed with stdout: {$stdout}");
+
+    $results = json_decode($stderr, true);
+    expect($results)->toBeArray();
+    expect($results)->toHaveCount(1);
+    expect($results[0]['type'])->toBe('debug');
+    expect($results[0]['value'])->toBeString();
+});
+test('result comment handles circular references with error handler', function (): void {
+    $code = <<<'PHP'
+set_error_handler(function ($severity, $message) { throw new ErrorException($message, 0, $severity); });
+$a = new stdClass();
+$a->self = $a;
+$a; // => 'anything'
+PHP;
+    $block    = ($this->makeBlock)($code);
+    $filePath = $this->generator->generate($block);
+
+    $descriptors = [
+        0 => ['pipe', 'r'],
+        1 => ['pipe', 'w'],
+        2 => ['pipe', 'w'],
+    ];
+    $process = proc_open([PHP_BINARY, $filePath], $descriptors, $pipes);
+    $stderr  = stream_get_contents($pipes[2]);
+    $stdout  = stream_get_contents($pipes[1]);
+    fclose($pipes[0]);
+    fclose($pipes[1]);
+    fclose($pipes[2]);
+    $exitCode = proc_close($process);
+
+    expect($exitCode)->toBe(0, "Process failed with stdout: {$stdout}");
+
+    $results = json_decode($stderr, true);
+    expect($results)->toBeArray();
+    expect($results)->toHaveCount(1);
+    expect($results[0]['type'])->toBe('result_comment');
+    expect($results[0]['actual'])->toBeString();
 });
 test('__DIR__ is replaced with source file directory in generated code', function (): void {
     $block    = ($this->makeBlock)('include __DIR__."/../migrations/test.php";', file: '/project/docs/guide.md');
