@@ -232,21 +232,31 @@ final readonly class Executor
 
         $decoded = json_decode($processResult->stderr, true);
 
-        /** @var array<array{type: string, expected?: string, actual?: string, expression?: string, passed?: bool, line?: int}> $results */
+        /** @var array<array{type: string, expected?: string, actual?: string, expression?: string, passed?: bool, line?: int, value?: string}> $results */
         $results = is_array($decoded) ? $decoded : [];
 
         return $this->evaluateResults($block, $results, $processResult);
     }
 
     /**
-     * @param  array<array{type: string, expected?: string, actual?: string, expression?: string, passed?: bool, line?: int}>  $results
+     * @param  array<array{type: string, expected?: string, actual?: string, expression?: string, passed?: bool, line?: int, value?: string}>  $results
      */
     private function evaluateResults(CodeBlock $block, array $results, ProcessResult $processResult): ExecutionResult
     {
         $capturedOutput   = [];
         $assertionDetails = [];
+        $debugOutputs     = [];
 
         foreach ($results as $result) {
+            if ($result['type'] === 'debug') {
+                $debugOutputs[] = new DebugOutput(
+                    expression: $result['expression'] ?? '',
+                    value: $result['value'] ?? '',
+                    line: $result['line'] ?? 0,
+                );
+
+                continue;
+            }
             if ($result['type'] === 'output') {
                 $expected         = $result['expected'] ?? '';
                 $actual           = $result['actual'] ?? '';
@@ -272,6 +282,7 @@ final readonly class Executor
                         diff: $diff,
                         duration: $processResult->duration,
                         assertionDetails: $assertionDetails,
+                        debugOutputs: $debugOutputs,
                     );
                 }
             }
@@ -299,6 +310,7 @@ final readonly class Executor
                         error: "Output does not contain: {$expected}",
                         duration: $processResult->duration,
                         assertionDetails: $assertionDetails,
+                        debugOutputs: $debugOutputs,
                     );
                 }
             }
@@ -325,6 +337,7 @@ final readonly class Executor
                         error: "Invalid regex pattern: {$pattern}",
                         duration: $processResult->duration,
                         assertionDetails: $assertionDetails,
+                        debugOutputs: $debugOutputs,
                     );
                 }
 
@@ -347,6 +360,7 @@ final readonly class Executor
                         error: "Output does not match pattern: {$pattern}",
                         duration: $processResult->duration,
                         assertionDetails: $assertionDetails,
+                        debugOutputs: $debugOutputs,
                     );
                 }
             }
@@ -381,6 +395,7 @@ final readonly class Executor
                         error: $error,
                         duration: $processResult->duration,
                         assertionDetails: $assertionDetails,
+                        debugOutputs: $debugOutputs,
                     );
                 }
             }
@@ -405,6 +420,7 @@ final readonly class Executor
                         error: 'Expect assertion failed: '.$expression,
                         duration: $processResult->duration,
                         assertionDetails: $assertionDetails,
+                        debugOutputs: $debugOutputs,
                     );
                 }
             }
@@ -430,6 +446,7 @@ final readonly class Executor
                         error: "result_comment assertion failed: expected {$expected} but got {$actual}",
                         duration: $processResult->duration,
                         assertionDetails: $assertionDetails,
+                        debugOutputs: $debugOutputs,
                     );
                 }
             }
@@ -443,6 +460,7 @@ final readonly class Executor
             actualOutput: $actualOutput,
             duration: $processResult->duration,
             assertionDetails: $assertionDetails,
+            debugOutputs: $debugOutputs,
         );
     }
 
@@ -493,7 +511,7 @@ final readonly class Executor
 
         $decoded = json_decode($processResult->stderr, true);
 
-        /** @var array<array{type: string, expected?: string, actual?: string, expression?: string, passed?: bool, line?: int}> $allResults */
+        /** @var array<array{type: string, expected?: string, actual?: string, expression?: string, passed?: bool, line?: int, value?: string}> $allResults */
         $allResults = is_array($decoded) ? $decoded : [];
 
         return $this->mapResultsToBlocks($blocks, $allResults, $processResult);
@@ -501,7 +519,7 @@ final readonly class Executor
 
     /**
      * @param  array<CodeBlock>  $blocks
-     * @param  array<array{type: string, expected?: string, actual?: string, expression?: string, passed?: bool, line?: int}>  $allResults
+     * @param  array<array{type: string, expected?: string, actual?: string, expression?: string, passed?: bool, line?: int, value?: string}>  $allResults
      *
      * @return array<ExecutionResult>
      */
@@ -513,7 +531,7 @@ final readonly class Executor
         $assertionCounts = [];
         foreach ($blocks as $block) {
             $parsed            = $parser->parse($block->rawCode);
-            $count             = count($block->assertions) + count($parsed->resultComments);
+            $count             = count($block->assertions) + count($parsed->resultComments) + count($parsed->debugMarkers);
             $assertionCounts[] = $count;
         }
 
