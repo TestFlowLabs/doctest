@@ -63,14 +63,19 @@ When different code blocks need different environments — some need a framework
 
 ### Creating Profiles
 
-Create a `.doctest/` directory in your project root and add PHP files. Each file becomes a profile named after its filename (without the `.php` extension):
+Create a `.doctest/` directory in your project root and add PHP files. Each `.php` file at the top level becomes a profile:
 
 ```
 .doctest/
-├── laravel.php      → profile "laravel"
-├── database.php     → profile "database"
-└── helpers.php      → profile "helpers"
+├── laravel.php      → profile "laravel"   ✓
+├── database.php     → profile "database"  ✓
+├── helpers.php      → profile "helpers"   ✓
+├── README.md        → ignored (not .php)  ✗
+└── nested/
+    └── special.php  → ignored (subdir)    ✗
 ```
+
+Only `.php` files directly in `.doctest/` are discovered — subdirectories and non-PHP files are ignored.
 
 ```php ignore
 // .doctest/laravel.php
@@ -115,19 +120,36 @@ Profiles are loaded left to right: `laravel.php` first, then `database.php`.
 
 ### Execution Order
 
-When all layers are used, code runs in this order:
+When a code block runs, DocTest generates a single PHP file with all layers in shared scope:
 
+```php ignore
+<?php
+// 1. Global bootstrap (from config, if set)
+require_once '/path/to/bootstrap.php';
+
+// 2. Bootstrap profiles (left to right, if specified)
+require_once '/path/to/.doctest/laravel.php';
+require_once '/path/to/.doctest/database.php';
+
+// 3. Setup code (if block is in a group)
+$pdo = new PDO('sqlite::memory:');
+
+// 4. Your code block
+echo $result;
+
+// 5. Teardown code (if block is in a group)
+$pdo = null;
 ```
-1. Global bootstrap (from config)
-2. Bootstrap profiles (left to right)
-3. Setup block (if in a group)
-4. Code block
-5. Teardown block (if in a group)
-```
+
+All layers execute in the same process with shared variable scope.
 
 ### Profiles with Groups
 
-Bootstrap profiles work with grouped blocks. All blocks in the same group must use the same bootstrap profile:
+Bootstrap profiles work with grouped blocks. **All blocks in the same group must use identical bootstrap profiles** — mixing different profiles within a group causes a runtime error:
+
+```
+RuntimeException: All blocks in group "queries" must have identical bootstrap profiles.
+```
 
 ````markdown
 ```php bootstrap="database" setup group="queries"
@@ -174,6 +196,16 @@ echo $count;
 <!-- doctest: 0 -->
 ````
 
+### Custom Profile Directory
+
+The default profile directory is `.doctest/`. To use a different path, set `bootstraps_dir` in your `doctest.php` config:
+
+```php ignore
+return [
+    'bootstraps_dir' => 'tests/.doctest',
+];
+```
+
 ## Tips
 
 - Keep your bootstrap file minimal — it runs for every code block
@@ -181,4 +213,3 @@ echo $count;
 - Group related database examples with the `group` attribute and use `setup`/`teardown` blocks for table creation and cleanup
 - Use bootstrap profiles when different blocks need different environments
 - Profile names must match filenames in `.doctest/` exactly (without `.php`)
-- Only `.php` files at the top level of `.doctest/` are discovered as profiles
