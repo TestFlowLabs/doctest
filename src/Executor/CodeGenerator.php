@@ -107,6 +107,17 @@ final readonly class CodeGenerator
                 $lines[] = '];';
                 $lines[] = '';
             }
+
+            foreach ($parsed->debugMarkers as $dm) {
+                $lines[] = '$__doctest_result = '.$dm->expression.';';
+                $lines[] = '$__doctest_results[] = [';
+                $lines[] = "    'type' => 'debug',";
+                $lines[] = "    'expression' => ".var_export($dm->expression, true).',';
+                $lines[] = "    'value' => var_export(\$__doctest_result, true),";
+                $lines[] = "    'line' => ".$dm->line().',';
+                $lines[] = '];';
+                $lines[] = '';
+            }
         }
 
         if ($teardown !== null) {
@@ -197,6 +208,17 @@ final readonly class CodeGenerator
             $lines[] = "    'actual' => var_export(\$__doctest_result, true),";
             $lines[] = "    'expression' => ".var_export($rc->expression, true).',';
             $lines[] = "    'line' => ".$rc->line().',';
+            $lines[] = '];';
+            $lines[] = '';
+        }
+
+        foreach ($parsed->debugMarkers as $dm) {
+            $lines[] = '$__doctest_result = '.$dm->expression.';';
+            $lines[] = '$__doctest_results[] = [';
+            $lines[] = "    'type' => 'debug',";
+            $lines[] = "    'expression' => ".var_export($dm->expression, true).',';
+            $lines[] = "    'value' => var_export(\$__doctest_result, true),";
+            $lines[] = "    'line' => ".$dm->line().',';
             $lines[] = '];';
             $lines[] = '';
         }
