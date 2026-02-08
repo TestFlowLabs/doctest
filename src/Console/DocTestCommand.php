@@ -51,6 +51,16 @@ final class DocTestCommand extends Command
                   <info>```php setup group="name"</info>            Setup code for a group
                   <info>```php teardown group="name"</info>         Teardown code for a group
 
+                <comment>Shiki transformations (auto-stripped):</comment>
+                  <info>// [!code --]</info>                      Line removed (diff removal)
+                  <info>// [!code ++]</info>                      Marker stripped (diff addition)
+                  <info>// [!code hide]</info>                    Marker stripped (single-line hide)
+                  <info>// [!code hide:start]</info>              Delimiter line removed (block hide start)
+                  <info>// [!code hide:end]</info>                Delimiter line removed (block hide end)
+                  <info>// [!code highlight]</info>               Marker stripped
+                  <info>// [!code focus]</info>                   Marker stripped
+                  <info>{1,4-6}</info> (in info string)           Line highlight notation stripped
+
                 <comment>Examples:</comment>
                   <info>doctest</info>
                     Run tests from default paths (docs/ and README.md)
