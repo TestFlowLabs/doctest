@@ -164,3 +164,46 @@ test('mixed result comments and regular lines', function (): void {
     $this->assertStringContainsString('$x = 1;', $result->executableCode);
     $this->assertStringContainsString('$z = 3;', $result->executableCode);
 });
+
+test('dd() creates a debug marker instead of result comment', function (): void {
+    $result = $this->parser->parse('$x = 42; // => dd()');
+
+    expect($result->resultComments)->toBeEmpty();
+    expect($result->debugMarkers)->toHaveCount(1);
+    expect($result->debugMarkers[0]->expression)->toBe('$x = 42');
+    expect($result->debugMarkers[0]->line())->toBe(1);
+});
+
+test('dd() strips comment from executable code', function (): void {
+    $result = $this->parser->parse('$x = 42; // => dd()');
+
+    $this->assertStringContainsString('$x = 42;', $result->executableCode);
+    $this->assertStringNotContainsString('dd()', $result->executableCode);
+});
+
+test('multiple dd() markers on different lines', function (): void {
+    $code   = "\$x = 42; // => dd()\n\$y = \$x * 2; // => dd()";
+    $result = $this->parser->parse($code);
+
+    expect($result->debugMarkers)->toHaveCount(2);
+    expect($result->debugMarkers[0]->expression)->toBe('$x = 42');
+    expect($result->debugMarkers[1]->expression)->toBe('$y = $x * 2');
+});
+
+test('dd() mixed with regular result comments', function (): void {
+    $code   = "\$x = 42; // => dd()\n\$y = 10; // => 10";
+    $result = $this->parser->parse($code);
+
+    expect($result->debugMarkers)->toHaveCount(1);
+    expect($result->resultComments)->toHaveCount(1);
+    expect($result->debugMarkers[0]->expression)->toBe('$x = 42');
+    expect($result->resultComments[0]->expectedValue)->toBe('10');
+});
+
+test('dd() without semicolon adds one to executable code', function (): void {
+    $result = $this->parser->parse('strtoupper("hello") // => dd()');
+
+    expect($result->debugMarkers)->toHaveCount(1);
+    expect($result->debugMarkers[0]->expression)->toBe('strtoupper("hello")');
+    $this->assertStringContainsString('strtoupper("hello");', $result->executableCode);
+});
