@@ -7,6 +7,7 @@ namespace TestFlowLabs\DocTest\Parser;
 use League\CommonMark\Node\NodeIterator;
 use League\CommonMark\Node\Block\Document;
 use TestFlowLabs\DocTest\CodeBlock\CodeBlock;
+use TestFlowLabs\DocTest\CodeBlock\Attributes;
 use TestFlowLabs\DocTest\Assertion\AssertionParser;
 use TestFlowLabs\DocTest\Assertion\HtmlCommentAssertionParser;
 use League\CommonMark\Extension\CommonMark\Node\Block\HtmlBlock;
@@ -18,13 +19,15 @@ final readonly class CodeBlockExtractor
     private AttributeParser $attributeParser;
     private AssertionParser $assertionParser;
     private HtmlCommentAssertionParser $htmlCommentParser;
+    private HtmlCommentAttributeParser $htmlCommentAttributeParser;
 
     public function __construct()
     {
-        $this->shikiFilter       = new ShikiFilter();
-        $this->attributeParser   = new AttributeParser();
-        $this->assertionParser   = new AssertionParser();
-        $this->htmlCommentParser = new HtmlCommentAssertionParser();
+        $this->shikiFilter                = new ShikiFilter();
+        $this->attributeParser            = new AttributeParser();
+        $this->assertionParser            = new AssertionParser();
+        $this->htmlCommentParser          = new HtmlCommentAssertionParser();
+        $this->htmlCommentAttributeParser = new HtmlCommentAttributeParser();
     }
 
     /**
@@ -34,14 +37,28 @@ final readonly class CodeBlockExtractor
     {
         $blocks = [];
 
+        /** @var array<HtmlBlock> $pendingHtmlBlocks */
+        $pendingHtmlBlocks = [];
+
         foreach ($document->iterator(NodeIterator::FLAG_BLOCKS_ONLY) as $node) {
+            // Track HTML blocks as potential pre-block attribute comments
+            if ($node instanceof HtmlBlock) {
+                $pendingHtmlBlocks[] = $node;
+
+                continue;
+            }
+
             if (!$node instanceof FencedCode) {
+                $pendingHtmlBlocks = [];
+
                 continue;
             }
 
             $infoString = $node->getInfo() ?? '';
 
             if (!$this->isPhpBlock($infoString)) {
+                $pendingHtmlBlocks = [];
+
                 continue;
             }
 
@@ -52,6 +69,10 @@ final readonly class CodeBlockExtractor
 
             // Parse attributes from cleaned info string
             $attributes = $this->attributeParser->parse($shikiResult->infoString);
+
+            // Check preceding HTML blocks for doctest-attr comments
+            $attributes        = $this->mergeHtmlCommentAttributes($attributes, $pendingHtmlBlocks);
+            $pendingHtmlBlocks = [];
 
             // Strip opening <?php tag
             $code = $this->stripPhpTag($shikiResult->code);
@@ -83,6 +104,30 @@ final readonly class CodeBlockExtractor
         }
 
         return $blocks;
+    }
+
+    /**
+     * @param  array<HtmlBlock>  $htmlBlocks
+     */
+    private function mergeHtmlCommentAttributes(Attributes $infoStringAttrs, array $htmlBlocks): Attributes
+    {
+        foreach ($htmlBlocks as $htmlBlock) {
+            $commentAttrs = $this->htmlCommentAttributeParser->parse($htmlBlock->getLiteral());
+
+            if ($commentAttrs === null) {
+                continue;
+            }
+
+            return new Attributes(
+                attribute: $commentAttrs->attribute ?? $infoStringAttrs->attribute,
+                throwsClass: $commentAttrs->throwsClass ?? $infoStringAttrs->throwsClass,
+                throwsMessage: $commentAttrs->throwsMessage ?? $infoStringAttrs->throwsMessage,
+                group: $commentAttrs->group ?? $infoStringAttrs->group,
+                bootstraps: $commentAttrs->bootstraps !== [] ? $commentAttrs->bootstraps : $infoStringAttrs->bootstraps,
+            );
+        }
+
+        return $infoStringAttrs;
     }
 
     private function isPhpBlock(string $infoString): bool
