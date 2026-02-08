@@ -46,3 +46,15 @@ $redis->connect('127.0.0.1', 6379);
 return require __DIR__ . '/config/app.php';
 ```
 ````
+
+## Alternative: HTML Comment Syntax
+
+````markdown
+<!-- doctest-attr: ignore -->
+```php
+// Editor syntax highlighting preserved
+$config = require 'missing-file.php';
+```
+````
+
+See [HTML Comment Syntax](/attributes/html-comment-syntax) for details.
