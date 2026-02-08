@@ -80,6 +80,7 @@ final readonly class DocTest
 
         $this->reporter->setTotalBlocks($totalBlocks);
         $this->reporter->setMaxLineNumber($maxLineNumber);
+        $this->reporter->setParallelWorkers($this->config->parallel);
 
         foreach ($files as $file) {
             $this->reporter->reportFile($file);
