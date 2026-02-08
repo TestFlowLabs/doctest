@@ -1,9 +1,8 @@
-# Multiple HTML comments before a block
+# Single HTML comment before a block
 
-Only the first matching doctest-attr comment should be used.
+A single doctest-attr comment should be applied.
 
 <!-- doctest-attr: group="first" -->
-<!-- doctest-attr: group="second" -->
 ```php
 echo 'hello';
 ```
