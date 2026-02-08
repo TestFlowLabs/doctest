@@ -117,6 +117,31 @@ echo $user->exists;
 <!-- doctest: 1 -->
 ````
 
+## One Comment Per Block
+
+Only **one** `doctest-attr` comment is allowed before each code block. Multiple comments throw a `RuntimeException`:
+
+````markdown
+<!-- doctest-attr: group="first" -->
+<!-- doctest-attr: bootstrap="laravel" -->
+```php
+echo 'hello';
+```
+````
+
+```
+RuntimeException: Multiple doctest-attr HTML comments found before code block. Use only one comment.
+```
+
+Combine all attributes into a single comment instead:
+
+````markdown
+<!-- doctest-attr: group="first" bootstrap="laravel" -->
+```php
+echo 'hello';
+```
+````
+
 ## Merging Rules
 
 Both syntaxes can coexist in the same file — some blocks can use info string attributes, others can use HTML comment attributes.
