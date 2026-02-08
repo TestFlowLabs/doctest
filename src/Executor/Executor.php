@@ -370,7 +370,13 @@ final readonly class Executor
 
     private function executeThrows(CodeBlock $block): ExecutionResult
     {
-        $filePath      = $this->codeGenerator->generate($block, blockBootstrapCode: $this->resolveBlockBootstrap($block));
+        $filePath = $this->codeGenerator->generate($block, blockBootstrapCode: $this->resolveBlockBootstrap($block));
+
+        $syntaxError = $this->preSyntaxCheck($filePath, $block);
+        if ($syntaxError !== null) {
+            return $syntaxError;
+        }
+
         $processResult = $this->processRunner->run($filePath);
         $this->cleanup($filePath);
 
@@ -379,7 +385,13 @@ final readonly class Executor
 
     private function executeNormal(CodeBlock $block, ?string $setup = null, ?string $teardown = null): ExecutionResult
     {
-        $filePath      = $this->codeGenerator->generate($block, setup: $setup, teardown: $teardown, blockBootstrapCode: $this->resolveBlockBootstrap($block));
+        $filePath = $this->codeGenerator->generate($block, setup: $setup, teardown: $teardown, blockBootstrapCode: $this->resolveBlockBootstrap($block));
+
+        $syntaxError = $this->preSyntaxCheck($filePath, $block);
+        if ($syntaxError !== null) {
+            return $syntaxError;
+        }
+
         $processResult = $this->processRunner->run($filePath);
         $this->cleanup($filePath);
 
@@ -634,7 +646,20 @@ final readonly class Executor
 
         $blockBootstrap = $blocks !== [] ? $this->resolveBlockBootstrap($blocks[0]) : null;
         $filePath       = $this->codeGenerator->generateGroup($blocks, setup: $setup, teardown: $teardown, blockBootstrapCode: $blockBootstrap);
-        $processResult  = $this->processRunner->run($filePath);
+
+        $syntaxError = $this->preSyntaxCheck($filePath, $blocks[0] ?? null);
+        if ($syntaxError !== null) {
+            return array_map(
+                fn (CodeBlock $block) => new ExecutionResult(
+                    passed: false,
+                    codeBlock: $block,
+                    error: $syntaxError->error,
+                ),
+                $blocks,
+            );
+        }
+
+        $processResult = $this->processRunner->run($filePath);
         $this->cleanup($filePath);
 
         if ($processResult->exitCode !== 0) {
@@ -746,6 +771,25 @@ final readonly class Executor
         }
 
         return $this->bootstrapResolver->resolve($block->attributes->bootstraps);
+    }
+
+    private function preSyntaxCheck(string $filePath, ?CodeBlock $block = null): ?ExecutionResult
+    {
+        $output   = [];
+        $exitCode = 0;
+        exec(PHP_BINARY.' -l '.escapeshellarg($filePath).' 2>&1', $output, $exitCode);
+
+        if ($exitCode === 0) {
+            return null;
+        }
+
+        $this->cleanup($filePath);
+
+        return new ExecutionResult(
+            passed: false,
+            codeBlock: $block ?? new CodeBlock(file: '', startLine: 0, rawCode: '', executableCode: '', attributes: new \TestFlowLabs\DocTest\CodeBlock\Attributes(), assertions: []),
+            error: 'Syntax error: '.implode("\n", $output),
+        );
     }
 
     private function cleanup(string $filePath): void
