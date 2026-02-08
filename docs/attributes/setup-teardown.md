@@ -30,6 +30,7 @@ The `setup` and `teardown` attributes define code that runs before and after gro
 
 ## Example
 
+````markdown
 ```php setup group="users"
 $pdo = new PDO('sqlite::memory:');
 $pdo->exec('CREATE TABLE users (
@@ -56,6 +57,7 @@ echo $user['name'];
 $pdo->exec('DROP TABLE users');
 $pdo = null;
 ```
+````
 
 ## Global Setup/Teardown
 
