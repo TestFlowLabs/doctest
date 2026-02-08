@@ -111,6 +111,8 @@ final readonly class CodeBlockExtractor
      */
     private function mergeHtmlCommentAttributes(Attributes $infoStringAttrs, array $htmlBlocks): Attributes
     {
+        $foundCommentAttrs = null;
+
         foreach ($htmlBlocks as $htmlBlock) {
             $commentAttrs = $this->htmlCommentAttributeParser->parse($htmlBlock->getLiteral());
 
@@ -118,18 +120,28 @@ final readonly class CodeBlockExtractor
                 continue;
             }
 
-            $this->detectConflicts($infoStringAttrs, $commentAttrs);
+            if ($foundCommentAttrs !== null) {
+                throw new \RuntimeException(
+                    'Multiple doctest-attr HTML comments found before code block. Use only one comment.'
+                );
+            }
 
-            return new Attributes(
-                attribute: $commentAttrs->attribute ?? $infoStringAttrs->attribute,
-                throwsClass: $commentAttrs->throwsClass ?? $infoStringAttrs->throwsClass,
-                throwsMessage: $commentAttrs->throwsMessage ?? $infoStringAttrs->throwsMessage,
-                group: $commentAttrs->group ?? $infoStringAttrs->group,
-                bootstraps: $commentAttrs->bootstraps !== [] ? $commentAttrs->bootstraps : $infoStringAttrs->bootstraps,
-            );
+            $foundCommentAttrs = $commentAttrs;
         }
 
-        return $infoStringAttrs;
+        if ($foundCommentAttrs === null) {
+            return $infoStringAttrs;
+        }
+
+        $this->detectConflicts($infoStringAttrs, $foundCommentAttrs);
+
+        return new Attributes(
+            attribute: $foundCommentAttrs->attribute ?? $infoStringAttrs->attribute,
+            throwsClass: $foundCommentAttrs->throwsClass ?? $infoStringAttrs->throwsClass,
+            throwsMessage: $foundCommentAttrs->throwsMessage ?? $infoStringAttrs->throwsMessage,
+            group: $foundCommentAttrs->group ?? $infoStringAttrs->group,
+            bootstraps: $foundCommentAttrs->bootstraps !== [] ? $foundCommentAttrs->bootstraps : $infoStringAttrs->bootstraps,
+        );
     }
 
     private function detectConflicts(Attributes $infoString, Attributes $comment): void
