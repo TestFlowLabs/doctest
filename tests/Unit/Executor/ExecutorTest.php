@@ -632,6 +632,39 @@ test('executeAll with parallel > 1 detects failures', function (): void {
     expect($results)->toHaveCount(1);
     expect($results[0]->passed)->toBeFalse();
 });
+test('executeAll with parallel preserves deterministic order', function (): void {
+    $executor = new Executor(parallel: 3);
+
+    $block1 = ($this->makeBlock)('echo "first";', assertions: [new OutputAssertion('first', 1)]);
+    $block2 = ($this->makeBlock)('echo "second";', assertions: [new OutputAssertion('second', 1)]);
+    $block3 = ($this->makeBlock)('echo "third";', assertions: [new OutputAssertion('third', 1)]);
+
+    $order   = [];
+    $results = $executor->executeAll([$block1, $block2, $block3], function (ExecutionResult $r) use (&$order): null {
+        $order[] = $r->codeBlock->rawCode;
+
+        return null;
+    });
+
+    expect($results)->toHaveCount(3);
+    expect($order)->toBe(['echo "first";', 'echo "second";', 'echo "third";']);
+});
+test('executeAll with parallel stops on failure via callback', function (): void {
+    $executor = new Executor(parallel: 2);
+
+    $block1 = ($this->makeBlock)('echo "wrong";', assertions: [new OutputAssertion('expected', 1)]);
+    $block2 = ($this->makeBlock)('echo "ok";', assertions: [new OutputAssertion('ok', 1)]);
+
+    $collected = [];
+    $executor->executeAll([$block1, $block2], function (ExecutionResult $r) use (&$collected): ?bool {
+        $collected[] = $r;
+
+        return $r->passed ? null : false;
+    });
+
+    expect($collected)->toHaveCount(1);
+    expect($collected[0]->passed)->toBeFalse();
+});
 test('executeAll with parallel skips ignored blocks', function (): void {
     $executor = new Executor(parallel: 2);
 
