@@ -7,6 +7,10 @@ DocTest can run code blocks concurrently using multiple worker processes. This c
 Use the `--parallel` (or `-p`) CLI option:
 
 ```bash
+# Auto-detect CPU cores
+doctest --parallel
+
+# Or specify a worker count
 doctest --parallel 4
 ```
 
@@ -42,16 +46,22 @@ Each worker runs a single PHP process — the same as sequential mode. The only 
 | `no_run` blocks | No | Syntax check only, no process needed |
 | Grouped blocks | No | Groups run sequentially (shared state) |
 
-## Choosing Worker Count
+## Auto-Detection
 
-A good starting point is your CPU core count:
+When `--parallel` is used without a value, DocTest automatically detects the number of logical CPU cores:
 
 ```bash
-# macOS
-doctest --parallel $(sysctl -n hw.logicalcpu)
+doctest --parallel
+```
 
-# Linux
-doctest --parallel $(nproc)
+This works on Linux (`/proc/cpuinfo`), macOS (`sysctl`), and Windows (`NUMBER_OF_PROCESSORS`).
+
+## Choosing Worker Count
+
+You can also specify the worker count explicitly:
+
+```bash
+doctest --parallel 4
 ```
 
 ::: tip
@@ -83,11 +93,13 @@ Results are always reported in the original source order, regardless of which wo
 ## CLI Reference
 
 ```bash
-doctest --parallel <N>   # or -p <N>
+doctest --parallel         # auto-detect CPU cores
+doctest --parallel <N>     # or -p <N>
 ```
 
 | Value | Behavior |
 |-------|----------|
+| (no value) | Auto-detect CPU core count |
 | `1` (default) | Sequential execution |
 | `2+` | Parallel execution with N workers |
 
