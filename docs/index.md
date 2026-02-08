@@ -244,6 +244,41 @@ echo $greeting;
 <div class="feature-section">
 <div class="feature-text">
 
+<div class="feature-badge">Bootstrap</div>
+
+## Per-Block Environments
+
+Different code blocks need different setups? Bootstrap profiles let each block load only what it needs. Create `.doctest/laravel.php` and `.doctest/database.php`, then tag blocks with `bootstrap="laravel"` or compose them with `bootstrap="laravel,database"`.
+
+[Learn about bootstrap profiles &rarr;](/framework-bootstrap/)
+
+</div>
+<div class="feature-code">
+
+````markdown
+```php bootstrap="laravel"
+echo config('app.name');
+```
+<!-- doctest: Laravel -->
+
+```php bootstrap="laravel,database"
+$count = DB::table('users')->count();
+echo $count;
+```
+<!-- doctest: 0 -->
+
+```php
+echo strtoupper('hello');
+```
+<!-- doctest: HELLO -->
+````
+
+</div>
+</div>
+
+<div class="feature-section">
+<div class="feature-text">
+
 <div class="feature-badge">CI/CD</div>
 
 ## CI-Ready from Day One
