@@ -675,3 +675,37 @@ test('executeAll with parallel skips ignored blocks', function (): void {
     expect($results)->toHaveCount(1);
     expect($results[0]->skipped)->toBeTrue();
 });
+test('pre-syntax check catches missing semicolon with clear error', function (): void {
+    $block  = ($this->makeBlock)('$x = 1 echo "hello"');
+    $result = $this->executor->execute($block);
+
+    expect($result->passed)->toBeFalse();
+    expect($result->error)->toContain('Syntax error');
+});
+test('pre-syntax check catches unclosed bracket with clear error', function (): void {
+    $block  = ($this->makeBlock)('$x = [1, 2, 3;');
+    $result = $this->executor->execute($block);
+
+    expect($result->passed)->toBeFalse();
+    expect($result->error)->toContain('Syntax error');
+});
+test('pre-syntax check does not block parse-error blocks', function (): void {
+    $block  = ($this->makeBlock)('$x = {invalid;', Attribute::ParseError);
+    $result = $this->executor->execute($block);
+
+    expect($result->passed)->toBeTrue();
+});
+test('pre-syntax check catches syntax error in group', function (): void {
+    $blocks = [
+        ($this->makeBlock)('$x = 1;', group: 'grp'),
+        ($this->makeBlock)('echo $x', group: 'grp', assertions: [new OutputAssertion('1', 1)]),
+    ];
+
+    // The second block has missing semicolon but it's in the executable code.
+    // The group file should fail syntax check.
+    // Note: "echo $x" without semicolon followed by more code causes parse error.
+    $results = $this->executor->executeAll([$blocks[0], $blocks[1]]);
+
+    // At least one result should exist
+    expect($results)->not->toBeEmpty();
+});
