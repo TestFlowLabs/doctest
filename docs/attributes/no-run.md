@@ -54,3 +54,16 @@ $response = $client->post('/api/users', [
 | Syntax check | No | Yes |
 | Execution | No | No |
 | Reports as | Skipped | Pass/Fail |
+
+## Alternative: HTML Comment Syntax
+
+````markdown
+<!-- doctest-attr: no_run -->
+```php
+$users = DB::table('users')
+    ->where('active', true)
+    ->get();
+```
+````
+
+See [HTML Comment Syntax](/attributes/html-comment-syntax) for details.
