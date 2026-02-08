@@ -297,3 +297,117 @@ test('verbose shows failed assertion detail', function (): void {
     $this->assertStringContainsString('99', $output);
     $this->assertStringContainsString('42', $output);
 });
+test('shows debug output at normal verbosity', function (): void {
+    $this->output->setVerbosity(OutputInterface::VERBOSITY_NORMAL);
+    $reporter = new ConsoleReporter($this->output);
+
+    $block = new CodeBlock(
+        file: 'test.md',
+        startLine: 1,
+        rawCode: '$x = 42; // => dd()',
+        executableCode: '$x = 42;',
+        attributes: new Attributes(),
+        assertions: [],
+    );
+
+    $result = new ExecutionResult(
+        passed: true,
+        codeBlock: $block,
+        debugOutputs: [
+            new \TestFlowLabs\DocTest\Executor\DebugOutput(expression: '$x = 42', value: '42', line: 1),
+        ],
+    );
+
+    $reporter->reportResult($result);
+    $output = ($this->getOutput)();
+
+    // Check for the dd-specific format marker, not just the expression
+    $this->assertStringContainsString('dd', $output);
+    $this->assertStringContainsString('$x = 42 => 42', $output);
+});
+test('shows debug output at verbose verbosity', function (): void {
+    $this->output->setVerbosity(OutputInterface::VERBOSITY_VERBOSE);
+    $reporter = new ConsoleReporter($this->output);
+
+    $block = new CodeBlock(
+        file: 'test.md',
+        startLine: 1,
+        rawCode: '$x = 42; // => dd()',
+        executableCode: '$x = 42;',
+        attributes: new Attributes(),
+        assertions: [],
+    );
+
+    $result = new ExecutionResult(
+        passed: true,
+        codeBlock: $block,
+        debugOutputs: [
+            new \TestFlowLabs\DocTest\Executor\DebugOutput(expression: '$x = 42', value: '42', line: 1),
+        ],
+    );
+
+    $reporter->reportResult($result);
+    $output = ($this->getOutput)();
+
+    $this->assertStringContainsString('dd', $output);
+    $this->assertStringContainsString('$x = 42 => 42', $output);
+});
+test('shows multiple debug outputs', function (): void {
+    $this->output->setVerbosity(OutputInterface::VERBOSITY_NORMAL);
+    $reporter = new ConsoleReporter($this->output);
+
+    $block = new CodeBlock(
+        file: 'test.md',
+        startLine: 1,
+        rawCode: "\$x = 1; // => dd()\n\$y = 2; // => dd()",
+        executableCode: "\$x = 1;\n\$y = 2;",
+        attributes: new Attributes(),
+        assertions: [],
+    );
+
+    $result = new ExecutionResult(
+        passed: true,
+        codeBlock: $block,
+        debugOutputs: [
+            new \TestFlowLabs\DocTest\Executor\DebugOutput(expression: '$x = 1', value: '1', line: 1),
+            new \TestFlowLabs\DocTest\Executor\DebugOutput(expression: '$y = 2', value: '2', line: 2),
+        ],
+    );
+
+    $reporter->reportResult($result);
+    $output = ($this->getOutput)();
+
+    $this->assertStringContainsString('$x = 1 => 1', $output);
+    $this->assertStringContainsString('$y = 2 => 2', $output);
+});
+test('debug output shown alongside assertion details', function (): void {
+    $this->output->setVerbosity(OutputInterface::VERBOSITY_VERBOSE);
+    $reporter = new ConsoleReporter($this->output);
+
+    $block = new CodeBlock(
+        file: 'test.md',
+        startLine: 1,
+        rawCode: "\$x = 42; // => dd()\n\$y = 10; // => 10",
+        executableCode: "\$x = 42;\n\$y = 10;",
+        attributes: new Attributes(),
+        assertions: [],
+    );
+
+    $result = new ExecutionResult(
+        passed: true,
+        codeBlock: $block,
+        assertionDetails: [
+            new AssertionResultDetail(type: 'result_comment', passed: true, expected: '10', actual: '10', line: 2, expression: '$y = 10'),
+        ],
+        debugOutputs: [
+            new \TestFlowLabs\DocTest\Executor\DebugOutput(expression: '$x = 42', value: '42', line: 1),
+        ],
+    );
+
+    $reporter->reportResult($result);
+    $output = ($this->getOutput)();
+
+    // Both debug output and assertion detail should be present
+    $this->assertStringContainsString('$x = 42 => 42', $output);
+    $this->assertStringContainsString('$y = 10 => 10', $output);
+});
