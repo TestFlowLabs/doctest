@@ -69,3 +69,24 @@ test('is parse error returns true for parse error attribute', function (): void 
 
     expect($attributes->isParseError())->toBeTrue();
 });
+test('bootstraps defaults to empty array', function (): void {
+    $attributes = new Attributes();
+
+    expect($attributes->bootstraps)->toBe([]);
+});
+test('has bootstraps returns true when bootstraps set', function (): void {
+    $attributes = new Attributes(bootstraps: ['laravel']);
+
+    expect($attributes->hasBootstraps())->toBeTrue();
+    expect($attributes->bootstraps)->toBe(['laravel']);
+});
+test('has bootstraps returns false when empty', function (): void {
+    $attributes = new Attributes();
+
+    expect($attributes->hasBootstraps())->toBeFalse();
+});
+test('multiple bootstraps stored in order', function (): void {
+    $attributes = new Attributes(bootstraps: ['laravel', 'database']);
+
+    expect($attributes->bootstraps)->toBe(['laravel', 'database']);
+});
