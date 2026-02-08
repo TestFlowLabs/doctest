@@ -6,6 +6,7 @@ namespace TestFlowLabs\DocTest\Executor;
 
 use TestFlowLabs\DocTest\CodeBlock\CodeBlock;
 use TestFlowLabs\DocTest\Comparison\DiffGenerator;
+use TestFlowLabs\DocTest\Config\BootstrapResolver;
 use TestFlowLabs\DocTest\Comparison\OutputComparator;
 
 final readonly class Executor
@@ -21,6 +22,7 @@ final readonly class Executor
         bool $normalizeWhitespace = true,
         bool $trimTrailing = true,
         ?string $bootstrapCode = null,
+        private ?BootstrapResolver $bootstrapResolver = null,
     ) {
         $this->codeGenerator = new CodeGenerator($bootstrapCode);
         $this->processRunner = new ProcessRunner($timeout, $memoryLimit);
@@ -136,7 +138,7 @@ final readonly class Executor
 
     private function executeParseError(CodeBlock $block): ExecutionResult
     {
-        $filePath      = $this->codeGenerator->generate($block);
+        $filePath      = $this->codeGenerator->generate($block, blockBootstrapCode: $this->resolveBlockBootstrap($block));
         $processResult = $this->processRunner->run($filePath);
         $this->cleanup($filePath);
 
@@ -153,7 +155,7 @@ final readonly class Executor
 
     private function executeThrows(CodeBlock $block): ExecutionResult
     {
-        $filePath      = $this->codeGenerator->generate($block);
+        $filePath      = $this->codeGenerator->generate($block, blockBootstrapCode: $this->resolveBlockBootstrap($block));
         $processResult = $this->processRunner->run($filePath);
         $this->cleanup($filePath);
 
@@ -206,7 +208,7 @@ final readonly class Executor
 
     private function executeNormal(CodeBlock $block, ?string $setup = null, ?string $teardown = null): ExecutionResult
     {
-        $filePath      = $this->codeGenerator->generate($block, setup: $setup, teardown: $teardown);
+        $filePath      = $this->codeGenerator->generate($block, setup: $setup, teardown: $teardown, blockBootstrapCode: $this->resolveBlockBootstrap($block));
         $processResult = $this->processRunner->run($filePath);
         $this->cleanup($filePath);
 
@@ -451,8 +453,9 @@ final readonly class Executor
      */
     private function executeGroupBlocks(array $blocks, ?string $setup = null, ?string $teardown = null): array
     {
-        $filePath      = $this->codeGenerator->generateGroup($blocks, setup: $setup, teardown: $teardown);
-        $processResult = $this->processRunner->run($filePath);
+        $blockBootstrap = $blocks !== [] ? $this->resolveBlockBootstrap($blocks[0]) : null;
+        $filePath       = $this->codeGenerator->generateGroup($blocks, setup: $setup, teardown: $teardown, blockBootstrapCode: $blockBootstrap);
+        $processResult  = $this->processRunner->run($filePath);
         $this->cleanup($filePath);
 
         if ($processResult->exitCode !== 0) {
@@ -555,6 +558,15 @@ final readonly class Executor
         $teardown = $teardownCode !== [] ? implode("\n", $teardownCode) : null;
 
         return [$setup, $teardown, $normalBlocks, $groupedBlocks];
+    }
+
+    private function resolveBlockBootstrap(CodeBlock $block): ?string
+    {
+        if ($this->bootstrapResolver === null || !$block->attributes->hasBootstraps()) {
+            return null;
+        }
+
+        return $this->bootstrapResolver->resolve($block->attributes->bootstraps);
     }
 
     private function cleanup(string $filePath): void
