@@ -306,3 +306,64 @@ test('no bootstrap when null', function (): void {
 
     $this->assertStringNotContainsString('require_once', $content);
 });
+test('block bootstrap code injected after global bootstrap', function (): void {
+    $generator = new CodeGenerator("require_once '/global.php';");
+    $block     = ($this->makeBlock)('echo "test";');
+    $filePath  = $generator->generate($block, blockBootstrapCode: "require_once '/profile.php';");
+    $content   = file_get_contents($filePath);
+
+    $globalPos  = strpos($content, '/global.php');
+    $profilePos = strpos($content, '/profile.php');
+
+    expect($globalPos)->toBeLessThan($profilePos);
+});
+test('block bootstrap code without global bootstrap works', function (): void {
+    $generator = new CodeGenerator();
+    $block     = ($this->makeBlock)('echo "test";');
+    $filePath  = $generator->generate($block, blockBootstrapCode: "require_once '/profile.php';");
+    $content   = file_get_contents($filePath);
+
+    $this->assertStringContainsString("require_once '/profile.php';", $content);
+});
+test('block bootstrap code null does not add anything', function (): void {
+    $generator = new CodeGenerator();
+    $block     = ($this->makeBlock)('echo "test";');
+    $filePath  = $generator->generate($block, blockBootstrapCode: null);
+    $content   = file_get_contents($filePath);
+
+    $this->assertStringNotContainsString('require_once', $content);
+});
+test('block bootstrap in group injected correctly', function (): void {
+    $generator = new CodeGenerator("require_once '/global.php';");
+    $blocks    = [
+        ($this->makeBlock)('$x = 1;', group: 'grp'),
+        ($this->makeBlock)('echo $x;', group: 'grp'),
+    ];
+    $filePath = $generator->generateGroup($blocks, blockBootstrapCode: "require_once '/profile.php';");
+    $content  = file_get_contents($filePath);
+
+    $globalPos  = strpos($content, '/global.php');
+    $profilePos = strpos($content, '/profile.php');
+
+    expect($globalPos)->toBeLessThan($profilePos);
+});
+test('block bootstrap in parse error block', function (): void {
+    $generator = new CodeGenerator("require_once '/global.php';");
+    $block     = ($this->makeBlock)('$x = {invalid;', Attribute::ParseError);
+    $filePath  = $generator->generate($block, blockBootstrapCode: "require_once '/profile.php';");
+    $content   = file_get_contents($filePath);
+
+    $this->assertStringContainsString('/global.php', $content);
+    $this->assertStringContainsString('/profile.php', $content);
+});
+test('block bootstrap generated file passes syntax check', function (): void {
+    $generator = new CodeGenerator('// global bootstrap');
+    $block     = ($this->makeBlock)('echo "Hello";', assertions: [new OutputAssertion('Hello', 1)]);
+    $filePath  = $generator->generate($block, blockBootstrapCode: '// block bootstrap');
+
+    $output   = [];
+    $exitCode = 0;
+    exec(PHP_BINARY.' -l '.escapeshellarg((string) $filePath).' 2>&1', $output, $exitCode);
+
+    expect($exitCode)->toBe(0, 'Generated PHP file has syntax errors: '.implode("\n", $output));
+});
