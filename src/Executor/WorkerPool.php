@@ -10,7 +10,11 @@ final readonly class WorkerPool
         private int $maxWorkers,
         private int $timeout,
         private string $memoryLimit,
-    ) {}
+    ) {
+        if ($maxWorkers < 1) {
+            throw new \InvalidArgumentException("maxWorkers must be at least 1, got: {$maxWorkers}");
+        }
+    }
 
     /**
      * @param  array<WorkItem>  $items
@@ -46,10 +50,11 @@ final readonly class WorkerPool
                 $slot['stdout'] .= stream_get_contents($slot['pipes'][1]) ?: '';
                 $slot['stderr'] .= stream_get_contents($slot['pipes'][2]) ?: '';
 
-                $running[$index] = $slot;
-
                 if (!$status['running']) {
-                    // Process finished
+                    // Final read to capture any remaining buffered output
+                    $slot['stdout'] .= stream_get_contents($slot['pipes'][1]) ?: '';
+                    $slot['stderr'] .= stream_get_contents($slot['pipes'][2]) ?: '';
+
                     $results[$index] = $this->collectResult($slot, $status['exitcode']);
                     $this->closeSlot($slot);
                     unset($running[$index]);
@@ -70,7 +75,11 @@ final readonly class WorkerPool
                     $results[$index] = $this->collectResult($slot, 137);
                     $this->closeSlot($slot);
                     unset($running[$index]);
+
+                    continue;
                 }
+
+                $running[$index] = $slot;
             }
 
             if ($running !== []) {
