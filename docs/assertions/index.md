@@ -12,6 +12,7 @@ Assertions tell DocTest what to expect from a code block's execution. Use HTML c
 | [OutputJson](/assertions/output-json) | `<!-- doctest-json: -->` | JSON structure comparison |
 | [Expect](/assertions/expect) | `<!-- doctest-expect: -->` | Expression must be truthy |
 | [Result Comment](/assertions/result-comment) | `// =>` | Return value comparison |
+| [Debug Dump](/assertions/debug-dump) | `// => dd()` | Inspect value without asserting |
 
 ## HTML Comments vs. Result Comments
 
