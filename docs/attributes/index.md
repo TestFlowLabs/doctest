@@ -34,6 +34,7 @@ $pdo = new PDO('sqlite::memory:');
 | [`group`](/attributes/group) | Group blocks sharing state | `php group="name"` |
 | [`setup`](/attributes/setup-teardown) | Setup code for a group | `php setup group="name"` |
 | [`teardown`](/attributes/setup-teardown) | Teardown code for a group | `php teardown group="name"` |
+| [`bootstrap`](/attributes/bootstrap) | Load bootstrap profiles | `php bootstrap="laravel"` |
 
 ## Combining Attributes
 
