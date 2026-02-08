@@ -148,7 +148,13 @@ final readonly class Executor
 
         // Run processable blocks in parallel
         if ($processableBlocks !== [] && $this->parallelExecutor !== null) {
-            $processResults = $this->parallelExecutor->execute($processableBlocks, $setup, $teardown);
+            // Resolve bootstrap per block
+            $blockBootstrapCodes = [];
+            foreach ($processableBlocks as $index => $block) {
+                $blockBootstrapCodes[$index] = $this->resolveBlockBootstrap($block);
+            }
+
+            $processResults = $this->parallelExecutor->execute($processableBlocks, $setup, $teardown, $blockBootstrapCodes);
 
             foreach ($processableBlocks as $index => $block) {
                 if (!isset($processResults[$index])) {
@@ -355,51 +361,7 @@ final readonly class Executor
         $processResult = $this->processRunner->run($filePath);
         $this->cleanup($filePath);
 
-        /** @var array{thrown?: bool, class?: string, message?: string} $data */
-        $data = json_decode($processResult->stderr, true) ?? [];
-
-        if (!isset($data['thrown']) || $data['thrown'] !== true) {
-            return new ExecutionResult(
-                passed: false,
-                codeBlock: $block,
-                error: 'Expected exception '.($block->attributes->throwsClass ?? 'Throwable').' but none was thrown',
-                duration: $processResult->duration,
-            );
-        }
-
-        if ($block->attributes->throwsClass !== null && isset($data['class'])) {
-            $actualClass   = $data['class'];
-            $expectedClass = $block->attributes->throwsClass;
-
-            $normalizedActual   = ltrim($actualClass, '\\');
-            $normalizedExpected = ltrim($expectedClass, '\\');
-
-            if ($normalizedActual !== $normalizedExpected) {
-                return new ExecutionResult(
-                    passed: false,
-                    codeBlock: $block,
-                    error: "Expected exception {$expectedClass} but got {$actualClass}",
-                    duration: $processResult->duration,
-                );
-            }
-        }
-
-        if ($block->attributes->throwsMessage !== null && isset($data['message'])) {
-            if (!str_contains($data['message'], $block->attributes->throwsMessage)) {
-                return new ExecutionResult(
-                    passed: false,
-                    codeBlock: $block,
-                    error: "Expected message containing \"{$block->attributes->throwsMessage}\" but got \"{$data['message']}\"",
-                    duration: $processResult->duration,
-                );
-            }
-        }
-
-        return new ExecutionResult(
-            passed: true,
-            codeBlock: $block,
-            duration: $processResult->duration,
-        );
+        return $this->evaluateThrowsResult($block, $processResult);
     }
 
     private function executeNormal(CodeBlock $block, ?string $setup = null, ?string $teardown = null): ExecutionResult
@@ -408,30 +370,7 @@ final readonly class Executor
         $processResult = $this->processRunner->run($filePath);
         $this->cleanup($filePath);
 
-        // Handle process crash or timeout (no valid JSON in stderr)
-        if ($processResult->exitCode !== 0) {
-            $decoded = json_decode($processResult->stderr, true);
-
-            if (!is_array($decoded)) {
-                $errorMessage = $processResult->stderr !== ''
-                    ? 'Process failed (exit code '.$processResult->exitCode.'): '.$processResult->stderr
-                    : 'Process failed with exit code '.$processResult->exitCode;
-
-                return new ExecutionResult(
-                    passed: false,
-                    codeBlock: $block,
-                    error: $errorMessage,
-                    duration: $processResult->duration,
-                );
-            }
-        }
-
-        $decoded = json_decode($processResult->stderr, true);
-
-        /** @var array<array{type: string, expected?: string, actual?: string, expression?: string, passed?: bool, line?: int, value?: string}> $results */
-        $results = is_array($decoded) ? $decoded : [];
-
-        return $this->evaluateResults($block, $results, $processResult);
+        return $this->evaluateNormalResult($block, $processResult);
     }
 
     /**
