@@ -63,6 +63,7 @@ final class ConsoleReporter
             $duration = sprintf('<fg=gray>%.2fs</>', $result->duration);
             $this->output->writeln("  <fg=gray>{$location}</> <fg=green>✔</> {$preview}{$progress} {$duration}");
             $this->writeAssertionDetails($result);
+            $this->writeDebugOutputs($result);
             $this->flush();
 
             return;
@@ -74,6 +75,7 @@ final class ConsoleReporter
         $this->output->writeln($line);
 
         $this->writeAssertionDetails($result);
+        $this->writeDebugOutputs($result);
 
         if ($result->error !== null) {
             $this->output->writeln("    {$result->error}");
@@ -160,6 +162,17 @@ final class ConsoleReporter
             };
 
             $this->output->writeln("       {$icon} <fg=gray>{$info}</>");
+        }
+    }
+
+    private function writeDebugOutputs(ExecutionResult $result): void
+    {
+        if ($result->debugOutputs === []) {
+            return;
+        }
+
+        foreach ($result->debugOutputs as $debug) {
+            $this->output->writeln("       <fg=yellow>dd</> <fg=gray>{$debug->expression} => {$debug->value}</>");
         }
     }
 
