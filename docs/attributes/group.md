@@ -97,3 +97,16 @@ echo $count * 2;
 ````
 
 Each group runs in its own process.
+
+## Alternative: HTML Comment Syntax
+
+````markdown
+<!-- doctest-attr: group="math" -->
+```php
+$sum = array_sum([1, 2, 3]);
+echo $sum;
+```
+<!-- doctest: 6 -->
+````
+
+See [HTML Comment Syntax](/attributes/html-comment-syntax) for details.
