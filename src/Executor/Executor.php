@@ -480,7 +480,9 @@ final readonly class Executor
                 $actual           = $result['actual'] ?? '';
                 $capturedOutput[] = $actual;
 
-                $matchResult = @preg_match($pattern, $actual);
+                set_error_handler(static fn () => true);
+                $matchResult = preg_match($pattern, $actual);
+                restore_error_handler();
 
                 if ($matchResult === false) {
                     $assertionDetails[] = new \TestFlowLabs\DocTest\Assertion\AssertionResultDetail(
