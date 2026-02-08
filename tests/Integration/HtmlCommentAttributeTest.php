@@ -102,7 +102,7 @@ test('bootstrap via HTML comment attribute', function (): void {
     expect($exitCode)->toBe(0);
 });
 
-test('first doctest-attr wins when multiple comments precede a block', function (): void {
+test('single doctest-attr comment is applied to block', function (): void {
     $config = DocTestConfig::fromArray([
         'paths' => [$this->fixturesDir.'/multiple-comments.md'],
     ]);
@@ -110,6 +110,15 @@ test('first doctest-attr wins when multiple comments precede a block', function 
     $exitCode = ($this->runDocTest)($config);
 
     expect($exitCode)->toBe(0);
+});
+
+test('multiple doctest-attr comments before block throws RuntimeException', function (): void {
+    $config = DocTestConfig::fromArray([
+        'paths' => [dirname(__DIR__).'/FixturesErrors/html-comment-attrs/multiple-comments.md'],
+    ]);
+
+    expect(fn () => ($this->runDocTest)($config))
+        ->toThrow(RuntimeException::class, 'Multiple');
 });
 
 test('text between comment and block breaks adjacency', function (): void {
