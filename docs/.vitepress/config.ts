@@ -54,6 +54,7 @@ export default defineConfig({
           { text: 'OutputJson', link: '/assertions/output-json' },
           { text: 'Expect', link: '/assertions/expect' },
           { text: 'Result Comment (=>)', link: '/assertions/result-comment' },
+          { text: 'Debug Dump (dd())', link: '/assertions/debug-dump' },
           { text: 'HTML Comment', link: '/assertions/html-comment' },
           { text: 'Wildcards', link: '/wildcards/' },
         ],
@@ -68,6 +69,8 @@ export default defineConfig({
           { text: 'parse_error', link: '/attributes/parse-error' },
           { text: 'group', link: '/attributes/group' },
           { text: 'setup / teardown', link: '/attributes/setup-teardown' },
+          { text: 'bootstrap', link: '/attributes/bootstrap' },
+          { text: 'HTML Comment Syntax', link: '/attributes/html-comment-syntax' },
         ],
       },
       {
