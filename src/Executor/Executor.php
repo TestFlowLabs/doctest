@@ -453,6 +453,19 @@ final readonly class Executor
      */
     private function executeGroupBlocks(array $blocks, ?string $setup = null, ?string $teardown = null): array
     {
+        if ($this->bootstrapResolver !== null && count($blocks) > 1) {
+            $firstBootstraps = $blocks[0]->attributes->bootstraps;
+            foreach ($blocks as $block) {
+                if ($block->attributes->bootstraps !== $firstBootstraps) {
+                    $group = $blocks[0]->attributes->group ?? 'unknown';
+
+                    throw new \RuntimeException(
+                        "All blocks in group \"{$group}\" must have identical bootstrap profiles."
+                    );
+                }
+            }
+        }
+
         $blockBootstrap = $blocks !== [] ? $this->resolveBlockBootstrap($blocks[0]) : null;
         $filePath       = $this->codeGenerator->generateGroup($blocks, setup: $setup, teardown: $teardown, blockBootstrapCode: $blockBootstrap);
         $processResult  = $this->processRunner->run($filePath);
