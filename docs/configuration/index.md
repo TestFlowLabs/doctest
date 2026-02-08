@@ -15,6 +15,7 @@ return [
     'execution'      => [
         'timeout'      => 30,
         'memory_limit' => '256M',
+        'parallel'     => 1,
     ],
     'output' => [
         'normalize_whitespace' => true,
@@ -64,6 +65,18 @@ PHP memory limit for each code block process.
     'memory_limit' => '256M',
 ],
 ```
+
+### `execution.parallel`
+
+Number of parallel worker processes. Default `1` (sequential). Set higher to run code blocks concurrently.
+
+```php ignore
+'execution' => [
+    'parallel' => 4,
+],
+```
+
+See [Parallel Execution](/advanced/parallel-execution) for details.
 
 ### `bootstrap`
 
