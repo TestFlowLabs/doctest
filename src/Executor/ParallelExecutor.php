@@ -15,10 +15,11 @@ final readonly class ParallelExecutor
 
     /**
      * @param  array<CodeBlock>  $blocks
+     * @param  array<int, string|null>  $blockBootstrapCodes  keyed by same index as $blocks
      *
      * @return array<int, ProcessResult> keyed by position in input array
      */
-    public function execute(array $blocks, ?string $setup = null, ?string $teardown = null): array
+    public function execute(array $blocks, ?string $setup = null, ?string $teardown = null, array $blockBootstrapCodes = []): array
     {
         if ($blocks === []) {
             return [];
@@ -27,8 +28,9 @@ final readonly class ParallelExecutor
         $items = [];
 
         foreach ($blocks as $index => $block) {
-            $filePath = $this->codeGenerator->generate($block, $setup, $teardown);
-            $items[]  = new WorkItem($index, $filePath, $block);
+            $bootstrapCode = $blockBootstrapCodes[$index] ?? null;
+            $filePath      = $this->codeGenerator->generate($block, $setup, $teardown, $bootstrapCode);
+            $items[]       = new WorkItem($index, $filePath, $block);
         }
 
         $results = $this->workerPool->run($items);
