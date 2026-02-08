@@ -7,7 +7,7 @@ DocTest has an official skill that teaches AI coding agents how to apply DocTest
 An agent can run `vendor/bin/doctest` — but it doesn't know _how_ to add DocTest to existing documentation. It needs to understand:
 
 - 6 assertion types and when to use each
-- 7 attributes and their processing priority
+- 8 attributes and their processing priority
 - 8 wildcard patterns for dynamic output
 - Group lifecycle with setup/teardown
 - Block classification — which blocks get which assertions
