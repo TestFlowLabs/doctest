@@ -23,6 +23,7 @@ final readonly class DocTestConfig
         public string $bootstrapsDir = '.doctest',
         public bool $normalizeWhitespace = true,
         public bool $trimTrailing = true,
+        public int $parallel = 1,
         public bool $reporterConsole = true,
         public ?string $reporterJson = null,
     ) {}
@@ -55,6 +56,7 @@ final readonly class DocTestConfig
             verbosity: is_int($data['verbosity'] ?? null) ? $data['verbosity'] : 0,
             bootstrap: is_string($data['bootstrap'] ?? null) ? $data['bootstrap'] : null,
             bootstrapsDir: is_string($data['bootstraps_dir'] ?? null) ? $data['bootstraps_dir'] : '.doctest',
+            parallel: is_int($execution['parallel'] ?? null) ? $execution['parallel'] : 1,
             normalizeWhitespace: (bool) ($output['normalize_whitespace'] ?? true),
             trimTrailing: (bool) ($output['trim_trailing'] ?? true),
             reporterConsole: (bool) ($reporters['console'] ?? true),
