@@ -15,6 +15,7 @@ final readonly class Executor
     private ProcessRunner $processRunner;
     private OutputComparator $comparator;
     private DiffGenerator $diffGenerator;
+    private \TestFlowLabs\DocTest\Assertion\AssertionParser $assertionParser;
     private ?ParallelExecutor $parallelExecutor;
 
     public function __construct(
@@ -26,10 +27,11 @@ final readonly class Executor
         private ?BootstrapResolver $bootstrapResolver = null,
         private int $parallel = 1,
     ) {
-        $this->codeGenerator = new CodeGenerator($bootstrapCode);
-        $this->processRunner = new ProcessRunner($timeout, $memoryLimit);
-        $this->comparator    = new OutputComparator($normalizeWhitespace, $trimTrailing);
-        $this->diffGenerator = new DiffGenerator();
+        $this->codeGenerator   = new CodeGenerator($bootstrapCode);
+        $this->processRunner   = new ProcessRunner($timeout, $memoryLimit);
+        $this->comparator      = new OutputComparator($normalizeWhitespace, $trimTrailing);
+        $this->diffGenerator   = new DiffGenerator();
+        $this->assertionParser = new \TestFlowLabs\DocTest\Assertion\AssertionParser();
 
         if ($this->parallel > 1) {
             $workerPool             = new WorkerPool($this->parallel, $this->timeout, $this->memoryLimit);
@@ -261,24 +263,20 @@ final readonly class Executor
 
     private function evaluateNormalResult(CodeBlock $block, ProcessResult $processResult): ExecutionResult
     {
-        if ($processResult->exitCode !== 0) {
-            $decoded = json_decode($processResult->stderr, true);
-
-            if (!is_array($decoded)) {
-                $errorMessage = $processResult->stderr !== ''
-                    ? 'Process failed (exit code '.$processResult->exitCode.'): '.$processResult->stderr
-                    : 'Process failed with exit code '.$processResult->exitCode;
-
-                return new ExecutionResult(
-                    passed: false,
-                    codeBlock: $block,
-                    error: $errorMessage,
-                    duration: $processResult->duration,
-                );
-            }
-        }
-
         $decoded = json_decode($processResult->stderr, true);
+
+        if ($processResult->exitCode !== 0 && !is_array($decoded)) {
+            $errorMessage = $processResult->stderr !== ''
+                ? 'Process failed (exit code '.$processResult->exitCode.'): '.$processResult->stderr
+                : 'Process failed with exit code '.$processResult->exitCode;
+
+            return new ExecutionResult(
+                passed: false,
+                codeBlock: $block,
+                error: $errorMessage,
+                duration: $processResult->duration,
+            );
+        }
 
         /** @var array<array{type: string, expected?: string, actual?: string, expression?: string, passed?: bool, line?: int, value?: string}> $results */
         $results = is_array($decoded) ? $decoded : [];
@@ -481,8 +479,12 @@ final readonly class Executor
                 $capturedOutput[] = $actual;
 
                 set_error_handler(static fn () => true);
-                $matchResult = preg_match($pattern, $actual);
-                restore_error_handler();
+
+                try {
+                    $matchResult = preg_match($pattern, $actual);
+                } finally {
+                    restore_error_handler();
+                }
 
                 if ($matchResult === false) {
                     $assertionDetails[] = new \TestFlowLabs\DocTest\Assertion\AssertionResultDetail(
@@ -700,12 +702,10 @@ final readonly class Executor
      */
     private function mapResultsToBlocks(array $blocks, array $allResults, ProcessResult $processResult): array
     {
-        $parser = new \TestFlowLabs\DocTest\Assertion\AssertionParser();
-
         // Count expected assertions per block to partition results
         $assertionCounts = [];
         foreach ($blocks as $block) {
-            $parsed            = $parser->parse($block->rawCode);
+            $parsed            = $this->assertionParser->parse($block->rawCode);
             $count             = count($block->assertions) + count($parsed->resultComments) + count($parsed->debugMarkers);
             $assertionCounts[] = $count;
         }
