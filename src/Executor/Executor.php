@@ -283,6 +283,19 @@ final readonly class Executor
         /** @var array<array{type: string, expected?: string, actual?: string, expression?: string, passed?: bool, line?: int, value?: string}> $results */
         $results = is_array($decoded) ? $decoded : [];
 
+        if (!is_array($decoded) && $processResult->stdout !== '') {
+            $stdout = trim($processResult->stdout);
+
+            if ($stdout !== '') {
+                return new ExecutionResult(
+                    passed: false,
+                    codeBlock: $block,
+                    error: $stdout,
+                    duration: $processResult->duration,
+                );
+            }
+        }
+
         return $this->evaluateResults($block, $results, $processResult);
     }
 
