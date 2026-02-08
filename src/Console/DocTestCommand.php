@@ -25,6 +25,7 @@ final class DocTestCommand extends Command
             ->addOption('exclude', null, InputOption::VALUE_REQUIRED, 'Exclude files matching pattern')
             ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Parse and show blocks without executing')
             ->addOption('stop-on-failure', null, InputOption::VALUE_NONE, 'Stop on first failure')
+            ->addOption('parallel', 'p', InputOption::VALUE_REQUIRED, 'Number of parallel workers (default: 1)')
             ->addOption('config', 'c', InputOption::VALUE_REQUIRED, 'Path to doctest.php config file')
             ->setHelp(
                 '<comment>DocTest</comment> v'.(InstalledVersions::getPrettyVersion('testflowlabs/doctest') ?? 'dev')."\n\n".<<<'HELP'
@@ -121,8 +122,9 @@ final class DocTestCommand extends Command
         $configPath = $input->getOption('config');
         $baseConfig = DocTestConfig::load(is_string($configPath) ? $configPath : null);
 
-        $filter  = $input->getOption('filter');
-        $exclude = $input->getOption('exclude');
+        $filter   = $input->getOption('filter');
+        $exclude  = $input->getOption('exclude');
+        $parallel = $input->getOption('parallel');
 
         $config = new DocTestConfig(
             paths: $files !== [] ? $files : $baseConfig->paths,
@@ -134,6 +136,7 @@ final class DocTestCommand extends Command
             filter: is_string($filter) ? $filter : $baseConfig->filter,
             verbosity: $baseConfig->verbosity,
             bootstrap: $baseConfig->bootstrap,
+            parallel: is_numeric($parallel) ? (int) $parallel : $baseConfig->parallel,
             reporterConsole: $baseConfig->reporterConsole,
             reporterJson: $baseConfig->reporterJson,
         );
