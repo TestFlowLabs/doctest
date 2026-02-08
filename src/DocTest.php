@@ -175,10 +175,10 @@ final readonly class DocTest
      */
     private function extractBlocks(string $filePath): array
     {
-        $markdown = file_get_contents($filePath);
+        $markdown = @file_get_contents($filePath);
 
         if ($markdown === false) {
-            return [];
+            throw new \RuntimeException("Failed to read file: {$filePath}");
         }
 
         $document = $this->markdownParser->parse($markdown);
