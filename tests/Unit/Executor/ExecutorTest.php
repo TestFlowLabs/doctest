@@ -552,3 +552,61 @@ test('group blocks with mismatched bootstrap profiles throws exception', functio
     unlink($tmpDir.'/greet.php');
     rmdir($tmpDir);
 });
+test('dd marker collects debug output without affecting pass fail', function (): void {
+    $block  = ($this->makeBlock)('$x = 42; // => dd()');
+    $result = $this->executor->execute($block);
+
+    expect($result->passed)->toBeTrue();
+    expect($result->debugOutputs)->toHaveCount(1);
+    expect($result->debugOutputs[0])->toBeInstanceOf(\TestFlowLabs\DocTest\Executor\DebugOutput::class);
+    expect($result->debugOutputs[0]->expression)->toBe('$x = 42');
+    expect($result->debugOutputs[0]->value)->toBe('42');
+    expect($result->debugOutputs[0]->line)->toBe(1);
+});
+test('dd marker does not create assertion details', function (): void {
+    $block  = ($this->makeBlock)('$x = 42; // => dd()');
+    $result = $this->executor->execute($block);
+
+    expect($result->assertionDetails)->toBeEmpty();
+    expect($result->debugOutputs)->toHaveCount(1);
+});
+test('dd marker mixed with result comment both pass', function (): void {
+    $block  = ($this->makeBlock)("\$x = 42; // => dd()\n\$y = 10; // => 10");
+    $result = $this->executor->execute($block);
+
+    expect($result->passed)->toBeTrue();
+    expect($result->debugOutputs)->toHaveCount(1);
+    expect($result->debugOutputs[0]->value)->toBe('42');
+    expect($result->assertionDetails)->toHaveCount(1);
+    expect($result->assertionDetails[0]->type)->toBe('result_comment');
+});
+test('multiple dd markers collect all debug outputs', function (): void {
+    $block  = ($this->makeBlock)("\$x = 1; // => dd()\n\$y = 2; // => dd()");
+    $result = $this->executor->execute($block);
+
+    expect($result->passed)->toBeTrue();
+    expect($result->debugOutputs)->toHaveCount(2);
+    expect($result->debugOutputs[0]->value)->toBe('1');
+    expect($result->debugOutputs[1]->value)->toBe('2');
+});
+test('dd marker in group blocks collects debug outputs', function (): void {
+    $blocks = [
+        ($this->makeBlock)('$x = 42; // => dd()', group: 'dbg'),
+        ($this->makeBlock)('$y = $x + 1; // => 43', group: 'dbg'),
+    ];
+
+    $results = $this->executor->executeGroup($blocks);
+
+    expect($results)->toHaveCount(2);
+    expect($results[0]->debugOutputs)->toHaveCount(1);
+    expect($results[0]->debugOutputs[0]->value)->toBe('42');
+    expect($results[1]->passed)->toBeTrue();
+});
+test('dd marker with output assertion both work', function (): void {
+    $block  = ($this->makeBlock)("\$x = 42; // => dd()\necho \$x;", assertions: [new OutputAssertion('42', 3)]);
+    $result = $this->executor->execute($block);
+
+    expect($result->passed)->toBeTrue();
+    expect($result->debugOutputs)->toHaveCount(1);
+    expect($result->debugOutputs[0]->value)->toBe('42');
+});
