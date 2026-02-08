@@ -1,12 +1,12 @@
 # Quality Gates
 
-After completing each task, run quality gates in two steps:
+After completing each task, **always** run quality gates via `composer test`. This is the only way to verify all gates pass. Never run individual tools separately as the quality gate check.
 
 ```bash
 # Step 1: Auto-fix (Rector + Pint)
 composer rector && composer pint
 
-# Step 2: Verify all gates pass
+# Step 2: Verify ALL gates pass (mandatory)
 composer test
 ```
 
@@ -14,6 +14,7 @@ composer test
 
 ## Rules
 
+- **Always use `composer test`** — never substitute with individual tool runs (e.g., `vendor/bin/pest` alone is not sufficient)
 - Run both steps after every task, no exceptions
 - Fix any issues before closing the task
 - If Rector or Pint make changes in Step 1, stage them in the same commit
