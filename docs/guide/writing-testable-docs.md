@@ -225,10 +225,12 @@ This approach forces you to think about what the reader should learn from each e
 
 ### Hidden State
 
+````markdown
 ```php no_run
 // BAD: Where does $config come from?
 echo $config['database'];
 ```
+````
 
 The reader can't run this. Either make the example self-contained or use a group with a setup block.
 

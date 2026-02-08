@@ -19,6 +19,7 @@ The `group` attribute links code blocks together so they share state within a si
 
 ## Example
 
+````markdown
 ```php group="math"
 $numbers = [1, 2, 3, 4, 5];
 $sum = array_sum($numbers);
@@ -32,11 +33,13 @@ $average = $sum / count($numbers);
 echo $average;
 ```
 <!-- doctest: 3 -->
+````
 
 ## With Setup and Teardown
 
 Groups are commonly used with [`setup`](/attributes/setup-teardown) and [`teardown`](/attributes/setup-teardown) blocks:
 
+````markdown
 ```php setup group="database"
 $pdo = new PDO('sqlite::memory:');
 $pdo->exec('CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT)');
@@ -59,6 +62,7 @@ echo $count;
 ```php teardown group="database"
 $pdo->exec('DROP TABLE users');
 ```
+````
 
 ## Execution Order
 
@@ -72,6 +76,7 @@ Within a group:
 
 You can have multiple independent groups in the same file:
 
+````markdown
 ```php group="strings"
 $greeting = 'Hello';
 ```
@@ -89,5 +94,6 @@ echo $greeting . ', World!';
 echo $count * 2;
 ```
 <!-- doctest: 84 -->
+````
 
 Each group runs in its own process.

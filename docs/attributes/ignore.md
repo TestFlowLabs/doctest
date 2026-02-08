@@ -4,10 +4,12 @@ The `ignore` attribute tells DocTest to skip a code block entirely. The block is
 
 ## Syntax
 
+````markdown
 ```php ignore
 // This code will not be executed
 $config = require 'missing-file.php';
 ```
+````
 
 ## Console Output
 
@@ -28,15 +30,19 @@ Ignored blocks appear with the skip symbol:
 
 ### External dependency
 
+````markdown
 ```php ignore
 // Requires a running Redis server
 $redis = new Redis();
 $redis->connect('127.0.0.1', 6379);
 ```
+````
 
 ### Configuration example
 
+````markdown
 ```php ignore
 // This file doesn't exist in the test environment
 return require __DIR__ . '/config/app.php';
 ```
+````

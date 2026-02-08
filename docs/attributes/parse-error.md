@@ -4,10 +4,12 @@ The `parse_error` attribute tells DocTest to expect a PHP parse error. The block
 
 ## Syntax
 
+````markdown
 ```php parse_error
 // This code has intentional syntax errors
 echo 'Hello
 ```
+````
 
 ## How It Works
 
@@ -26,22 +28,28 @@ echo 'Hello
 
 ### Missing semicolon
 
+````markdown
 ```php parse_error
 $x = 42
 echo $x;
 ```
+````
 
 ### Unclosed string
 
+````markdown
 ```php parse_error
 echo "Hello, World!;
 ```
+````
 
 ### Invalid syntax
 
+````markdown
 ```php parse_error
 function 123invalid() {}
 ```
+````
 
 ## Failure Condition
 

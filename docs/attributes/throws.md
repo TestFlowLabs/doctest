@@ -6,21 +6,27 @@ The `throws` attribute tells DocTest to expect an exception from the code block.
 
 ### Expect any exception
 
+````markdown
 ```php throws
 throw new RuntimeException('Something went wrong');
 ```
+````
 
 ### Expect a specific exception class
 
+````markdown
 ```php throws(InvalidArgumentException)
 throw new InvalidArgumentException('Expected an integer');
 ```
+````
 
 ### Expect a specific exception with message
 
+````markdown
 ```php throws(InvalidArgumentException, "Expected an integer")
 throw new InvalidArgumentException('Expected an integer');
 ```
+````
 
 ## How It Works
 
@@ -42,9 +48,11 @@ The block fails when:
 
 ### Division by zero
 
+````markdown
 ```php throws(DivisionByZeroError)
 $result = 1 / 0;
 ```
+````
 
 ### Custom exception
 
@@ -56,6 +64,8 @@ validate(['email' => 'not-an-email'], ['email' => 'email']);
 
 ### Exception with message check
 
+````markdown
 ```php throws(RuntimeException, "not found")
 throw new RuntimeException('File not found');
 ```
+````

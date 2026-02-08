@@ -4,10 +4,12 @@ The `no_run` attribute tells DocTest to check the syntax of a code block without
 
 ## Syntax
 
+````markdown
 ```php no_run
 // Syntax is checked but code is not executed
 $db->query('SELECT * FROM users');
 ```
+````
 
 ## How It Works
 
@@ -26,20 +28,24 @@ $db->query('SELECT * FROM users');
 
 ### Database query
 
+````markdown
 ```php no_run
 $users = DB::table('users')
     ->where('active', true)
     ->orderBy('name')
     ->get();
 ```
+````
 
 ### API call
 
+````markdown
 ```php no_run
 $response = $client->post('/api/users', [
     'json' => ['name' => 'Alice', 'email' => 'alice@example.com'],
 ]);
 ```
+````
 
 ## Difference from ignore
 
