@@ -204,3 +204,64 @@ test('preserves raw code with php tag', function (): void {
 
     $this->assertStringContainsString('<?php', $blocks[0]->rawCode);
 });
+
+test('parses doctest-attr HTML comment before code block as attributes', function (): void {
+    $markdown = "<!-- doctest-attr: ignore -->\n```php\necho 'test';\n```\n";
+    $document = $this->markdownParser->parse($markdown);
+
+    $blocks = $this->extractor->extract($document, 'test.md');
+
+    expect($blocks)->toHaveCount(1);
+    expect($blocks[0]->attributes->attribute)->toBe(Attribute::Ignore);
+});
+
+test('parses doctest-attr with group before code block', function (): void {
+    $markdown = "<!-- doctest-attr: group=\"cart\" -->\n```php\necho 1;\n```\n";
+    $document = $this->markdownParser->parse($markdown);
+
+    $blocks = $this->extractor->extract($document, 'test.md');
+
+    expect($blocks)->toHaveCount(1);
+    expect($blocks[0]->attributes->group)->toBe('cart');
+});
+
+test('parses doctest-attr with bootstrap before code block', function (): void {
+    $markdown = "<!-- doctest-attr: bootstrap=\"laravel\" -->\n```php\necho 1;\n```\n";
+    $document = $this->markdownParser->parse($markdown);
+
+    $blocks = $this->extractor->extract($document, 'test.md');
+
+    expect($blocks)->toHaveCount(1);
+    expect($blocks[0]->attributes->bootstraps)->toBe(['laravel']);
+});
+
+test('doctest-attr comment does not become an assertion', function (): void {
+    $markdown = "<!-- doctest-attr: ignore -->\n```php\necho 'test';\n```\n";
+    $document = $this->markdownParser->parse($markdown);
+
+    $blocks = $this->extractor->extract($document, 'test.md');
+
+    expect($blocks[0]->assertions)->toHaveCount(0);
+});
+
+test('doctest-attr and doctest assertion work together', function (): void {
+    $markdown = "<!-- doctest-attr: group=\"math\" -->\n```php\necho 42;\n```\n<!-- doctest: 42 -->\n";
+    $document = $this->markdownParser->parse($markdown);
+
+    $blocks = $this->extractor->extract($document, 'test.md');
+
+    expect($blocks)->toHaveCount(1);
+    expect($blocks[0]->attributes->group)->toBe('math');
+    expect($blocks[0]->assertions)->toHaveCount(1);
+    expect($blocks[0]->assertions[0])->toBeInstanceOf(OutputAssertion::class);
+});
+
+test('non-doctest-attr HTML comment before block is not parsed as attribute', function (): void {
+    $markdown = "<!-- just a regular comment -->\n```php\necho 1;\n```\n";
+    $document = $this->markdownParser->parse($markdown);
+
+    $blocks = $this->extractor->extract($document, 'test.md');
+
+    expect($blocks)->toHaveCount(1);
+    expect($blocks[0]->attributes->attribute)->toBeNull();
+});
