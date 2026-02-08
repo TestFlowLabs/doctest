@@ -50,4 +50,4 @@ The `memory_limit` and `timeout` settings provide some boundaries, but they don'
 
 ## Temp Files
 
-DocTest writes generated scripts to `/tmp/doctest/` and deletes them after execution. These files contain the instrumented code and are cleaned up automatically. If DocTest crashes, temp files may remain in `/tmp/doctest/` and can be safely deleted.
+DocTest writes generated scripts to the system temp directory (`sys_get_temp_dir()`) with a `doctest_run_` prefix and a random suffix. These files contain the instrumented code and are cleaned up automatically after execution. If DocTest crashes, temp files may remain and can be safely deleted.
