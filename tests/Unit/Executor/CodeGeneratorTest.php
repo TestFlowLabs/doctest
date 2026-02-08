@@ -480,6 +480,7 @@ PHP;
     expect($results)->toHaveCount(1);
     expect($results[0]['type'])->toBe('debug');
     expect($results[0]['value'])->toBeString();
+    expect($results[0]['value'])->toContain('*RECURSION*');
 });
 test('result comment handles circular references with error handler', function (): void {
     $code = <<<'PHP'
