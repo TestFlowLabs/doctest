@@ -182,6 +182,7 @@ Use the simplest assertion that verifies correctness:
 | Only part of output matters | `<!-- doctest-contains: -->` | Flexible |
 | JSON output | `<!-- doctest-json: -->` | Key order independent |
 | Return value, no output | `// =>` or `<!-- doctest-expect: -->` | Value verification |
+| Inspect value (no assertion) | `// => dd()` | Debugging & exploration |
 
 Don't use `<!-- doctest-matches: /regex/ -->` when wildcards would do. Regex is powerful but harder to read.
 
