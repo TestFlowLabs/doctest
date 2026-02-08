@@ -43,6 +43,7 @@ final class DocTestCommand extends Command
                   \<!-- doctest-json: {"k":"v"} --\>   JSON structure match
                   \<!-- doctest-expect: $x === 42 --\> Expression must be truthy
                   <info>$x = 42; // => 42</info>               Return value match
+                  <info>$x = 42; // => dd()</info>             Debug dump (shows value, always passes)
 
                 <comment>Attributes (in code fence info string):</comment>
                   <info>```php ignore</info>                        Skip this block
