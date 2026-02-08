@@ -9,13 +9,17 @@ beforeEach(function (): void {
 });
 
 afterEach(function (): void {
-    // Clean up temp directory
-    $files = glob($this->tmpDir.'/*.php') ?: [];
-    foreach ($files as $file) {
-        unlink($file);
-    }
+    // Clean up temp directory recursively
+    $cleanup = function (string $dir) use (&$cleanup): void {
+        $items = array_diff(scandir($dir) ?: [], ['.', '..']);
+        foreach ($items as $item) {
+            $path = $dir.'/'.$item;
+            is_dir($path) ? $cleanup($path) : unlink($path);
+        }
+        rmdir($dir);
+    };
     if (is_dir($this->tmpDir)) {
-        rmdir($this->tmpDir);
+        $cleanup($this->tmpDir);
     }
 });
 
@@ -102,3 +106,55 @@ test('non existent directory throws for any profile', function (): void {
 
     $resolver->resolve(['anything']);
 })->throws(RuntimeException::class);
+test('empty directory discovers no profiles', function (): void {
+    $resolver = new BootstrapResolver($this->tmpDir);
+
+    expect($resolver->availableProfiles())->toBe([]);
+});
+test('ignores non-php files in directory', function (): void {
+    file_put_contents($this->tmpDir.'/readme.txt', 'text file');
+    file_put_contents($this->tmpDir.'/config.json', '{}');
+    file_put_contents($this->tmpDir.'/valid.php', "<?php\n// valid");
+
+    $resolver = new BootstrapResolver($this->tmpDir);
+
+    expect($resolver->availableProfiles())->toBe(['valid']);
+});
+test('ignores nested directories and their files', function (): void {
+    mkdir($this->tmpDir.'/nested', 0755, true);
+    file_put_contents($this->tmpDir.'/nested/deep.php', "<?php\n// deep");
+    file_put_contents($this->tmpDir.'/top.php', "<?php\n// top");
+
+    $resolver = new BootstrapResolver($this->tmpDir);
+
+    expect($resolver->availableProfiles())->toBe(['top']);
+});
+test('unknown profile error includes available profiles hint', function (): void {
+    file_put_contents($this->tmpDir.'/alpha.php', "<?php\n");
+    file_put_contents($this->tmpDir.'/beta.php', "<?php\n");
+
+    $resolver = new BootstrapResolver($this->tmpDir);
+
+    expect(fn () => $resolver->resolve(['missing']))
+        ->toThrow(RuntimeException::class, 'Available profiles: alpha, beta');
+});
+test('unknown profile error with no available profiles has no hint', function (): void {
+    $resolver = new BootstrapResolver($this->tmpDir);
+
+    try {
+        $resolver->resolve(['missing']);
+        $this->fail('Expected RuntimeException');
+    } catch (RuntimeException $e) {
+        expect($e->getMessage())->toBe('Unknown bootstrap profile "missing".');
+        expect($e->getMessage())->not->toContain('Available profiles');
+    }
+});
+test('resolve same profile multiple times produces consistent output', function (): void {
+    file_put_contents($this->tmpDir.'/math.php', "<?php\n// math");
+
+    $resolver = new BootstrapResolver($this->tmpDir);
+    $first    = $resolver->resolve(['math']);
+    $second   = $resolver->resolve(['math']);
+
+    expect($first)->toBe($second);
+});
