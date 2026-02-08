@@ -67,3 +67,11 @@ $x = 42; // This is just a comment, not an assertion
 $y = 42; // => 42   <-- This IS an assertion
 ```
 ````
+
+## Debug Variant
+
+Use `// => dd()` to inspect a value without asserting. See [Debug Dump](/assertions/debug-dump) for details.
+
+```php
+$x = 42; // => dd()
+```
