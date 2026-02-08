@@ -183,3 +183,27 @@ test('bootstraps dir in constructor defaults to .doctest', function (): void {
 
     expect($config->bootstrapsDir)->toBe('.doctest');
 });
+test('parallel defaults to 1', function (): void {
+    $config = DocTestConfig::fromArray([]);
+
+    expect($config->parallel)->toBe(1);
+});
+test('parallel loaded from execution section', function (): void {
+    $config = DocTestConfig::fromArray([
+        'execution' => ['parallel' => 4],
+    ]);
+
+    expect($config->parallel)->toBe(4);
+});
+test('parallel non int falls back to default', function (): void {
+    $config = DocTestConfig::fromArray([
+        'execution' => ['parallel' => 'many'],
+    ]);
+
+    expect($config->parallel)->toBe(1);
+});
+test('parallel in constructor defaults to 1', function (): void {
+    $config = new DocTestConfig();
+
+    expect($config->parallel)->toBe(1);
+});
