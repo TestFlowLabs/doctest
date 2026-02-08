@@ -52,6 +52,13 @@ final class DocTestCommand extends Command
                   <info>```php group="name"</info>                  Group blocks sharing state
                   <info>```php setup group="name"</info>            Setup code for a group
                   <info>```php teardown group="name"</info>         Teardown code for a group
+                  <info>```php bootstrap="name"</info>              Use named bootstrap profile
+                  <info>```php bootstrap="a,b"</info>               Compose multiple profiles
+
+                <comment>Bootstrap profiles (.doctest/ directory):</comment>
+                  Files in <info>.doctest/</info> are auto-discovered as profiles.
+                  Profile name = filename without .php extension.
+                  Order: global bootstrap → profiles (left to right) → setup → code
 
                 <comment>Shiki transformations (auto-stripped):</comment>
                   <info>// [!code --]</info>                      Line removed (diff removal)
