@@ -1,6 +1,9 @@
 # Attributes Overview
 
-Attributes control how DocTest handles each code block. They are written in the fence info string after `php`.
+Attributes control how DocTest handles each code block. They can be written in two ways:
+
+1. **Info string** — after `php` in the code fence (traditional)
+2. **[HTML comment](/attributes/html-comment-syntax)** — in a `<!-- doctest-attr: ... -->` comment before the block (preserves editor syntax highlighting)
 
 ## Syntax
 
@@ -43,6 +46,17 @@ Some attributes can be combined:
 
 ```php teardown group="database"
 // Both teardown and group
+```
+````
+
+## Alternative: HTML Comment Syntax
+
+All attributes above can also be specified via HTML comments before the code block. This preserves editor syntax highlighting. See the [HTML Comment Syntax](/attributes/html-comment-syntax) page for details.
+
+````markdown
+<!-- doctest-attr: group="database" setup -->
+```php
+$pdo = new PDO('sqlite::memory:');
 ```
 ````
 
