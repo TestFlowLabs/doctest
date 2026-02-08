@@ -118,6 +118,8 @@ final readonly class CodeBlockExtractor
                 continue;
             }
 
+            $this->detectConflicts($infoStringAttrs, $commentAttrs);
+
             return new Attributes(
                 attribute: $commentAttrs->attribute ?? $infoStringAttrs->attribute,
                 throwsClass: $commentAttrs->throwsClass ?? $infoStringAttrs->throwsClass,
@@ -128,6 +130,27 @@ final readonly class CodeBlockExtractor
         }
 
         return $infoStringAttrs;
+    }
+
+    private function detectConflicts(Attributes $infoString, Attributes $comment): void
+    {
+        if ($infoString->attribute !== null && $comment->attribute !== null) {
+            throw new \RuntimeException(
+                "Conflicting attribute: info string has '{$infoString->attribute->value}' but HTML comment has '{$comment->attribute->value}'. Use only one source."
+            );
+        }
+
+        if ($infoString->group !== null && $comment->group !== null) {
+            throw new \RuntimeException(
+                "Conflicting group: info string has '{$infoString->group}' but HTML comment has '{$comment->group}'. Use only one source."
+            );
+        }
+
+        if ($infoString->bootstraps !== [] && $comment->bootstraps !== []) {
+            throw new \RuntimeException(
+                'Conflicting bootstrap: both info string and HTML comment set bootstrap profiles. Use only one source.'
+            );
+        }
     }
 
     private function isPhpBlock(string $infoString): bool
