@@ -44,7 +44,7 @@ final readonly class DocTest
             $bootstrapResolver = new BootstrapResolver($bootstrapsDir, $bootstrapCode);
         }
 
-        $this->executor = new Executor($config->timeout, $config->memoryLimit, $config->normalizeWhitespace, $config->trimTrailing, $bootstrapCode, $bootstrapResolver);
+        $this->executor = new Executor($config->timeout, $config->memoryLimit, $config->normalizeWhitespace, $config->trimTrailing, $bootstrapCode, $bootstrapResolver, $config->parallel);
 
         if ($output !== null) {
             $this->reporter = new ConsoleReporter($output);
