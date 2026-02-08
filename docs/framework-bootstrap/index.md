@@ -266,10 +266,3 @@ return [
 ];
 ```
 
-## Tips
-
-- Keep your bootstrap file minimal — it runs for every code block
-- Use SQLite in-memory databases for documentation examples that need a database
-- Group related database examples with the `group` attribute and use `setup`/`teardown` blocks for table creation and cleanup
-- Use bootstrap profiles when different blocks need different environments
-- Profile names must match filenames in `.doctest/` exactly (without `.php`)
