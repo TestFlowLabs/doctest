@@ -112,3 +112,35 @@ test('throws with empty message returns null message', function (): void {
     expect($attributes->throwsClass)->toBe('RuntimeException');
     expect($attributes->throwsMessage)->toBeNull();
 });
+test('parses single bootstrap profile', function (): void {
+    $attributes = $this->parser->parse('php bootstrap="laravel"');
+
+    expect($attributes->bootstraps)->toBe(['laravel']);
+});
+test('parses multiple bootstrap profiles', function (): void {
+    $attributes = $this->parser->parse('php bootstrap="laravel,database"');
+
+    expect($attributes->bootstraps)->toBe(['laravel', 'database']);
+});
+test('bootstrap combined with group', function (): void {
+    $attributes = $this->parser->parse('php bootstrap="db" group="users"');
+
+    expect($attributes->bootstraps)->toBe(['db']);
+    expect($attributes->group)->toBe('users');
+});
+test('bootstrap combined with ignore', function (): void {
+    $attributes = $this->parser->parse('php bootstrap="laravel" ignore');
+
+    expect($attributes->bootstraps)->toBe(['laravel']);
+    expect($attributes->attribute)->toBe(Attribute::Ignore);
+});
+test('no bootstrap in info string returns empty array', function (): void {
+    $attributes = $this->parser->parse('php ignore');
+
+    expect($attributes->bootstraps)->toBe([]);
+});
+test('bootstrap trims spaces around profile names', function (): void {
+    $attributes = $this->parser->parse('php bootstrap="laravel , db"');
+
+    expect($attributes->bootstraps)->toBe(['laravel', 'db']);
+});
