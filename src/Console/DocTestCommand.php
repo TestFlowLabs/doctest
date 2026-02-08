@@ -111,6 +111,12 @@ final class DocTestCommand extends Command
 
                   <info>doctest -c custom-doctest.php</info>
                     Use a custom config file
+
+                  <info>doctest --parallel</info>
+                    Run in parallel (auto-detect CPU cores)
+
+                  <info>doctest --parallel 4</info>
+                    Run with 4 parallel workers
                 HELP
             );
     }
