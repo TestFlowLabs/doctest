@@ -265,3 +265,38 @@ test('non-doctest-attr HTML comment before block is not parsed as attribute', fu
     expect($blocks)->toHaveCount(1);
     expect($blocks[0]->attributes->attribute)->toBeNull();
 });
+
+test('HTML comment attribute fills in what info string does not set', function (): void {
+    $markdown = "<!-- doctest-attr: group=\"cart\" -->\n```php setup\necho 1;\n```\n";
+    $document = $this->markdownParser->parse($markdown);
+
+    $blocks = $this->extractor->extract($document, 'test.md');
+
+    expect($blocks)->toHaveCount(1);
+    expect($blocks[0]->attributes->attribute)->toBe(Attribute::Setup);
+    expect($blocks[0]->attributes->group)->toBe('cart');
+});
+
+test('throws RuntimeException when both sources set same attribute', function (): void {
+    $markdown = "<!-- doctest-attr: group=\"from-comment\" -->\n```php group=\"from-info\"\necho 1;\n```\n";
+    $document = $this->markdownParser->parse($markdown);
+
+    expect(fn () => $this->extractor->extract($document, 'test.md'))
+        ->toThrow(RuntimeException::class, 'Conflicting');
+});
+
+test('throws RuntimeException when both sources set attribute keyword', function (): void {
+    $markdown = "<!-- doctest-attr: no_run -->\n```php ignore\necho 1;\n```\n";
+    $document = $this->markdownParser->parse($markdown);
+
+    expect(fn () => $this->extractor->extract($document, 'test.md'))
+        ->toThrow(RuntimeException::class, 'Conflicting');
+});
+
+test('throws RuntimeException when both sources set bootstrap', function (): void {
+    $markdown = "<!-- doctest-attr: bootstrap=\"db\" -->\n```php bootstrap=\"laravel\"\necho 1;\n```\n";
+    $document = $this->markdownParser->parse($markdown);
+
+    expect(fn () => $this->extractor->extract($document, 'test.md'))
+        ->toThrow(RuntimeException::class, 'Conflicting');
+});
