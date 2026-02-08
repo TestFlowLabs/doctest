@@ -54,6 +54,7 @@ final readonly class CodeGenerator
             $lines[] = '';
         }
 
+        $lines[] = $this->safeExportFunction();
         $lines[] = '$__doctest_results = [];';
         $lines[] = '';
 
@@ -102,7 +103,7 @@ final readonly class CodeGenerator
                 $lines[] = '$__doctest_results[] = [';
                 $lines[] = "    'type' => 'result_comment',";
                 $lines[] = "    'expected' => ".var_export($rc->expectedValue, true).',';
-                $lines[] = "    'actual' => var_export(\$__doctest_result, true),";
+                $lines[] = "    'actual' => __doctest_safe_export(\$__doctest_result),";
                 $lines[] = "    'expression' => ".var_export($rc->expression, true).',';
                 $lines[] = "    'line' => ".$rc->line().',';
                 $lines[] = '];';
@@ -114,7 +115,7 @@ final readonly class CodeGenerator
                 $lines[] = '$__doctest_results[] = [';
                 $lines[] = "    'type' => 'debug',";
                 $lines[] = "    'expression' => ".var_export($dm->expression, true).',';
-                $lines[] = "    'value' => var_export(\$__doctest_result, true),";
+                $lines[] = "    'value' => __doctest_safe_export(\$__doctest_result),";
                 $lines[] = "    'line' => ".$dm->line().',';
                 $lines[] = '];';
                 $lines[] = '';
@@ -163,6 +164,7 @@ final readonly class CodeGenerator
     private function generateSegmentCapture(\TestFlowLabs\DocTest\Assertion\AssertionParserResult $parsed, CodeBlock $block, ?string $setup = null, ?string $teardown = null): string
     {
         $lines   = [];
+        $lines[] = $this->safeExportFunction();
         $lines[] = '$__doctest_results = [];';
         $lines[] = '';
 
@@ -207,7 +209,7 @@ final readonly class CodeGenerator
             $lines[] = '$__doctest_results[] = [';
             $lines[] = "    'type' => 'result_comment',";
             $lines[] = "    'expected' => ".var_export($rc->expectedValue, true).',';
-            $lines[] = "    'actual' => var_export(\$__doctest_result, true),";
+            $lines[] = "    'actual' => __doctest_safe_export(\$__doctest_result),";
             $lines[] = "    'expression' => ".var_export($rc->expression, true).',';
             $lines[] = "    'line' => ".$rc->line().',';
             $lines[] = '];';
@@ -219,7 +221,7 @@ final readonly class CodeGenerator
             $lines[] = '$__doctest_results[] = [';
             $lines[] = "    'type' => 'debug',";
             $lines[] = "    'expression' => ".var_export($dm->expression, true).',';
-            $lines[] = "    'value' => var_export(\$__doctest_result, true),";
+            $lines[] = "    'value' => __doctest_safe_export(\$__doctest_result),";
             $lines[] = "    'line' => ".$dm->line().',';
             $lines[] = '];';
             $lines[] = '';
@@ -262,6 +264,19 @@ final readonly class CodeGenerator
         if (file_put_contents($filePath, $content) === false) {
             throw new \RuntimeException("Failed to write generated code to {$filePath}");
         }
+    }
+
+    private function safeExportFunction(): string
+    {
+        return <<<'PHP'
+function __doctest_safe_export(mixed $value): string {
+    try {
+        return var_export($value, true);
+    } catch (\Throwable) {
+        return print_r($value, true);
+    }
+}
+PHP;
     }
 
     private function resolveDir(string $code, string $sourceFile): string
