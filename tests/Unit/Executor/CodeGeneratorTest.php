@@ -19,11 +19,11 @@ beforeEach(function (): void {
     /*
      * @param  array<\TestFlowLabs\DocTest\Assertion\Assertion>  $assertions
      */
-    $this->makeBlock = function (string $code, ?Attribute $attribute = null, ?string $throwsClass = null, ?string $throwsMessage = null, array $assertions = [], ?string $group = null): CodeBlock {
+    $this->makeBlock = function (string $code, ?Attribute $attribute = null, ?string $throwsClass = null, ?string $throwsMessage = null, array $assertions = [], ?string $group = null, string $file = 'test.md'): CodeBlock {
         $parsed = $this->assertionParser->parse($code);
 
         return new CodeBlock(
-            file: 'test.md',
+            file: $file,
             startLine: 1,
             rawCode: $code,
             executableCode: $parsed->executableCode,
@@ -447,4 +447,32 @@ test('debug dump in group passes syntax check', function (): void {
     exec(PHP_BINARY.' -l '.escapeshellarg((string) $filePath).' 2>&1', $output, $exitCode);
 
     expect($exitCode)->toBe(0, 'Generated group PHP file has syntax errors: '.implode("\n", $output));
+});
+test('__DIR__ is replaced with source file directory in generated code', function (): void {
+    $block    = ($this->makeBlock)('include __DIR__."/../migrations/test.php";', file: '/project/docs/guide.md');
+    $filePath = $this->generator->generate($block);
+    $content  = file_get_contents($filePath);
+
+    $this->assertStringNotContainsString('__DIR__', $content);
+    $this->assertStringContainsString("'/project/docs'", $content);
+});
+test('__DIR__ is replaced in group generated code', function (): void {
+    $blocks = [
+        ($this->makeBlock)('$path = __DIR__."/file.php";', group: 'grp', file: '/project/docs/api.md'),
+    ];
+    $filePath = $this->generator->generateGroup($blocks);
+    $content  = file_get_contents($filePath);
+
+    $this->assertStringNotContainsString('__DIR__', $content);
+    $this->assertStringContainsString("'/project/docs'", $content);
+});
+test('__DIR__ replacement produces valid syntax', function (): void {
+    $block    = ($this->makeBlock)('$f = include __DIR__."/../data.php";', file: '/my/project/docs/test.md');
+    $filePath = $this->generator->generate($block);
+
+    $output   = [];
+    $exitCode = 0;
+    exec(PHP_BINARY.' -l '.escapeshellarg((string) $filePath).' 2>&1', $output, $exitCode);
+
+    expect($exitCode)->toBe(0, 'Generated PHP file has syntax errors: '.implode("\n", $output));
 });
