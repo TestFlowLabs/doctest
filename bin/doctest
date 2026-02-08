@@ -16,10 +16,12 @@ foreach ($autoloadPaths as $autoloadPath) {
     }
 }
 
+use Composer\InstalledVersions;
 use Symfony\Component\Console\Application;
 use TestFlowLabs\DocTest\Console\DocTestCommand;
 
-$application = new Application('doctest', '0.1.0');
+$version = InstalledVersions::getPrettyVersion('testflowlabs/doctest') ?? 'dev';
+$application = new Application('doctest', $version);
 $command = new DocTestCommand();
 $application->addCommand($command);
 $application->setDefaultCommand('doctest', true);
