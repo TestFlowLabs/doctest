@@ -165,6 +165,19 @@ echo $users->count();
 
 Blocks without a `bootstrap` attribute run without any profile — exactly as before.
 
+### Alternative: HTML Comment Syntax
+
+````markdown
+<!-- doctest-attr: bootstrap="laravel" -->
+```php
+$user = User::factory()->create();
+echo $user->exists;
+```
+<!-- doctest: 1 -->
+````
+
+This preserves editor syntax highlighting. See [HTML Comment Syntax](/attributes/html-comment-syntax) for details.
+
 ### Composing Profiles
 
 Combine multiple profiles with comma-separated names:
