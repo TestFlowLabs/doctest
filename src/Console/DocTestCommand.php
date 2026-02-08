@@ -9,6 +9,7 @@ use TestFlowLabs\DocTest\DocTest;
 use Symfony\Component\Console\Command\Command;
 use TestFlowLabs\DocTest\Config\DocTestConfig;
 use Symfony\Component\Console\Input\InputOption;
+use TestFlowLabs\DocTest\System\CpuCoreDetector;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -25,7 +26,7 @@ final class DocTestCommand extends Command
             ->addOption('exclude', null, InputOption::VALUE_REQUIRED, 'Exclude files matching pattern')
             ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Parse and show blocks without executing')
             ->addOption('stop-on-failure', null, InputOption::VALUE_NONE, 'Stop on first failure')
-            ->addOption('parallel', 'p', InputOption::VALUE_REQUIRED, 'Number of parallel workers (default: 1)')
+            ->addOption('parallel', 'p', InputOption::VALUE_OPTIONAL, 'Number of parallel workers (auto-detects CPU cores when no value given)')
             ->addOption('config', 'c', InputOption::VALUE_REQUIRED, 'Path to doctest.php config file')
             ->setHelp(
                 '<comment>DocTest</comment> v'.(InstalledVersions::getPrettyVersion('testflowlabs/doctest') ?? 'dev')."\n\n".<<<'HELP'
@@ -126,6 +127,14 @@ final class DocTestCommand extends Command
         $exclude  = $input->getOption('exclude');
         $parallel = $input->getOption('parallel');
 
+        if (is_numeric($parallel)) {
+            $parallelValue = (int) $parallel;
+        } elseif ($parallel === null && $input->hasParameterOption(['--parallel', '-p'])) {
+            $parallelValue = CpuCoreDetector::detect();
+        } else {
+            $parallelValue = $baseConfig->parallel;
+        }
+
         $config = new DocTestConfig(
             paths: $files !== [] ? $files : $baseConfig->paths,
             exclude: is_string($exclude) ? [$exclude] : $baseConfig->exclude,
@@ -136,7 +145,7 @@ final class DocTestCommand extends Command
             filter: is_string($filter) ? $filter : $baseConfig->filter,
             verbosity: $baseConfig->verbosity,
             bootstrap: $baseConfig->bootstrap,
-            parallel: is_numeric($parallel) ? (int) $parallel : $baseConfig->parallel,
+            parallel: $parallelValue,
             reporterConsole: $baseConfig->reporterConsole,
             reporterJson: $baseConfig->reporterJson,
         );
