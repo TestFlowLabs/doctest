@@ -9,6 +9,7 @@ use TestFlowLabs\DocTest\Executor\Executor;
 use TestFlowLabs\DocTest\Config\DocTestConfig;
 use TestFlowLabs\DocTest\Parser\MarkdownParser;
 use TestFlowLabs\DocTest\Reporter\JsonReporter;
+use TestFlowLabs\DocTest\Config\BootstrapResolver;
 use TestFlowLabs\DocTest\Executor\ExecutionResult;
 use TestFlowLabs\DocTest\Reporter\ConsoleReporter;
 use TestFlowLabs\DocTest\Parser\CodeBlockExtractor;
@@ -36,7 +37,14 @@ final readonly class DocTest
                 $bootstrapCode = "require_once '".addslashes($resolvedPath)."';";
             }
         }
-        $this->executor = new Executor($config->timeout, $config->memoryLimit, $config->normalizeWhitespace, $config->trimTrailing, $bootstrapCode);
+
+        $bootstrapResolver = null;
+        $bootstrapsDir     = $config->bootstrapsDir;
+        if (is_dir($bootstrapsDir)) {
+            $bootstrapResolver = new BootstrapResolver($bootstrapsDir, $bootstrapCode);
+        }
+
+        $this->executor = new Executor($config->timeout, $config->memoryLimit, $config->normalizeWhitespace, $config->trimTrailing, $bootstrapCode, $bootstrapResolver);
 
         if ($output !== null) {
             $this->reporter = new ConsoleReporter($output);
