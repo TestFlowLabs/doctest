@@ -17,6 +17,7 @@ final class ConsoleReporter
     private int $totalBlocks     = 0;
     private int $currentBlock    = 0;
     private int $lineNumberWidth = 1;
+    private int $parallelWorkers = 1;
 
     public function __construct(
         private readonly OutputInterface $output = new ConsoleOutput(),
@@ -32,6 +33,11 @@ final class ConsoleReporter
     public function setMaxLineNumber(int $maxLine): void
     {
         $this->lineNumberWidth = max(1, strlen((string) $maxLine));
+    }
+
+    public function setParallelWorkers(int $workers): void
+    {
+        $this->parallelWorkers = $workers;
     }
 
     public function reportFile(string $filePath): void
@@ -127,6 +133,10 @@ final class ConsoleReporter
 
         if ($skipped > 0) {
             $summary .= "<fg=gray>Skipped: {$skipped}</>  ";
+        }
+
+        if ($this->parallelWorkers > 1) {
+            $summary .= "Parallel: {$this->parallelWorkers}  ";
         }
 
         $summary .= sprintf('Duration: %.2fs', $duration);
