@@ -367,3 +367,84 @@ test('block bootstrap generated file passes syntax check', function (): void {
 
     expect($exitCode)->toBe(0, 'Generated PHP file has syntax errors: '.implode("\n", $output));
 });
+test('generates debug dump code for dd marker', function (): void {
+    $block    = ($this->makeBlock)('$x = 42; // => dd()');
+    $filePath = $this->generator->generate($block);
+    $content  = file_get_contents($filePath);
+
+    $this->assertStringContainsString("'type' => 'debug'", $content);
+    $this->assertStringContainsString('var_export', $content);
+    $this->assertStringContainsString('$x = 42', $content);
+});
+test('debug dump generated code passes syntax check', function (): void {
+    $block    = ($this->makeBlock)('$x = 42; // => dd()');
+    $filePath = $this->generator->generate($block);
+
+    $output   = [];
+    $exitCode = 0;
+    exec(PHP_BINARY.' -l '.escapeshellarg((string) $filePath).' 2>&1', $output, $exitCode);
+
+    expect($exitCode)->toBe(0, 'Generated PHP file has syntax errors: '.implode("\n", $output));
+});
+test('debug dump produces correct output when executed', function (): void {
+    $block    = ($this->makeBlock)('$x = 42; // => dd()');
+    $filePath = $this->generator->generate($block);
+
+    $descriptors = [
+        0 => ['pipe', 'r'],
+        1 => ['pipe', 'w'],
+        2 => ['pipe', 'w'],
+    ];
+    $process = proc_open([PHP_BINARY, $filePath], $descriptors, $pipes);
+    $stderr  = stream_get_contents($pipes[2]);
+    fclose($pipes[0]);
+    fclose($pipes[1]);
+    fclose($pipes[2]);
+    proc_close($process);
+
+    $results = json_decode($stderr, true);
+    expect($results)->toBeArray();
+    expect($results)->toHaveCount(1);
+    expect($results[0]['type'])->toBe('debug');
+    expect($results[0]['expression'])->toBe('$x = 42');
+    expect($results[0]['value'])->toBe('42');
+    expect($results[0]['line'])->toBe(1);
+});
+test('generates multiple debug dumps', function (): void {
+    $block    = ($this->makeBlock)("\$x = 1; // => dd()\n\$y = 2; // => dd()");
+    $filePath = $this->generator->generate($block);
+    $content  = file_get_contents($filePath);
+
+    expect(substr_count($content, "'type' => 'debug'"))->toBe(2);
+});
+test('debug dump mixed with result comment', function (): void {
+    $block    = ($this->makeBlock)("\$x = 42; // => dd()\n\$y = 10; // => 10");
+    $filePath = $this->generator->generate($block);
+    $content  = file_get_contents($filePath);
+
+    $this->assertStringContainsString("'type' => 'debug'", $content);
+    $this->assertStringContainsString("'type' => 'result_comment'", $content);
+});
+test('debug dump in group generates correct code', function (): void {
+    $blocks = [
+        ($this->makeBlock)('$x = 42; // => dd()', group: 'grp'),
+        ($this->makeBlock)('$y = $x + 1; // => 43', group: 'grp'),
+    ];
+    $filePath = $this->generator->generateGroup($blocks);
+    $content  = file_get_contents($filePath);
+
+    $this->assertStringContainsString("'type' => 'debug'", $content);
+    $this->assertStringContainsString("'type' => 'result_comment'", $content);
+});
+test('debug dump in group passes syntax check', function (): void {
+    $blocks = [
+        ($this->makeBlock)('$x = 42; // => dd()', group: 'grp'),
+    ];
+    $filePath = $this->generator->generateGroup($blocks);
+
+    $output   = [];
+    $exitCode = 0;
+    exec(PHP_BINARY.' -l '.escapeshellarg((string) $filePath).' 2>&1', $output, $exitCode);
+
+    expect($exitCode)->toBe(0, 'Generated group PHP file has syntax errors: '.implode("\n", $output));
+});
