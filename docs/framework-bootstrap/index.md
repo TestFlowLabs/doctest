@@ -8,7 +8,7 @@ Add a `bootstrap` key to your `doctest.php` config:
 
 ```php ignore
 return [
-    'bootstrap' => 'tests/doctest-bootstrap.php',
+    'bootstrap' => '.doctest/bootstrap.php',
 ];
 ```
 
@@ -21,7 +21,7 @@ The bootstrap file is `require_once`'d at the top of every generated script, giv
 Create a bootstrap file that boots the Laravel application:
 
 ```php ignore
-// tests/doctest-bootstrap.php
+// .doctest/bootstrap.php
 require_once __DIR__.'/../vendor/autoload.php';
 
 $app = require_once __DIR__.'/../bootstrap/app.php';
@@ -41,7 +41,7 @@ echo $users->count();
 ### Symfony
 
 ```php ignore
-// tests/doctest-bootstrap.php
+// .doctest/bootstrap.php
 require_once __DIR__.'/../vendor/autoload.php';
 
 $kernel = new \App\Kernel('test', true);
@@ -53,7 +53,7 @@ $kernel->boot();
 For projects without a framework, just load the autoloader:
 
 ```php ignore
-// tests/doctest-bootstrap.php
+// .doctest/bootstrap.php
 require_once __DIR__.'/../vendor/autoload.php';
 ```
 
