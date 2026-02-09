@@ -58,14 +58,3 @@ No other implementation supports grouping related code blocks with shared state.
 
 Rust can use `extern crate` in doc tests. DocTest's `bootstrap` attribute allows loading any PHP framework (Laravel, Symfony, etc.) before execution.
 
-## What Others Have That DocTest Doesn't (Yet)
-
-| Feature | Available In | Status |
-|---------|-------------|--------|
-| Auto-update expected values (`--bless`) | Rust | Planned |
-| Unordered output comparison | Go | Planned |
-| Watch mode | Rust (via cargo-watch), Elixir | Planned |
-| Auto-scaffold assertions | — | Planned |
-| Floating-point tolerance | — | Planned |
-
-See the [GitHub issues](https://github.com/testflowlabs/doctest/issues) for the latest roadmap.
