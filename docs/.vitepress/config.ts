@@ -112,6 +112,7 @@ export default defineConfig({
           { text: 'Execution Model', link: '/advanced/execution-model' },
           { text: 'Parallel Execution', link: '/advanced/parallel-execution' },
           { text: 'Output Comparison', link: '/advanced/output-comparison' },
+          { text: 'Cross-Language Comparison', link: '/advanced/comparison' },
           { text: 'Security', link: '/advanced/security' },
         ],
       },
