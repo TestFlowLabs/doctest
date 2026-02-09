@@ -6,11 +6,11 @@ How does DocTest compare to doctest implementations in other languages? This pag
 
 | Language | Tool | Since |
 |----------|------|-------|
-| **Python** | `doctest` (stdlib) | 1999 |
-| **Rust** | `rustdoc --test` | 2015 |
-| **Elixir** | `ExUnit.DocTest` | 2014 |
-| **Go** | `go test` (testable examples) | 2012 |
-| **PHP** | **DocTest** | 2025 |
+| **Python** | `doctest` (stdlib) | 1999  |
+| **Rust** | `rustdoc --test` | 2015  |
+| **Elixir** | `ExUnit.DocTest` | 2014  |
+| **Go** | `go test` (testable examples) | 2012  |
+| **PHP** | **DocTest** | 2026  |
 
 ## Feature Matrix
 
@@ -21,7 +21,7 @@ How does DocTest compare to doctest implementations in other languages? This pag
 | Partial output matching | — | — | — | — | `output-contains` |
 | JSON comparison | — | — | — | — | `output-json` |
 | Inline result assertion | — | — | `iex>` / `...>` | — | `// =>` |
-| Wildcard patterns | `...` only | — | — | — | 8 patterns (`{{uuid}}`, `{{date}}`, etc.) |
+| Wildcard patterns | `...` only | — | — | — | 8 patterns (<code v-pre>{{uuid}}</code>, <code v-pre>{{date}}</code>, etc.) |
 | Unordered output | — | — | — | `Unordered output:` | — |
 | Exception testing | `Traceback` block | `should_panic` | `** (Error)` | — | `throws` attribute |
 | Parse error testing | — | `compile_fail` | — | — | `parse_error` attribute |
@@ -48,7 +48,11 @@ DocTest offers 6 distinct assertion types, allowing documentation authors to cho
 
 ### Wildcard System
 
+<div v-pre>
+
 Python's `...` is the only wildcard available in other implementations -- it matches anything. DocTest provides 8 semantic wildcards (`{{uuid}}`, `{{date}}`, `{{datetime}}`, `{{time}}`, `{{integer}}`, `{{float}}`, `{{hash}}`, `{{any}}`) that validate the format of dynamic values, not just their presence.
+
+</div>
 
 ### Block Organization
 
