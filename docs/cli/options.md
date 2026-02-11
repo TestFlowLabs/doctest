@@ -20,9 +20,17 @@ vendor/bin/doctest docs/
 
 # Mixed
 vendor/bin/doctest README.md docs/
+
+# Specific block (Nth PHP block in the file, 1-based)
+vendor/bin/doctest README.md:3
+
+# Multiple files with block indices
+vendor/bin/doctest README.md:1 docs/api.md:5
 ```
 
 If no files are specified, DocTest uses the configured paths (default: `docs/` and `README.md`).
+
+The `:N` suffix targets a specific PHP code block within a file. Block numbering is **1-based** (the first PHP block is `:1`). If the block number exceeds the number of PHP blocks in the file, DocTest exits with code 3 (no tests found).
 
 ## Options
 
