@@ -207,3 +207,15 @@ test('parallel in constructor defaults to 1', function (): void {
 
     expect($config->parallel)->toBe(1);
 });
+test('blockIndices defaults to empty array', function (): void {
+    $config = new DocTestConfig();
+
+    expect($config->blockIndices)->toBe([]);
+});
+test('blockIndices accepts file to index map', function (): void {
+    $config = new DocTestConfig(
+        blockIndices: ['README.md' => 3, 'docs/api.md' => 1],
+    );
+
+    expect($config->blockIndices)->toBe(['README.md' => 3, 'docs/api.md' => 1]);
+});
