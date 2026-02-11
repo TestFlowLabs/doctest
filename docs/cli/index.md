@@ -13,6 +13,9 @@ vendor/bin/doctest docs/getting-started.md docs/api.md
 
 # Test a directory
 vendor/bin/doctest docs/
+
+# Test only the 3rd PHP block in a file
+vendor/bin/doctest README.md:3
 ```
 
 ## Quick Reference
