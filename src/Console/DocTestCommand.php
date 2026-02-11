@@ -88,6 +88,9 @@ final class DocTestCommand extends Command
                   <info>doctest README.md docs/api.md</info>
                     Test specific files
 
+                  <info>doctest README.md:3</info>
+                    Test only the 3rd PHP block in README.md
+
                   <info>doctest docs/</info>
                     Test all markdown files in a directory
 
@@ -126,6 +129,18 @@ final class DocTestCommand extends Command
         /** @var array<string> $files */
         $files = $input->getArgument('files');
 
+        $blockIndices = [];
+        $cleanFiles   = [];
+        foreach ($files as $file) {
+            if (preg_match('/^(.+):(\d+)$/', $file, $matches) === 1 && !is_dir($file)) {
+                $cleanFiles[]              = $matches[1];
+                $blockIndices[$matches[1]] = (int) $matches[2];
+            } else {
+                $cleanFiles[] = $file;
+            }
+        }
+        $files = $cleanFiles;
+
         $configPath = $input->getOption('config');
         $baseConfig = DocTestConfig::load(is_string($configPath) ? $configPath : null);
 
@@ -154,6 +169,7 @@ final class DocTestCommand extends Command
             parallel: $parallelValue,
             reporterConsole: $baseConfig->reporterConsole,
             reporterJson: $baseConfig->reporterJson,
+            blockIndices: $blockIndices,
         );
 
         $doctest = new DocTest($config, $output);
