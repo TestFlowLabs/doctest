@@ -70,7 +70,13 @@ final readonly class DocTest
         $allBlocks     = [];
         $maxLineNumber = 0;
         foreach ($files as $file) {
-            $blocks           = $this->extractBlocks($file);
+            $blocks = $this->extractBlocks($file);
+
+            if (isset($this->config->blockIndices[$file])) {
+                $index  = $this->config->blockIndices[$file] - 1;
+                $blocks = ($index >= 0 && $index < count($blocks)) ? [$blocks[$index]] : [];
+            }
+
             $allBlocks[$file] = $blocks;
             $totalBlocks += count($blocks);
             foreach ($blocks as $block) {
