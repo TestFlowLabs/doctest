@@ -9,6 +9,7 @@ final readonly class DocTestConfig
     /**
      * @param  array<string>  $paths
      * @param  array<string>  $exclude
+     * @param  array<string, int>  $blockIndices
      */
     public function __construct(
         public array $paths = ['docs', 'README.md'],
@@ -26,6 +27,7 @@ final readonly class DocTestConfig
         public int $parallel = 1,
         public bool $reporterConsole = true,
         public ?string $reporterJson = null,
+        public array $blockIndices = [],
     ) {}
 
     /**
