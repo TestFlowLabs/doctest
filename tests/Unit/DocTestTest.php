@@ -99,3 +99,45 @@ test('all processes all discovered files', function (): void {
     // Should have results from multiple fixture files
     expect($results)->not->toBeEmpty();
 });
+test('run with block index filters to specific block', function (): void {
+    $file   = $this->fixturesDir.'/basic.md';
+    $config = new DocTestConfig(
+        paths: [$file],
+        blockIndices: [$file => 2],
+    );
+
+    $docTest  = ($this->makeDocTest)($config);
+    $exitCode = $docTest->run();
+
+    $output = $this->output->fetch();
+
+    expect($exitCode)->toBe(0);
+    // Block 2 in basic.md is: $x = 42; echo $x;
+    $this->assertStringContainsString('42', $output);
+    // Should only run 1 block
+    expect(substr_count((string) $output, '✔'))->toBe(1);
+});
+test('run with out of range block index returns exit code 3', function (): void {
+    $file   = $this->fixturesDir.'/basic.md';
+    $config = new DocTestConfig(
+        paths: [$file],
+        blockIndices: [$file => 999],
+    );
+
+    $docTest  = ($this->makeDocTest)($config);
+    $exitCode = $docTest->run();
+
+    expect($exitCode)->toBe(3);
+});
+test('run with block index 0 returns exit code 3', function (): void {
+    $file   = $this->fixturesDir.'/basic.md';
+    $config = new DocTestConfig(
+        paths: [$file],
+        blockIndices: [$file => 0],
+    );
+
+    $docTest  = ($this->makeDocTest)($config);
+    $exitCode = $docTest->run();
+
+    expect($exitCode)->toBe(3);
+});
