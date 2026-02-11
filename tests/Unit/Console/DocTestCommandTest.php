@@ -106,6 +106,24 @@ test('parallel option without value auto-detects CPU cores', function (): void {
 
     expect($tester->getStatusCode())->toBe(0);
 });
+test('execute with block index runs only specified block', function (): void {
+    $command = new DocTestCommand();
+    $tester  = new CommandTester($command);
+
+    $tester->execute(['files' => [$this->fixturesDir.'/basic.md:1']]);
+
+    expect($tester->getStatusCode())->toBe(0);
+    // Only 1 block should run
+    expect(substr_count($tester->getDisplay(), '✔'))->toBe(1);
+});
+test('execute with out of range block index returns exit code 3', function (): void {
+    $command = new DocTestCommand();
+    $tester  = new CommandTester($command);
+
+    $tester->execute(['files' => [$this->fixturesDir.'/basic.md:999']]);
+
+    expect($tester->getStatusCode())->toBe(3);
+});
 test('execute with stop on failure stops early', function (): void {
     $tempFile = sys_get_temp_dir().'/doctest_cmd_stop_'.uniqid().'.md';
     file_put_contents($tempFile, "```php\necho \"wrong\";\n```\n<!-- doctest: right -->\n\n```php\necho \"ok\";\n```\n<!-- doctest: ok -->\n");
