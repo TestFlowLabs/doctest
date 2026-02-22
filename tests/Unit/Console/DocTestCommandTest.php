@@ -142,3 +142,24 @@ test('execute with stop on failure stops early', function (): void {
         }
     }
 });
+test('command has update option', function (): void {
+    $command    = new DocTestCommand();
+    $definition = $command->getDefinition();
+
+    expect($definition->hasOption('update'))->toBeTrue();
+    expect($definition->getOption('update')->getShortcut())->toBe('u');
+    expect($definition->getOption('update')->acceptValue())->toBeFalse();
+});
+test('update and dry run are mutually exclusive', function (): void {
+    $command = new DocTestCommand();
+    $tester  = new CommandTester($command);
+
+    $tester->execute([
+        'files'     => [$this->fixturesDir.'/basic.md'],
+        '--update'  => true,
+        '--dry-run' => true,
+    ]);
+
+    expect($tester->getStatusCode())->toBe(1);
+    $this->assertStringContainsString('mutually exclusive', $tester->getDisplay());
+});
