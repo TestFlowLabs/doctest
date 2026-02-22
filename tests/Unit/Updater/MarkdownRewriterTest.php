@@ -245,6 +245,34 @@ test('single line value to multi line value', function (): void {
     $content = file_get_contents($file);
     expect($content)->toContain("<!-- doctest:\na\nb\n-->");
 });
+test('skips malformed multi line comment without closing delimiter', function (): void {
+    $file     = $this->tempDir.'/test.md';
+    $original = implode("\n", [
+        '```php',
+        'echo "hello";',
+        '```',
+        '<!-- doctest:',
+        'broken content without closing',
+        '',
+    ]);
+    file_put_contents($file, $original);
+
+    $updates = [
+        new AssertionUpdate(
+            markdownLine: 4,
+            type: 'html_comment',
+            assertionType: 'output',
+            oldValue: 'broken content without closing',
+            newValue: 'hello',
+        ),
+    ];
+
+    $count = $this->rewriter->rewrite($file, $updates);
+
+    // Should skip the malformed comment — not corrupt the file
+    expect($count)->toBe(0);
+    expect(file_get_contents($file))->toBe($original);
+});
 test('multi line value to single line value', function (): void {
     $file = $this->tempDir.'/test.md';
     file_put_contents($file, implode("\n", [
