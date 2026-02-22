@@ -26,6 +26,8 @@ beforeEach(function (): void {
                 throwsClass: $throwsClass,
             ),
             assertions: $assertions,
+            resultComments: $parsed->resultComments,
+            debugMarkers: $parsed->debugMarkers,
         );
     };
 });
