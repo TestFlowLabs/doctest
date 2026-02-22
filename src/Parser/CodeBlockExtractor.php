@@ -9,6 +9,7 @@ use League\CommonMark\Node\Block\Document;
 use TestFlowLabs\DocTest\CodeBlock\CodeBlock;
 use TestFlowLabs\DocTest\CodeBlock\Attributes;
 use TestFlowLabs\DocTest\Assertion\AssertionParser;
+use TestFlowLabs\DocTest\CodeBlock\DisplayOutputBlock;
 use TestFlowLabs\DocTest\Assertion\HtmlCommentAssertionParser;
 use League\CommonMark\Extension\CommonMark\Node\Block\HtmlBlock;
 use League\CommonMark\Extension\CommonMark\Node\Block\FencedCode;
@@ -82,11 +83,38 @@ final readonly class CodeBlockExtractor
 
             // Check for HTML comment assertions after the code block
             $htmlAssertions = [];
+            $displayOutput  = null;
             $nextNode       = $node->next();
             while ($nextNode instanceof HtmlBlock) {
+                // Check for display output directive
+                $directive = $this->htmlCommentParser->parseDirective(
+                    $nextNode->getLiteral(),
+                    $nextNode->getStartLine() ?? 0,
+                );
+
+                if ($directive !== null) {
+                    // Next sibling should be a non-PHP fenced code block
+                    $displayNode = $nextNode->next();
+                    if ($displayNode instanceof FencedCode && !$this->isPhpBlock($displayNode->getInfo() ?? '')) {
+                        $startLine     = $displayNode->getStartLine() ?? 0;
+                        $endLine       = $displayNode->getEndLine() ?? 0;
+                        $displayOutput = new DisplayOutputBlock(
+                            contentStartLine: $startLine + 1,
+                            contentEndLine: $endLine - 1,
+                            lines: $directive->lines,
+                            tail: $directive->tail,
+                        );
+                    }
+
+                    break;
+                }
+
                 $htmlAssertions = array_merge(
                     $htmlAssertions,
-                    $this->htmlCommentParser->parse($nextNode->getLiteral()),
+                    $this->htmlCommentParser->parse(
+                        $nextNode->getLiteral(),
+                        $nextNode->getStartLine() ?? 0,
+                    ),
                 );
                 $nextNode = $nextNode->next();
             }
@@ -100,6 +128,7 @@ final readonly class CodeBlockExtractor
                 executableCode: $assertionResult->executableCode,
                 attributes: $attributes,
                 assertions: $allAssertions,
+                displayOutput: $displayOutput,
             );
         }
 
