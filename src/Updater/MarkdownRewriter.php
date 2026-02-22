@@ -1,0 +1,154 @@
+<?php
+
+declare(strict_types=1);
+
+namespace TestFlowLabs\DocTest\Updater;
+
+final class MarkdownRewriter
+{
+    /**
+     * @param  array<AssertionUpdate>  $updates
+     *
+     * @return int Number of updates applied
+     */
+    public function rewrite(string $filePath, array $updates): int
+    {
+        if ($updates === []) {
+            return 0;
+        }
+
+        $lines = file($filePath, FILE_IGNORE_NEW_LINES);
+
+        if ($lines === false) {
+            return 0;
+        }
+
+        // Sort updates by markdownLine DESC (bottom-up to preserve line numbers)
+        usort($updates, static fn (AssertionUpdate $a, AssertionUpdate $b) => $b->markdownLine <=> $a->markdownLine);
+
+        $applied = 0;
+
+        foreach ($updates as $update) {
+            $index = $update->markdownLine - 1; // Convert 1-based to 0-based
+
+            if ($index < 0 || $index >= count($lines)) {
+                continue;
+            }
+
+            if ($update->type === 'html_comment') {
+                $lines = $this->rewriteHtmlComment($lines, $index, $update);
+                $applied++;
+            } elseif ($update->type === 'result_comment') {
+                $lines = $this->rewriteResultComment($lines, $index, $update);
+                $applied++;
+            }
+        }
+
+        file_put_contents($filePath, implode("\n", $lines)."\n");
+
+        return $applied;
+    }
+
+    /**
+     * @param  array<string>  $lines
+     *
+     * @return array<string>
+     */
+    private function rewriteHtmlComment(array $lines, int $index, AssertionUpdate $update): array
+    {
+        // Determine the range of the existing HTML comment
+        $endIndex = $index;
+        if (!str_contains($lines[$index], '-->')) {
+            // Multi-line comment — find closing -->
+            for ($i = $index + 1; $i < count($lines); $i++) {
+                if (str_contains($lines[$i], '-->')) {
+                    $endIndex = $i;
+
+                    break;
+                }
+            }
+        }
+
+        // Build replacement
+        $commentTag = $this->commentTagForType($update->assertionType);
+        if (str_contains($update->newValue, "\n")) {
+            // Multi-line replacement
+            $replacement = [
+                "<!-- {$commentTag}:",
+                ...explode("\n", $update->newValue),
+                '-->',
+            ];
+        } else {
+            // Single-line replacement
+            $replacement = ["<!-- {$commentTag}: {$update->newValue} -->"];
+        }
+
+        array_splice($lines, $index, $endIndex - $index + 1, $replacement);
+
+        return $lines;
+    }
+
+    /**
+     * @param  array<string>  $lines
+     *
+     * @return array<string>
+     */
+    private function rewriteResultComment(array $lines, int $index, AssertionUpdate $update): array
+    {
+        $line = $lines[$index];
+
+        $lines[$index] = (string) preg_replace(
+            '/\/\/\s*=>\s*.+$/',
+            '// => '.$update->newValue,
+            $line,
+        );
+
+        return $lines;
+    }
+
+    /**
+     * @param  array<string>  $lines
+     *
+     * @return array<string>
+     */
+    public function rewriteDisplayBlock(array $lines, int $contentStartLine, int $contentEndLine, string $newContent): array
+    {
+        $startIndex = $contentStartLine - 1;
+        $endIndex   = $contentEndLine - 1;
+
+        if ($startIndex < 0 || $endIndex < $startIndex || $endIndex >= count($lines)) {
+            return $lines;
+        }
+
+        $replacement = explode("\n", $newContent);
+        array_splice($lines, $startIndex, $endIndex - $startIndex + 1, $replacement);
+
+        return $lines;
+    }
+
+    /**
+     * Rewrites a file replacing display block content.
+     */
+    public function rewriteDisplayBlockInFile(string $filePath, int $contentStartLine, int $contentEndLine, string $newContent): void
+    {
+        $lines = file($filePath, FILE_IGNORE_NEW_LINES);
+
+        if ($lines === false) {
+            return;
+        }
+
+        $lines = $this->rewriteDisplayBlock($lines, $contentStartLine, $contentEndLine, $newContent);
+
+        file_put_contents($filePath, implode("\n", $lines)."\n");
+    }
+
+    private function commentTagForType(string $assertionType): string
+    {
+        return match ($assertionType) {
+            'output_json'     => 'doctest-json',
+            'output_contains' => 'doctest-contains',
+            'output_matches'  => 'doctest-matches',
+            default           => 'doctest',
+        };
+    }
+}
