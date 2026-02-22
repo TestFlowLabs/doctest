@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace TestFlowLabs\DocTest\Reporter;
 
 use TestFlowLabs\DocTest\CodeBlock\CodeBlock;
+use TestFlowLabs\DocTest\Updater\AssertionUpdate;
 use TestFlowLabs\DocTest\Executor\ExecutionResult;
 use Symfony\Component\Console\Output\ConsoleOutput;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -140,6 +141,46 @@ final class ConsoleReporter
         }
 
         $summary .= sprintf('Duration: %.2fs', $duration);
+        $this->output->writeln($summary);
+    }
+
+    /**
+     * @param  array<AssertionUpdate>  $updates
+     */
+    public function reportUpdate(ExecutionResult $result, array $updates): void
+    {
+        $this->currentBlock++;
+        $progress = $this->totalBlocks > 0
+            ? " [{$this->currentBlock}/{$this->totalBlocks}]"
+            : '';
+
+        $preview    = $this->codePreview($result->codeBlock);
+        $paddedLine = str_pad((string) $result->codeBlock->startLine, $this->lineNumberWidth, ' ', STR_PAD_LEFT);
+        $location   = ":{$paddedLine}";
+
+        $this->output->writeln("  <fg=gray>{$location}</> <fg=cyan>✎</> {$preview}{$progress}");
+
+        if ($this->output->isVerbose()) {
+            foreach ($updates as $update) {
+                $short = mb_strlen($update->newValue) > 40
+                    ? mb_substr($update->newValue, 0, 37).'...'
+                    : $update->newValue;
+                $this->output->writeln("       <fg=cyan>✎</> <fg=gray>{$update->assertionType}: {$short}</>");
+            }
+        }
+
+        $this->flush();
+    }
+
+    public function reportUpdateSummary(int $totalUpdated, int $filesUpdated, float $duration): void
+    {
+        $this->output->writeln('');
+        $this->output->writeln(str_repeat('-', 40));
+
+        $summary = "Updated: {$totalUpdated} assertion".($totalUpdated !== 1 ? 's' : '');
+        $summary .= " in {$filesUpdated} file".($filesUpdated !== 1 ? 's' : '');
+        $summary .= sprintf('  Duration: %.2fs', $duration);
+
         $this->output->writeln($summary);
     }
 
