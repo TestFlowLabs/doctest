@@ -18,5 +18,6 @@ final readonly class CodeBlock
         public string $executableCode,
         public Attributes $attributes,
         public array $assertions,
+        public ?DisplayOutputBlock $displayOutput = null,
     ) {}
 }
