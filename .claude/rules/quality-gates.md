@@ -15,6 +15,7 @@ composer test
 ## Rules
 
 - **Always use `composer test`** — never substitute with individual tool runs (e.g., `vendor/bin/pest` alone is not sufficient)
+- **Run after every change** — not just at task completion, but after every meaningful code change (implementation, refactor, test addition)
 - Run both steps after every task, no exceptions
 - Fix any issues before closing the task
 - If Rector or Pint make changes in Step 1, stage them in the same commit
