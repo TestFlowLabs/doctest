@@ -31,6 +31,7 @@ vendor/bin/doctest [files...] [options]
 | `--dry-run` | | Parse only, don't execute |
 | `--update` | `-u` | Update stale assertions with actual output |
 | `--stop-on-failure` | | Stop on first failure |
+| `--parallel` | `-p` | Run blocks in parallel (auto-detects cores) |
 | `--config` | `-c` | Path to config file |
 | `-v` | | Show per-assertion details |
 | `-vv` | | Also show source code on failure |
