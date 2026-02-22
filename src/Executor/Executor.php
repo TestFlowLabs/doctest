@@ -124,10 +124,9 @@ final readonly class Executor
         $stopped = false;
 
         // Separate blocks that need process execution from skip/syntax-only blocks
-        $processableBlocks   = [];
-        $processableIndexMap = [];
+        $processableBlocks = [];
 
-        foreach ($normalBlocks as $i => $block) {
+        foreach ($normalBlocks as $block) {
             if ($block->attributes->isIgnore()) {
                 $result    = new ExecutionResult(passed: true, codeBlock: $block, skipped: true);
                 $results[] = $result;
@@ -143,8 +142,7 @@ final readonly class Executor
                     return $results;
                 }
             } else {
-                $processableIndexMap[] = $i;
-                $processableBlocks[]   = $block;
+                $processableBlocks[] = $block;
             }
         }
 
