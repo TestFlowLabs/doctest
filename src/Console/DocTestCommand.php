@@ -27,6 +27,7 @@ final class DocTestCommand extends Command
             ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Parse and show blocks without executing')
             ->addOption('stop-on-failure', null, InputOption::VALUE_NONE, 'Stop on first failure')
             ->addOption('parallel', 'p', InputOption::VALUE_OPTIONAL, 'Number of parallel workers (auto-detects CPU cores when no value given)')
+            ->addOption('update', 'u', InputOption::VALUE_NONE, 'Update outdated assertion values with actual output')
             ->addOption('config', 'c', InputOption::VALUE_REQUIRED, 'Path to doctest.php config file')
             ->setHelp(
                 '<comment>DocTest</comment> v'.(InstalledVersions::getPrettyVersion('testflowlabs/doctest') ?? 'dev')."\n\n".<<<'HELP'
@@ -120,6 +121,12 @@ final class DocTestCommand extends Command
 
                   <info>doctest --parallel 4</info>
                     Run with 4 parallel workers
+
+                  <info>doctest --update</info>
+                    Update stale assertion values with actual output
+
+                  <info>doctest docs/api.md -u</info>
+                    Update assertions in a specific file
                 HELP
             );
     }
@@ -140,6 +147,15 @@ final class DocTestCommand extends Command
             }
         }
         $files = $cleanFiles;
+
+        $isUpdate = $input->getOption('update') === true;
+        $isDryRun = $input->getOption('dry-run') === true;
+
+        if ($isUpdate && $isDryRun) {
+            $output->writeln('<error>The --update and --dry-run options are mutually exclusive.</error>');
+
+            return 1;
+        }
 
         $configPath = $input->getOption('config');
         $baseConfig = DocTestConfig::load(is_string($configPath) ? $configPath : null);
@@ -162,7 +178,7 @@ final class DocTestCommand extends Command
             timeout: $baseConfig->timeout,
             memoryLimit: $baseConfig->memoryLimit,
             stopOnFailure: $input->getOption('stop-on-failure') === true || $baseConfig->stopOnFailure,
-            dryRun: $input->getOption('dry-run') === true || $baseConfig->dryRun,
+            dryRun: $isDryRun || $baseConfig->dryRun,
             filter: is_string($filter) ? $filter : $baseConfig->filter,
             verbosity: $baseConfig->verbosity,
             bootstrap: $baseConfig->bootstrap,
@@ -170,6 +186,7 @@ final class DocTestCommand extends Command
             reporterConsole: $baseConfig->reporterConsole,
             reporterJson: $baseConfig->reporterJson,
             blockIndices: $blockIndices,
+            update: $isUpdate || $baseConfig->update,
         );
 
         $doctest = new DocTest($config, $output);
