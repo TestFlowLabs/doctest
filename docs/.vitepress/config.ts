@@ -43,6 +43,7 @@ export default defineConfig({
           { text: 'How It Works', link: '/guide/how-it-works' },
           { text: 'Writing Testable Docs', link: '/guide/writing-testable-docs' },
           { text: 'Cross-Language Comparison', link: '/advanced/comparison' },
+          { text: 'Update Mode', link: '/features/update' },
         ],
       },
       {
@@ -90,12 +91,6 @@ export default defineConfig({
           { text: 'Console Reporter', link: '/reporters/console' },
           { text: 'JSON Reporter', link: '/reporters/json' },
           { text: 'Framework Bootstrap', link: '/framework-bootstrap/' },
-        ],
-      },
-      {
-        text: 'Features',
-        items: [
-          { text: 'Update Mode', link: '/features/update' },
         ],
       },
       {
