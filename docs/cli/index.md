@@ -29,6 +29,7 @@ vendor/bin/doctest [files...] [options]
 | `--filter` | `-f` | Filter blocks by content or file name |
 | `--exclude` | | Exclude files matching pattern |
 | `--dry-run` | | Parse only, don't execute |
+| `--update` | `-u` | Update stale assertions with actual output |
 | `--stop-on-failure` | | Stop on first failure |
 | `--config` | `-c` | Path to config file |
 | `-v` | | Show per-assertion details |
@@ -57,4 +58,5 @@ Blocks: 5  Passed: 3  Failed: 1  Skipped: 1  Duration: 0.12s
 | ✔ | Passed |
 | ✖ | Failed |
 | ⊘ | Skipped (ignored) |
+| ✎ | Updated (`--update` mode) |
 
