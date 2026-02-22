@@ -9,10 +9,13 @@ The `--update` flag automatically updates outdated assertion values with actual 
 vendor/bin/doctest --update
 
 # Update a specific file
-vendor/bin/doctest docs/api.md -u
+vendor/bin/doctest docs/api.md --update
 
 # Update a specific block
-vendor/bin/doctest docs/api.md:3 -u
+vendor/bin/doctest docs/api.md:3 --update
+
+# Update only blocks matching a filter
+vendor/bin/doctest --update --filter="array_map"
 ```
 
 ## Workflow
@@ -23,7 +26,7 @@ A typical update workflow after changing underlying code:
 # 1. Run normally to see what's stale
 vendor/bin/doctest
 
-# 2. Review the failures, then update
+# 2. Review the stale assertions, then update
 vendor/bin/doctest --update
 
 # 3. Verify everything passes
@@ -35,9 +38,9 @@ git diff docs/
 
 ## Which Assertions Are Updated?
 
-| Assertion | Updated? | Why |
-|-----------|----------|-----|
-| `<!-- doctest: value -->` | Yes | Unless it contains wildcards |
+| Assertion | Updated? | Notes |
+|-----------|----------|-------|
+| `<!-- doctest: value -->` | Yes | Unless it contains wildcards (`{{any}}`, `{{date}}`, etc.) |
 | `<!-- doctest-json: {} -->` | Yes | Always |
 | `$x = 42; // => 42` | Yes | Always |
 | `<!-- doctest-output -->` | Yes | Display block content refreshed |
@@ -65,7 +68,7 @@ Hello, World!
 ```
 ````
 
-During normal runs, the display block is completely ignored. During `--update`, its content is replaced with actual output.
+During normal runs, the display block is completely ignored. During `--update`, its content is replaced with actual output. Unlike regular assertions (which are only rewritten when they fail), display blocks are always refreshed, even if the content already matches.
 
 ### Options
 
@@ -111,12 +114,8 @@ Use regular assertions (`<!-- doctest: -->`) when output must match exactly.
 
 ## Exit Codes
 
-| Code | Meaning |
-|------|---------|
-| 0 | All updatable assertions updated, no non-updatable failures |
-| 1 | Non-updatable assertion failures remain |
-| 3 | No test blocks found |
+See [Exit Codes](/cli/exit-codes#exit-codes-in-update-mode-update) for update mode exit semantics.
 
 ## Mutual Exclusion
 
-`--update` and `--dry-run` cannot be used together. If both are specified, DocTest exits with an error.
+`--update` cannot be combined with `--dry-run` or `--stop-on-failure`. If either is specified alongside `--update`, DocTest prints an error and exits with code `1`.
