@@ -44,4 +44,38 @@ final readonly class HtmlCommentAssertionParser
 
         return [];
     }
+
+    public function parseDirective(string $html, int $markdownLine = 0): ?DisplayOutputDirective
+    {
+        $html = trim($html);
+
+        if (!str_starts_with($html, '<!--')) {
+            return null;
+        }
+
+        // <!-- doctest-output --> or <!-- doctest-output: options -->
+        if (preg_match('/^<!--\s*doctest-output(?::\s*(.+?))?\s*-->$/s', $html, $matches)) {
+            $options = isset($matches[1]) ? trim($matches[1]) : '';
+
+            $lines = null;
+            $tail  = null;
+
+            if ($options !== '') {
+                if (preg_match('/lines=(\d+)/', $options, $m)) {
+                    $lines = (int) $m[1];
+                }
+                if (preg_match('/tail=(\d+)/', $options, $m)) {
+                    $tail = (int) $m[1];
+                }
+            }
+
+            return new DisplayOutputDirective(
+                markdownLine: $markdownLine,
+                lines: $lines,
+                tail: $tail,
+            );
+        }
+
+        return null;
+    }
 }
