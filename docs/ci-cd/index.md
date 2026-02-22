@@ -69,6 +69,7 @@ jobs:
 |------|---------|
 | `0` | All blocks passed |
 | `1` | One or more blocks failed |
+| `3` | No files found or no testable blocks extracted |
 
 CI systems treat exit code `1` as a failure, which fails the build when documentation tests break.
 
