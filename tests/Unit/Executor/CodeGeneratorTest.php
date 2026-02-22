@@ -34,6 +34,8 @@ beforeEach(function (): void {
                 throwsMessage: $throwsMessage,
             ),
             assertions: $assertions,
+            resultComments: $parsed->resultComments,
+            debugMarkers: $parsed->debugMarkers,
         );
     };
 });
@@ -530,6 +532,90 @@ test('__DIR__ is replaced in group generated code', function (): void {
 
     $this->assertStringNotContainsString('__DIR__', $content);
     $this->assertStringContainsString("'/project/docs'", $content);
+});
+test('generated code uses executableCode not rawCode for shiki markers', function (): void {
+    // rawCode has Shiki markers including <?php // [!code hide]
+    // executableCode is clean (ShikiFilter + AssertionParser already processed it)
+    $block = new CodeBlock(
+        file: 'test.md',
+        startLine: 1,
+        rawCode: "<?php // [!code hide]\n\$secret = 'setup'; // [!code hide]\necho strtoupper(\$secret);",
+        executableCode: "\$secret = 'setup';\necho strtoupper(\$secret);",
+        attributes: new Attributes(),
+        assertions: [new OutputAssertion('SETUP', 1)],
+    );
+
+    $filePath = $this->generator->generate($block);
+    $content  = file_get_contents($filePath);
+
+    // Should NOT contain Shiki markers
+    expect($content)->not->toContain('[!code hide]');
+
+    // Should NOT have double <?php
+    expect(substr_count($content, '<?php'))->toBe(1);
+});
+test('generated code with shiki hide passes syntax check', function (): void {
+    $block = new CodeBlock(
+        file: 'test.md',
+        startLine: 1,
+        rawCode: "<?php // [!code hide]\n\$x = 42; // [!code hide]\necho \$x;",
+        executableCode: "\$x = 42;\necho \$x;",
+        attributes: new Attributes(),
+        assertions: [new OutputAssertion('42', 1)],
+    );
+
+    $filePath = $this->generator->generate($block);
+
+    $output   = [];
+    $exitCode = 0;
+    exec(PHP_BINARY.' -l '.escapeshellarg((string) $filePath).' 2>&1', $output, $exitCode);
+
+    expect($exitCode)->toBe(0, 'Generated PHP file has syntax errors: '.implode("\n", $output));
+});
+test('generated code with shiki hide and result comment works', function (): void {
+    $block = new CodeBlock(
+        file: 'test.md',
+        startLine: 1,
+        rawCode: "<?php // [!code hide]\n\$x = 42; // => 42",
+        executableCode: '$x = 42;',
+        attributes: new Attributes(),
+        assertions: [],
+        displayOutput: null,
+        resultComments: [new \TestFlowLabs\DocTest\Assertion\ResultCommentAssertion('$x = 42', '42', 1)],
+        debugMarkers: [],
+    );
+
+    $filePath = $this->generator->generate($block);
+    $content  = file_get_contents($filePath);
+
+    // Should contain result comment capture
+    $this->assertStringContainsString("'type' => 'result_comment'", $content);
+
+    // Should NOT contain Shiki markers
+    expect($content)->not->toContain('[!code hide]');
+
+    // Should pass syntax check
+    $output   = [];
+    $exitCode = 0;
+    exec(PHP_BINARY.' -l '.escapeshellarg((string) $filePath).' 2>&1', $output, $exitCode);
+
+    expect($exitCode)->toBe(0, 'Generated PHP file has syntax errors: '.implode("\n", $output));
+});
+test('group generated code uses executableCode not rawCode for shiki markers', function (): void {
+    $block = new CodeBlock(
+        file: 'test.md',
+        startLine: 1,
+        rawCode: "<?php // [!code hide]\necho 'visible';",
+        executableCode: "echo 'visible';",
+        attributes: new Attributes(group: 'grp'),
+        assertions: [new OutputAssertion('visible', 1)],
+    );
+
+    $filePath = $this->generator->generateGroup([$block]);
+    $content  = file_get_contents($filePath);
+
+    expect($content)->not->toContain('[!code hide]');
+    expect(substr_count($content, '<?php'))->toBe(1);
 });
 test('__DIR__ replacement produces valid syntax', function (): void {
     $block    = ($this->makeBlock)('$f = include __DIR__."/../data.php";', file: '/my/project/docs/test.md');
