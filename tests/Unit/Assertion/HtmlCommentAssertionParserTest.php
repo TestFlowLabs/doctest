@@ -100,7 +100,7 @@ test('trims whitespace around value', function (): void {
     expect($result)->toHaveCount(1);
     expect($result[0]->expected)->toBe('World');
 });
-test('all assertion types use line zero', function (): void {
+test('all assertion types use line zero by default', function (): void {
     $assertions = [
         $this->parser->parse('<!-- doctest: output -->'),
         $this->parser->parse('<!-- doctest-contains: value -->'),
@@ -113,6 +113,36 @@ test('all assertion types use line zero', function (): void {
         expect($assertion)->toHaveCount(1);
         expect($assertion[0]->line())->toBe(0);
     }
+});
+test('passes markdown line to output assertion', function (): void {
+    $result = $this->parser->parse('<!-- doctest: Hello -->', 15);
+
+    expect($result)->toHaveCount(1);
+    expect($result[0]->line())->toBe(15);
+});
+test('passes markdown line to json assertion', function (): void {
+    $result = $this->parser->parse('<!-- doctest-json: {} -->', 20);
+
+    expect($result)->toHaveCount(1);
+    expect($result[0]->line())->toBe(20);
+});
+test('passes markdown line to contains assertion', function (): void {
+    $result = $this->parser->parse('<!-- doctest-contains: value -->', 25);
+
+    expect($result)->toHaveCount(1);
+    expect($result[0]->line())->toBe(25);
+});
+test('passes markdown line to matches assertion', function (): void {
+    $result = $this->parser->parse('<!-- doctest-matches: /pat/ -->', 30);
+
+    expect($result)->toHaveCount(1);
+    expect($result[0]->line())->toBe(30);
+});
+test('passes markdown line to expect assertion', function (): void {
+    $result = $this->parser->parse('<!-- doctest-expect: true -->', 35);
+
+    expect($result)->toHaveCount(1);
+    expect($result[0]->line())->toBe(35);
 });
 test('returns empty for doctest comment without type', function (): void {
     $result = $this->parser->parse('<!-- doctest -->');
