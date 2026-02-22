@@ -9,10 +9,13 @@ use TestFlowLabs\DocTest\Executor\Executor;
 use TestFlowLabs\DocTest\Config\DocTestConfig;
 use TestFlowLabs\DocTest\Parser\MarkdownParser;
 use TestFlowLabs\DocTest\Reporter\JsonReporter;
+use TestFlowLabs\DocTest\Updater\AssertionUpdate;
 use TestFlowLabs\DocTest\Config\BootstrapResolver;
 use TestFlowLabs\DocTest\Executor\ExecutionResult;
 use TestFlowLabs\DocTest\Reporter\ConsoleReporter;
+use TestFlowLabs\DocTest\Updater\MarkdownRewriter;
 use TestFlowLabs\DocTest\Parser\CodeBlockExtractor;
+use TestFlowLabs\DocTest\Comparison\WildcardMatcher;
 use Symfony\Component\Console\Output\OutputInterface;
 
 final readonly class DocTest
@@ -55,6 +58,10 @@ final readonly class DocTest
 
     public function run(): int
     {
+        if ($this->config->update) {
+            return $this->runUpdate();
+        }
+
         $startTime = microtime(true);
         $files     = $this->discoverFiles();
 
@@ -141,6 +148,179 @@ final readonly class DocTest
         $this->writeReporterFiles($allResults);
 
         return $hasFailure ? 1 : 0;
+    }
+
+    private function runUpdate(): int
+    {
+        $startTime = microtime(true);
+        $files     = $this->discoverFiles();
+
+        if ($files === []) {
+            return 3;
+        }
+
+        $rewriter        = new MarkdownRewriter();
+        $wildcardMatcher = new WildcardMatcher();
+        $totalUpdated    = 0;
+        $filesUpdated    = 0;
+        $allResults      = [];
+        $hasRealFailure  = false;
+
+        foreach ($files as $file) {
+            $blocks = $this->extractBlocks($file);
+
+            if (isset($this->config->blockIndices[$file])) {
+                $index  = $this->config->blockIndices[$file] - 1;
+                $blocks = ($index >= 0 && $index < count($blocks)) ? [$blocks[$index]] : [];
+            }
+
+            if ($this->config->filter !== null) {
+                $blocks = $this->applyFilter($blocks, $this->config->filter);
+            }
+
+            if ($blocks === []) {
+                continue;
+            }
+
+            $this->reporter->reportFile($file);
+            $this->reporter->setTotalBlocks(count($blocks));
+            $this->reporter->setMaxLineNumber(max(array_map(fn ($b) => $b->startLine, $blocks)));
+
+            $results        = $this->executor->executeAll($blocks);
+            $updates        = [];
+            $displayUpdates = [];
+            $fileChanged    = false;
+
+            foreach ($results as $result) {
+                $allResults[] = $result;
+
+                // Collect display output block updates (regardless of pass/fail)
+                $displayBlock = $result->codeBlock->displayOutput;
+                if ($displayBlock !== null && $result->actualOutput !== null) {
+                    $displayUpdates[] = [
+                        'block'  => $displayBlock,
+                        'output' => $result->actualOutput,
+                    ];
+                }
+
+                if ($result->passed || $result->skipped) {
+                    $this->reporter->reportResult($result);
+
+                    continue;
+                }
+
+                $fileUpdates = $this->collectUpdates($result, $wildcardMatcher);
+
+                if ($fileUpdates !== []) {
+                    $updates = array_merge($updates, $fileUpdates);
+                    $this->reporter->reportUpdate($result, $fileUpdates);
+                } else {
+                    $hasRealFailure = true;
+                    $this->reporter->reportResult($result);
+                }
+            }
+
+            if ($updates !== []) {
+                $count = $rewriter->rewrite($file, $updates);
+                $totalUpdated += $count;
+                if ($count > 0) {
+                    $fileChanged = true;
+                }
+            }
+
+            // Apply display output block updates (bottom-up)
+            $displayUpdates = array_reverse($displayUpdates);
+            foreach ($displayUpdates as $du) {
+                /** @var \TestFlowLabs\DocTest\CodeBlock\DisplayOutputBlock $block */
+                $block  = $du['block'];
+                $output = $this->limitDisplayOutput((string) $du['output'], $block->lines, $block->tail);
+                $rewriter->rewriteDisplayBlockInFile($file, $block->contentStartLine, $block->contentEndLine, $output);
+                $totalUpdated++;
+                $fileChanged = true;
+            }
+
+            if ($fileChanged) {
+                $filesUpdated++;
+            }
+        }
+
+        $this->reporter->reportUpdateSummary($totalUpdated, $filesUpdated, microtime(true) - $startTime);
+
+        if ($allResults === []) {
+            return 3;
+        }
+
+        return $hasRealFailure ? 1 : 0;
+    }
+
+    /**
+     * @return array<AssertionUpdate>
+     */
+    private function collectUpdates(ExecutionResult $result, WildcardMatcher $wildcardMatcher): array
+    {
+        $updates = [];
+
+        foreach ($result->assertionDetails as $detail) {
+            if ($detail->passed) {
+                continue;
+            }
+
+            // Only updatable assertion types
+            if ($detail->type === 'output') {
+                // Skip wildcarded output assertions
+                if ($wildcardMatcher->hasWildcards($detail->expected)) {
+                    continue;
+                }
+
+                $updates[] = new AssertionUpdate(
+                    markdownLine: $detail->line,
+                    type: 'html_comment',
+                    assertionType: 'output',
+                    oldValue: $detail->expected,
+                    newValue: $detail->actual,
+                );
+            } elseif ($detail->type === 'output_json') {
+                $updates[] = new AssertionUpdate(
+                    markdownLine: $detail->line,
+                    type: 'html_comment',
+                    assertionType: 'output_json',
+                    oldValue: $detail->expected,
+                    newValue: $detail->actual,
+                );
+            } elseif ($detail->type === 'result_comment') {
+                // result_comment line is offset within code block
+                // absolute markdown line = codeBlock.startLine + detail.line
+                $absoluteLine = $result->codeBlock->startLine + $detail->line;
+
+                $updates[] = new AssertionUpdate(
+                    markdownLine: $absoluteLine,
+                    type: 'result_comment',
+                    assertionType: 'result_comment',
+                    oldValue: $detail->expected,
+                    newValue: $detail->actual,
+                );
+            }
+            // output_contains, output_matches, expect → not updatable
+        }
+
+        return $updates;
+    }
+
+    private function limitDisplayOutput(string $output, ?int $lines, ?int $tail): string
+    {
+        if ($lines === null && $tail === null) {
+            return $output;
+        }
+
+        $outputLines = explode("\n", $output);
+
+        if ($lines !== null) {
+            $outputLines = array_slice($outputLines, 0, $lines);
+        } elseif ($tail !== null) {
+            $outputLines = array_slice($outputLines, -$tail);
+        }
+
+        return implode("\n", $outputLines);
     }
 
     /**
