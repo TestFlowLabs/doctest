@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace TestFlowLabs\DocTest\Executor;
 
 use TestFlowLabs\DocTest\CodeBlock\CodeBlock;
-use TestFlowLabs\DocTest\Assertion\AssertionParser;
 
 final readonly class CodeGenerator
 {
@@ -40,7 +39,6 @@ final readonly class CodeGenerator
     {
         $dir      = $this->ensureTempDir();
         $filePath = $dir.'/doctest_group_'.bin2hex(random_bytes(16)).'.php';
-        $parser   = new AssertionParser();
 
         $lines = ["<?php\n"];
 
@@ -64,12 +62,11 @@ final readonly class CodeGenerator
         }
 
         foreach ($blocks as $block) {
-            $rawCode = $this->resolveDir($block->rawCode, $block->file);
-            $parsed  = $parser->parse($rawCode);
+            $executableCode = $this->resolveDir($block->executableCode, $block->file);
 
             if ($block->assertions !== []) {
                 $lines[] = 'ob_start();';
-                $lines[] = $parsed->executableCode;
+                $lines[] = $executableCode;
                 $lines[] = '$__doctest_output = ob_get_clean();';
 
                 foreach ($block->assertions as $assertion) {
@@ -94,11 +91,11 @@ final readonly class CodeGenerator
                     $lines[] = '';
                 }
             } else {
-                $lines[] = $parsed->executableCode;
+                $lines[] = $executableCode;
                 $lines[] = '';
             }
 
-            foreach ($parsed->resultComments as $rc) {
+            foreach ($block->resultComments as $rc) {
                 $lines[] = '$__doctest_result = '.$rc->expression.';';
                 $lines[] = '$__doctest_results[] = [';
                 $lines[] = "    'type' => 'result_comment',";
@@ -110,7 +107,7 @@ final readonly class CodeGenerator
                 $lines[] = '';
             }
 
-            foreach ($parsed->debugMarkers as $dm) {
+            foreach ($block->debugMarkers as $dm) {
                 $lines[] = '$__doctest_result = '.$dm->expression.';';
                 $lines[] = '$__doctest_results[] = [';
                 $lines[] = "    'type' => 'debug',";
@@ -136,9 +133,7 @@ final readonly class CodeGenerator
 
     private function generateInstrumented(CodeBlock $block, ?string $setup = null, ?string $teardown = null, ?string $blockBootstrapCode = null): string
     {
-        $parser  = new AssertionParser();
-        $rawCode = $this->resolveDir($block->rawCode, $block->file);
-        $parsed  = $parser->parse($rawCode);
+        $executableCode = $this->resolveDir($block->executableCode, $block->file);
 
         $lines = ["<?php\n"];
 
@@ -153,15 +148,15 @@ final readonly class CodeGenerator
         }
 
         if ($block->attributes->isThrows()) {
-            $lines[] = $this->generateThrowsWrapper($block, $parsed->executableCode);
+            $lines[] = $this->generateThrowsWrapper($block, $executableCode);
         } else {
-            $lines[] = $this->generateSegmentCapture($parsed, $block, $setup, $teardown);
+            $lines[] = $this->generateSegmentCapture($executableCode, $block, $setup, $teardown);
         }
 
         return implode("\n", $lines);
     }
 
-    private function generateSegmentCapture(\TestFlowLabs\DocTest\Assertion\AssertionParserResult $parsed, CodeBlock $block, ?string $setup = null, ?string $teardown = null): string
+    private function generateSegmentCapture(string $executableCode, CodeBlock $block, ?string $setup = null, ?string $teardown = null): string
     {
         $lines   = [];
         $lines[] = $this->safeExportFunction();
@@ -175,7 +170,7 @@ final readonly class CodeGenerator
 
         if ($block->assertions !== []) {
             $lines[] = 'ob_start();';
-            $lines[] = $parsed->executableCode;
+            $lines[] = $executableCode;
             $lines[] = '$__doctest_output = ob_get_clean();';
 
             foreach ($block->assertions as $assertion) {
@@ -200,11 +195,11 @@ final readonly class CodeGenerator
                 $lines[] = '';
             }
         } else {
-            $lines[] = $parsed->executableCode;
+            $lines[] = $executableCode;
             $lines[] = '';
         }
 
-        foreach ($parsed->resultComments as $rc) {
+        foreach ($block->resultComments as $rc) {
             $lines[] = '$__doctest_result = '.$rc->expression.';';
             $lines[] = '$__doctest_results[] = [';
             $lines[] = "    'type' => 'result_comment',";
@@ -216,7 +211,7 @@ final readonly class CodeGenerator
             $lines[] = '';
         }
 
-        foreach ($parsed->debugMarkers as $dm) {
+        foreach ($block->debugMarkers as $dm) {
             $lines[] = '$__doctest_result = '.$dm->expression.';';
             $lines[] = '$__doctest_results[] = [';
             $lines[] = "    'type' => 'debug',";
