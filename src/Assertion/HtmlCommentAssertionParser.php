@@ -9,7 +9,7 @@ final readonly class HtmlCommentAssertionParser
     /**
      * @return array<Assertion>
      */
-    public function parse(string $html): array
+    public function parse(string $html, int $markdownLine = 0): array
     {
         $html = trim($html);
 
@@ -19,27 +19,27 @@ final readonly class HtmlCommentAssertionParser
 
         // <!-- doctest-contains: value -->
         if (preg_match('/^<!--\s*doctest-contains:\s*(.+?)\s*-->$/s', $html, $matches)) {
-            return [new OutputContainsAssertion(trim($matches[1]), 0)];
+            return [new OutputContainsAssertion(trim($matches[1]), $markdownLine)];
         }
 
         // <!-- doctest-matches: /pattern/ -->
         if (preg_match('/^<!--\s*doctest-matches:\s*(.+?)\s*-->$/s', $html, $matches)) {
-            return [new OutputMatchesAssertion(trim($matches[1]), 0)];
+            return [new OutputMatchesAssertion(trim($matches[1]), $markdownLine)];
         }
 
         // <!-- doctest-json: {"key":"value"} -->
         if (preg_match('/^<!--\s*doctest-json:\s*(.+?)\s*-->$/s', $html, $matches)) {
-            return [new OutputJsonAssertion(trim($matches[1]), 0)];
+            return [new OutputJsonAssertion(trim($matches[1]), $markdownLine)];
         }
 
         // <!-- doctest-expect: expression -->
         if (preg_match('/^<!--\s*doctest-expect:\s*(.+?)\s*-->$/s', $html, $matches)) {
-            return [new ExpectAssertion(trim($matches[1]), 0)];
+            return [new ExpectAssertion(trim($matches[1]), $markdownLine)];
         }
 
         // <!-- doctest: value --> (output)
         if (preg_match('/^<!--\s*doctest:\s*(.+?)\s*-->$/s', $html, $matches)) {
-            return [new OutputAssertion(trim($matches[1]), 0)];
+            return [new OutputAssertion(trim($matches[1]), $markdownLine)];
         }
 
         return [];
