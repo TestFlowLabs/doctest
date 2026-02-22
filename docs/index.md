@@ -60,7 +60,7 @@ vendor/bin/doctest
 
 <div class="feature-badge">Assertions</div>
 
-## Six Ways to Assert
+## Seven Ways to Assert
 
 From exact output matching to JSON comparison, DocTest gives you the right tool for every situation.
 
