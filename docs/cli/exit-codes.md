@@ -26,6 +26,16 @@ vendor/bin/doctest
 
 Most CI systems treat any non-zero exit code as a failure.
 
+## Exit Codes in Update Mode (`--update`)
+
+In update mode, exit codes have slightly different semantics:
+
+| Code | Meaning |
+|------|---------|
+| `0` | All updatable assertions rewritten; no non-updatable assertion failures |
+| `1` | Non-updatable assertions (contains, matches, expect) still failing, or `--update` combined with `--dry-run` / `--stop-on-failure` |
+| `3` | No files found or no testable blocks extracted |
+
 ## Verbosity in CI
 
 For CI environments, the default verbosity is usually sufficient. Use `-v` for more detailed output in logs:
