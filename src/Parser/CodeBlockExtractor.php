@@ -127,6 +127,8 @@ final readonly class CodeBlockExtractor
                 attributes: $attributes,
                 assertions: $htmlAssertions,
                 displayOutput: $displayOutput,
+                resultComments: $assertionResult->resultComments,
+                debugMarkers: $assertionResult->debugMarkers,
             );
         }
 
