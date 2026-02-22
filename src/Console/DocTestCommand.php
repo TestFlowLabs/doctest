@@ -157,6 +157,12 @@ final class DocTestCommand extends Command
             return 1;
         }
 
+        if ($isUpdate && $input->getOption('stop-on-failure') === true) {
+            $output->writeln('<error>The --update and --stop-on-failure options are mutually exclusive.</error>');
+
+            return 1;
+        }
+
         $configPath = $input->getOption('config');
         $baseConfig = DocTestConfig::load(is_string($configPath) ? $configPath : null);
 
