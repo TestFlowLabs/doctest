@@ -22,6 +22,7 @@ echo 'Hello';
 | `<!-- doctest-matches: /pattern/ -->` | [OutputMatches](/assertions/output-matches) | Regex pattern match |
 | `<!-- doctest-json: {...} -->` | [OutputJson](/assertions/output-json) | JSON structure comparison |
 | `<!-- doctest-expect: expr -->` | [Expect](/assertions/expect) | Expression must be truthy |
+| `<!-- doctest-output -->` | [Display Output](/features/update#display-output-directive) | Display-only block, refreshed by `--update`, never asserted |
 
 ## Parsing Rules
 
