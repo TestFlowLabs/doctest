@@ -28,6 +28,7 @@ final readonly class DocTestConfig
         public bool $reporterConsole = true,
         public ?string $reporterJson = null,
         public array $blockIndices = [],
+        public bool $update = false,
     ) {}
 
     /**
@@ -63,6 +64,7 @@ final readonly class DocTestConfig
             trimTrailing: (bool) ($output['trim_trailing'] ?? true),
             reporterConsole: (bool) ($reporters['console'] ?? true),
             reporterJson: is_string($reporters['json'] ?? null) ? $reporters['json'] : null,
+            update: (bool) ($data['update'] ?? false),
         );
     }
 
