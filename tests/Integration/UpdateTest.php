@@ -241,3 +241,45 @@ test('updates multi line output assertion', function (): void {
     $content = file_get_contents($file);
     expect($content)->toContain("<!-- doctest:\nline1\nline2\n-->");
 });
+test('updates both result comment and output assertion in same block', function (): void {
+    $file = $this->tempDir.'/test.md';
+    file_put_contents($file, implode("\n", [
+        '```php',
+        '$x = 42;',
+        '$x // => 99',
+        'echo "Result: $x";',
+        '```',
+        '<!-- doctest: wrong -->',
+        '',
+    ]));
+
+    $exitCode = ($this->runUpdate)($file);
+
+    expect($exitCode)->toBe(0);
+
+    $content = file_get_contents($file);
+    // Both assertions should be updated
+    expect($content)->toContain('// => 42');
+    expect($content)->toContain('<!-- doctest: Result: 42 -->');
+});
+test('updates result comment when output assertion also fails', function (): void {
+    $file = $this->tempDir.'/test.md';
+    file_put_contents($file, implode("\n", [
+        '```php',
+        '$a = 10;',
+        '$b = $a * 2;',
+        '$b // => 0',
+        'echo $a + $b;',
+        '```',
+        '<!-- doctest: wrong -->',
+        '',
+    ]));
+
+    $exitCode = ($this->runUpdate)($file);
+
+    expect($exitCode)->toBe(0);
+
+    $content = file_get_contents($file);
+    expect($content)->toContain('// => 20');
+    expect($content)->toContain('<!-- doctest: 30 -->');
+});
