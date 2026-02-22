@@ -25,6 +25,8 @@ beforeEach(function (): void {
             executableCode: $parsed->executableCode,
             attributes: new Attributes(),
             assertions: $assertions,
+            resultComments: $parsed->resultComments,
+            debugMarkers: $parsed->debugMarkers,
         );
     };
 });
