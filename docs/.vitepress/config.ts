@@ -93,6 +93,12 @@ export default defineConfig({
         ],
       },
       {
+        text: 'Features',
+        items: [
+          { text: 'Update Mode', link: '/features/update' },
+        ],
+      },
+      {
         text: 'Integrations',
         items: [
           { text: 'CI/CD', link: '/ci-cd/' },
