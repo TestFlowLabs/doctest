@@ -405,6 +405,13 @@ final readonly class Executor
         $assertionDetails = [];
         $debugOutputs     = [];
 
+        // Track first failure details for reporting
+        $hasFailed       = false;
+        $failureActual   = null;
+        $failureExpected = null;
+        $failureDiff     = null;
+        $failureError    = null;
+
         foreach ($results as $result) {
             if ($result['type'] === 'debug') {
                 $debugOutputs[] = new DebugOutput(
@@ -429,19 +436,11 @@ final readonly class Executor
                     line: $result['line'] ?? 0,
                 );
 
-                if (!$comparison->passed) {
-                    $diff = $this->diffGenerator->generate($comparison->normalizedExpected, $comparison->normalizedActual);
-
-                    return new ExecutionResult(
-                        passed: false,
-                        codeBlock: $block,
-                        actualOutput: $actual,
-                        expectedOutput: $expected,
-                        diff: $diff,
-                        duration: $processResult->duration,
-                        assertionDetails: $assertionDetails,
-                        debugOutputs: $debugOutputs,
-                    );
+                if (!$comparison->passed && !$hasFailed) {
+                    $hasFailed       = true;
+                    $failureActual   = $actual;
+                    $failureExpected = $expected;
+                    $failureDiff     = $this->diffGenerator->generate($comparison->normalizedExpected, $comparison->normalizedActual);
                 }
             }
 
@@ -459,17 +458,11 @@ final readonly class Executor
                     line: $result['line'] ?? 0,
                 );
 
-                if (!$passed) {
-                    return new ExecutionResult(
-                        passed: false,
-                        codeBlock: $block,
-                        actualOutput: $actual,
-                        expectedOutput: $expected,
-                        error: "Output does not contain: {$expected}",
-                        duration: $processResult->duration,
-                        assertionDetails: $assertionDetails,
-                        debugOutputs: $debugOutputs,
-                    );
+                if (!$passed && !$hasFailed) {
+                    $hasFailed       = true;
+                    $failureActual   = $actual;
+                    $failureExpected = $expected;
+                    $failureError    = "Output does not contain: {$expected}";
                 }
             }
 
@@ -495,14 +488,12 @@ final readonly class Executor
                         line: $result['line'] ?? 0,
                     );
 
-                    return new ExecutionResult(
-                        passed: false,
-                        codeBlock: $block,
-                        error: "Invalid regex pattern: {$pattern}",
-                        duration: $processResult->duration,
-                        assertionDetails: $assertionDetails,
-                        debugOutputs: $debugOutputs,
-                    );
+                    if (!$hasFailed) {
+                        $hasFailed    = true;
+                        $failureError = "Invalid regex pattern: {$pattern}";
+                    }
+
+                    continue;
                 }
 
                 $passed = $matchResult === 1;
@@ -515,17 +506,11 @@ final readonly class Executor
                     line: $result['line'] ?? 0,
                 );
 
-                if (!$passed) {
-                    return new ExecutionResult(
-                        passed: false,
-                        codeBlock: $block,
-                        actualOutput: $actual,
-                        expectedOutput: $pattern,
-                        error: "Output does not match pattern: {$pattern}",
-                        duration: $processResult->duration,
-                        assertionDetails: $assertionDetails,
-                        debugOutputs: $debugOutputs,
-                    );
+                if (!$passed && !$hasFailed) {
+                    $hasFailed       = true;
+                    $failureActual   = $actual;
+                    $failureExpected = $pattern;
+                    $failureError    = "Output does not match pattern: {$pattern}";
                 }
             }
 
@@ -544,23 +529,15 @@ final readonly class Executor
                     line: $result['line'] ?? 0,
                 );
 
-                if (!$jsonResult->passed) {
-                    $error = match (true) {
+                if (!$jsonResult->passed && !$hasFailed) {
+                    $hasFailed       = true;
+                    $failureActual   = $actual;
+                    $failureExpected = $expectedJson;
+                    $failureError    = match (true) {
                         str_contains($jsonResult->normalizedExpected, 'Expected JSON is invalid')    => $jsonResult->normalizedExpected,
                         str_contains($jsonResult->normalizedActual, 'Actual JSON output is invalid') => $jsonResult->normalizedActual,
                         default                                                                      => 'JSON output does not match expected structure',
                     };
-
-                    return new ExecutionResult(
-                        passed: false,
-                        codeBlock: $block,
-                        actualOutput: $actual,
-                        expectedOutput: $expectedJson,
-                        error: $error,
-                        duration: $processResult->duration,
-                        assertionDetails: $assertionDetails,
-                        debugOutputs: $debugOutputs,
-                    );
                 }
             }
 
@@ -577,15 +554,9 @@ final readonly class Executor
                     expression: $expression,
                 );
 
-                if (!$passed) {
-                    return new ExecutionResult(
-                        passed: false,
-                        codeBlock: $block,
-                        error: 'Expect assertion failed: '.$expression,
-                        duration: $processResult->duration,
-                        assertionDetails: $assertionDetails,
-                        debugOutputs: $debugOutputs,
-                    );
+                if (!$passed && !$hasFailed) {
+                    $hasFailed    = true;
+                    $failureError = 'Expect assertion failed: '.$expression;
                 }
             }
 
@@ -603,17 +574,25 @@ final readonly class Executor
                     expression: $result['expression'] ?? null,
                 );
 
-                if (!$passed) {
-                    return new ExecutionResult(
-                        passed: false,
-                        codeBlock: $block,
-                        error: "result_comment assertion failed: expected {$expected} but got {$actual}",
-                        duration: $processResult->duration,
-                        assertionDetails: $assertionDetails,
-                        debugOutputs: $debugOutputs,
-                    );
+                if (!$passed && !$hasFailed) {
+                    $hasFailed    = true;
+                    $failureError = "result_comment assertion failed: expected {$expected} but got {$actual}";
                 }
             }
+        }
+
+        if ($hasFailed) {
+            return new ExecutionResult(
+                passed: false,
+                codeBlock: $block,
+                actualOutput: $failureActual,
+                expectedOutput: $failureExpected,
+                diff: $failureDiff,
+                error: $failureError,
+                duration: $processResult->duration,
+                assertionDetails: $assertionDetails,
+                debugOutputs: $debugOutputs,
+            );
         }
 
         $actualOutput = $capturedOutput !== [] ? implode('', $capturedOutput) : ($processResult->stdout !== '' ? $processResult->stdout : null);
