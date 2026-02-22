@@ -219,3 +219,25 @@ test('blockIndices accepts file to index map', function (): void {
 
     expect($config->blockIndices)->toBe(['README.md' => 3, 'docs/api.md' => 1]);
 });
+test('update defaults to false', function (): void {
+    $config = new DocTestConfig();
+
+    expect($config->update)->toBeFalse();
+});
+test('update accepts true', function (): void {
+    $config = new DocTestConfig(update: true);
+
+    expect($config->update)->toBeTrue();
+});
+test('update loaded from array', function (): void {
+    $config = DocTestConfig::fromArray([
+        'update' => true,
+    ]);
+
+    expect($config->update)->toBeTrue();
+});
+test('update defaults to false in fromArray', function (): void {
+    $config = DocTestConfig::fromArray([]);
+
+    expect($config->update)->toBeFalse();
+});
