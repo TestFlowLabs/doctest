@@ -119,15 +119,13 @@ final readonly class CodeBlockExtractor
                 $nextNode = $nextNode->next();
             }
 
-            $allAssertions = $htmlAssertions;
-
             $blocks[] = new CodeBlock(
                 file: $filePath,
                 startLine: $node->getStartLine() ?? 0,
                 rawCode: $rawCode,
                 executableCode: $assertionResult->executableCode,
                 attributes: $attributes,
-                assertions: $allAssertions,
+                assertions: $htmlAssertions,
                 displayOutput: $displayOutput,
             );
         }
