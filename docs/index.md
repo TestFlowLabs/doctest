@@ -279,6 +279,35 @@ echo strtoupper('hello');
 <div class="feature-section">
 <div class="feature-text">
 
+<div class="feature-badge">Update</div>
+
+## Keep Docs in Sync
+
+Code changed but forgot to update the docs? The `--update` flag automatically rewrites stale assertion values with actual output. Use `<!-- doctest-output -->` to mark display-only blocks that get refreshed but never asserted.
+
+Look for the `✎` symbol — it means DocTest updated an assertion for you.
+
+[Learn about update mode &rarr;](/features/update)
+
+</div>
+<div class="feature-code">
+
+```bash
+vendor/bin/doctest docs/ --update
+
+  docs/api.md
+    :12 ✎ updated  <!-- doctest: old → new -->
+
+  ----------------------------------------
+  Updated: 1 assertion in 1 file
+```
+
+</div>
+</div>
+
+<div class="feature-section">
+<div class="feature-text">
+
 <div class="feature-badge">CI/CD</div>
 
 ## CI-Ready from Day One
