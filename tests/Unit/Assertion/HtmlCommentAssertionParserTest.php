@@ -186,3 +186,33 @@ test('parses json with nested structure', function (): void {
     expect($result[0])->toBeInstanceOf(OutputJsonAssertion::class);
     expect($result[0]->expectedJson)->toBe('{"users":[{"name":"Alice"},{"name":"Bob"}]}');
 });
+test('parses display output directive', function (): void {
+    $result = $this->parser->parseDirective('<!-- doctest-output -->', 10);
+
+    expect($result)->toBeInstanceOf(\TestFlowLabs\DocTest\Assertion\DisplayOutputDirective::class);
+    expect($result->markdownLine)->toBe(10);
+    expect($result->lines)->toBeNull();
+    expect($result->tail)->toBeNull();
+});
+test('parses display output directive with lines option', function (): void {
+    $result = $this->parser->parseDirective('<!-- doctest-output: lines=5 -->', 10);
+
+    expect($result)->toBeInstanceOf(\TestFlowLabs\DocTest\Assertion\DisplayOutputDirective::class);
+    expect($result->lines)->toBe(5);
+});
+test('parses display output directive with tail option', function (): void {
+    $result = $this->parser->parseDirective('<!-- doctest-output: tail=3 -->', 10);
+
+    expect($result)->toBeInstanceOf(\TestFlowLabs\DocTest\Assertion\DisplayOutputDirective::class);
+    expect($result->tail)->toBe(3);
+});
+test('returns null for non directive comment', function (): void {
+    $result = $this->parser->parseDirective('<!-- doctest: value -->', 10);
+
+    expect($result)->toBeNull();
+});
+test('returns null for non html directive', function (): void {
+    $result = $this->parser->parseDirective('not a comment', 10);
+
+    expect($result)->toBeNull();
+});
