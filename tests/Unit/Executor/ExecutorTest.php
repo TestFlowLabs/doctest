@@ -35,6 +35,8 @@ beforeEach(function (): void {
                 throwsMessage: $throwsMessage,
             ),
             assertions: $assertions,
+            resultComments: $parsed->resultComments,
+            debugMarkers: $parsed->debugMarkers,
         );
     };
 });
