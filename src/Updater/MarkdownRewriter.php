@@ -36,15 +36,20 @@ final class MarkdownRewriter
             }
 
             if ($update->type === 'html_comment') {
-                $lines = $this->rewriteHtmlComment($lines, $index, $update);
-                $applied++;
+                $result = $this->rewriteHtmlComment($lines, $index, $update);
+                if ($result !== null) {
+                    $lines = $result;
+                    $applied++;
+                }
             } elseif ($update->type === 'result_comment') {
                 $lines = $this->rewriteResultComment($lines, $index, $update);
                 $applied++;
             }
         }
 
-        file_put_contents($filePath, implode("\n", $lines)."\n");
+        if ($applied > 0) {
+            file_put_contents($filePath, implode("\n", $lines)."\n");
+        }
 
         return $applied;
     }
@@ -52,20 +57,27 @@ final class MarkdownRewriter
     /**
      * @param  array<string>  $lines
      *
-     * @return array<string>
+     * @return array<string>|null Null if comment is malformed
      */
-    private function rewriteHtmlComment(array $lines, int $index, AssertionUpdate $update): array
+    private function rewriteHtmlComment(array $lines, int $index, AssertionUpdate $update): ?array
     {
         // Determine the range of the existing HTML comment
         $endIndex = $index;
         if (!str_contains($lines[$index], '-->')) {
             // Multi-line comment — find closing -->
-            for ($i = $index + 1; $i < count($lines); $i++) {
+            $lineCount = count($lines);
+            $found     = false;
+            for ($i = $index + 1; $i < $lineCount; $i++) {
                 if (str_contains($lines[$i], '-->')) {
                     $endIndex = $i;
+                    $found    = true;
 
                     break;
                 }
+            }
+
+            if (!$found) {
+                return null;
             }
         }
 
@@ -97,11 +109,12 @@ final class MarkdownRewriter
     {
         $line = $lines[$index];
 
-        $lines[$index] = (string) preg_replace(
+        $result = preg_replace(
             '/\/\/\s*=>\s*.+$/',
             '// => '.$update->newValue,
             $line,
         );
+        $lines[$index] = $result ?? $line;
 
         return $lines;
     }
