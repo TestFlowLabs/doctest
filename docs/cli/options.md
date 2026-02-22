@@ -66,6 +66,8 @@ Parse and list blocks without executing them. Useful for verifying which blocks 
 vendor/bin/doctest --dry-run
 ```
 
+**Mutually exclusive** with `--update`.
+
 ### `--update`, `-u`
 
 Update outdated assertion values with actual execution output. Works like Jest's `--updateSnapshot` — runs all blocks, detects mismatches in updatable assertions, and rewrites the markdown file.
@@ -85,7 +87,7 @@ vendor/bin/doctest docs/api.md:3 --update
 
 | Assertion | Updated? | Notes |
 |-----------|----------|-------|
-| `<!-- doctest: -->` | Yes | Unless it contains wildcards (`{{any}}`, etc.) |
+| `<!-- doctest: -->` | Yes | Unless it contains wildcards (`{{any}}`, `{{date}}`, etc.) |
 | `<!-- doctest-json: -->` | Yes | Always |
 | `// => value` | Yes | Always |
 | `<!-- doctest-output -->` | Yes | Display block content refreshed |
@@ -93,7 +95,7 @@ vendor/bin/doctest docs/api.md:3 --update
 | `<!-- doctest-matches: -->` | No | Regex can't be auto-generated |
 | `<!-- doctest-expect: -->` | No | Expression comparison can't be auto-updated |
 
-**Mutually exclusive** with `--dry-run`. If both are specified, DocTest exits with an error.
+**Mutually exclusive** with `--dry-run` and `--stop-on-failure`. If combined, DocTest exits with code `1`.
 
 ### `--stop-on-failure`
 
