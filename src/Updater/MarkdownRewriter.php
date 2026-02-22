@@ -140,17 +140,28 @@ final class MarkdownRewriter
     }
 
     /**
-     * Rewrites a file replacing display block content.
+     * Rewrites all display blocks in a file in a single pass (bottom-up).
+     *
+     * @param  array<array{block: \TestFlowLabs\DocTest\CodeBlock\DisplayOutputBlock, output: string}>  $displayUpdates
      */
-    public function rewriteDisplayBlockInFile(string $filePath, int $contentStartLine, int $contentEndLine, string $newContent): void
+    public function rewriteDisplayBlocks(string $filePath, array $displayUpdates): void
     {
+        if ($displayUpdates === []) {
+            return;
+        }
+
         $lines = file($filePath, FILE_IGNORE_NEW_LINES);
 
         if ($lines === false) {
             return;
         }
 
-        $lines = $this->rewriteDisplayBlock($lines, $contentStartLine, $contentEndLine, $newContent);
+        // Sort bottom-up by contentStartLine DESC to preserve line numbers
+        usort($displayUpdates, static fn (array $a, array $b) => $b['block']->contentStartLine <=> $a['block']->contentStartLine);
+
+        foreach ($displayUpdates as $du) {
+            $lines = $this->rewriteDisplayBlock($lines, $du['block']->contentStartLine, $du['block']->contentEndLine, $du['output']);
+        }
 
         file_put_contents($filePath, implode("\n", $lines)."\n");
     }
@@ -158,10 +169,8 @@ final class MarkdownRewriter
     private function commentTagForType(string $assertionType): string
     {
         return match ($assertionType) {
-            'output_json'     => 'doctest-json',
-            'output_contains' => 'doctest-contains',
-            'output_matches'  => 'doctest-matches',
-            default           => 'doctest',
+            'output_json' => 'doctest-json',
+            default       => 'doctest',
         };
     }
 }

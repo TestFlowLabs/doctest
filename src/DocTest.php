@@ -166,6 +166,10 @@ final readonly class DocTest
         $allResults      = [];
         $hasRealFailure  = false;
 
+        // Pre-compute blocks per file for accurate progress reporting
+        $allBlocks     = [];
+        $totalBlocks   = 0;
+        $maxLineNumber = 0;
         foreach ($files as $file) {
             $blocks = $this->extractBlocks($file);
 
@@ -182,9 +186,19 @@ final readonly class DocTest
                 continue;
             }
 
+            $allBlocks[$file] = $blocks;
+            $totalBlocks += count($blocks);
+            foreach ($blocks as $block) {
+                $maxLineNumber = max($maxLineNumber, $block->startLine);
+            }
+        }
+
+        $this->reporter->setTotalBlocks($totalBlocks);
+        $this->reporter->setMaxLineNumber($maxLineNumber);
+        $this->reporter->setParallelWorkers($this->config->parallel);
+
+        foreach ($allBlocks as $file => $blocks) {
             $this->reporter->reportFile($file);
-            $this->reporter->setTotalBlocks(count($blocks));
-            $this->reporter->setMaxLineNumber(max(array_map(fn ($b) => $b->startLine, $blocks)));
 
             $results        = $this->executor->executeAll($blocks);
             $updates        = [];
@@ -228,14 +242,19 @@ final readonly class DocTest
                 }
             }
 
-            // Apply display output block updates (bottom-up)
-            $displayUpdates = array_reverse($displayUpdates);
-            foreach ($displayUpdates as $du) {
-                /** @var \TestFlowLabs\DocTest\CodeBlock\DisplayOutputBlock $block */
-                $block  = $du['block'];
-                $output = $this->limitDisplayOutput((string) $du['output'], $block->lines, $block->tail);
-                $rewriter->rewriteDisplayBlockInFile($file, $block->contentStartLine, $block->contentEndLine, $output);
-                $totalUpdated++;
+            // Apply display output block updates (batched, single file read/write)
+            if ($displayUpdates !== []) {
+                $limitedDisplayUpdates = [];
+                foreach ($displayUpdates as $du) {
+                    /** @var \TestFlowLabs\DocTest\CodeBlock\DisplayOutputBlock $block */
+                    $block                   = $du['block'];
+                    $limitedDisplayUpdates[] = [
+                        'block'  => $block,
+                        'output' => $this->limitDisplayOutput((string) $du['output'], $block->lines, $block->tail),
+                    ];
+                }
+                $rewriter->rewriteDisplayBlocks($file, $limitedDisplayUpdates);
+                $totalUpdated += count($limitedDisplayUpdates);
                 $fileChanged = true;
             }
 
