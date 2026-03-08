@@ -13,7 +13,8 @@ README.md
   :19 ✖ echo $result;               [5/5]  0.02s
 
 ----------------------------------------
-Blocks: 5  Passed: 3  Failed: 1  Skipped: 1  Duration: 0.12s
+Blocks: 5  Passed: 3  Failed: 1  Skipped: 1
+Tested: 80.0% (4/5)  Duration: 0.12s
 ```
 
 ## Output Elements
@@ -57,11 +58,12 @@ Also shows source code on failure:
 
 ## Summary
 
-After all blocks run, a summary line shows totals:
+After all blocks run, a two-line summary shows totals and coverage:
 
 ```
 ----------------------------------------
-Blocks: 12  Passed: 10  Failed: 1  Skipped: 1  Duration: 1.23s
+Blocks: 12  Passed: 10  Failed: 1  Skipped: 1
+Tested: 91.7% (11/12)  Duration: 1.23s
 ```
 
 ## Configuration

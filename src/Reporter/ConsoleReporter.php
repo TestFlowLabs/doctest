@@ -126,22 +126,28 @@ final class ConsoleReporter
         $this->output->writeln('');
         $this->output->writeln(str_repeat('-', 40));
 
-        $summary = "Blocks: {$total}  <fg=green>Passed: {$passed}</>  ";
+        $line1 = "Blocks: {$total}  <fg=green>Passed: {$passed}</>  ";
 
         if ($failed > 0) {
-            $summary .= "<fg=red>Failed: {$failed}</>  ";
+            $line1 .= "<fg=red>Failed: {$failed}</>  ";
         }
 
         if ($skipped > 0) {
-            $summary .= "<fg=gray>Skipped: {$skipped}</>  ";
+            $line1 .= "<fg=gray>Skipped: {$skipped}</>";
         }
+
+        $this->output->writeln($line1);
+
+        $tested     = $passed + $failed;
+        $percentage = $total > 0 ? ($tested / $total) * 100 : 0;
+        $line2      = sprintf('Tested: %.1f%% (%d/%d)  ', $percentage, $tested, $total);
 
         if ($this->parallelWorkers > 1) {
-            $summary .= "Parallel: {$this->parallelWorkers}  ";
+            $line2 .= "Parallel: {$this->parallelWorkers}  ";
         }
 
-        $summary .= sprintf('Duration: %.2fs', $duration);
-        $this->output->writeln($summary);
+        $line2 .= sprintf('Duration: %.2fs', $duration);
+        $this->output->writeln($line2);
     }
 
     /**

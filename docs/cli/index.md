@@ -51,7 +51,8 @@ README.md
   :19 ✖ echo $result;         [5/5]  0.02s
 
 ----------------------------------------
-Blocks: 5  Passed: 3  Failed: 1  Skipped: 1  Duration: 0.12s
+Blocks: 5  Passed: 3  Failed: 1  Skipped: 1
+Tested: 80.0% (4/5)  Duration: 0.12s
 ```
 
 | Symbol | Meaning |

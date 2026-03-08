@@ -92,6 +92,19 @@ test('summary shows parallel worker count when parallel is greater than 1', func
     $output = ($this->getOutput)();
     $this->assertStringContainsString('Parallel: 4', $output);
 });
+test('summary shows tested percentage', function (): void {
+    $reporter = new ConsoleReporter($this->output);
+    $results  = [
+        ($this->makeResult)(passed: true),
+        ($this->makeResult)(passed: true),
+        ($this->makeResult)(passed: false, error: 'fail'),
+        ($this->makeResult)(passed: true, skipped: true),
+    ];
+    $reporter->reportSummary($results, 1.5);
+
+    $output = ($this->getOutput)();
+    $this->assertStringContainsString('Tested: 75.0% (3/4)', $output);
+});
 test('summary does not show parallel info when sequential', function (): void {
     $reporter = new ConsoleReporter($this->output);
     $results  = [

@@ -49,7 +49,8 @@ vendor/bin/doctest
     :3 ✔ echo 'Hello, World!';  [1/1]  0.02s
 
   ----------------------------------------
-  Blocks: 1  Passed: 1  Duration: 0.05s
+  Blocks: 1  Passed: 1
+  Tested: 100.0% (1/1)  Duration: 0.05s
 ```
 
 </div>
